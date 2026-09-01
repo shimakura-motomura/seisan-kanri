@@ -4,10 +4,13 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>生産管理システム</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Noto+Sans+JP:wght@400;500;700&display=swap" rel="stylesheet">
 <style>
   * { box-sizing: border-box; }
   body {
-    font-family: "Yu Gothic", "Hiragino Sans", sans-serif;
+    font-family: "Noto Sans JP", "Yu Gothic", "Hiragino Sans", sans-serif;
     background: #F5F6F4;
     color: #1F2933;
     margin: 0;
@@ -93,7 +96,12 @@
 
   table { width: 100%; border-collapse: collapse; font-size: 12px; }
   th, td { text-align: left; padding: 6px 8px; border-bottom: 1px solid #eee; white-space: nowrap; }
+  td.dense { max-width: 140px; overflow: hidden; text-overflow: ellipsis; cursor: default; }
   th { color: #666; font-weight: 500; border-bottom: 1px solid #ccc; }
+  .progressDot { display:inline-block; width:10px; height:10px; border-radius:50%; margin-right:2px; cursor:pointer; }
+  .progressDot.done { background:#0F6E56; }
+  .progressDot.yotei { background:#D98324; }
+  .progressDot.empty { background:#ddd; }
   .tableWrap { overflow-x: auto; }
   .listStatus { font-size: 12px; color: #888; margin-bottom: 8px; }
 
@@ -187,7 +195,12 @@
     <button class="backBtn" onclick="nav('home')">← メニューに戻る</button>
     <h1>一覧</h1>
     <div class="box">
-      <input type="text" id="ichSearch" placeholder="製造番号・現場名で検索" style="width:100%;max-width:300px;font-family:inherit;font-size:14px;padding:9px;border:1px solid #ccc;border-radius:8px;margin-bottom:10px;">
+      <div style="display:flex; gap:10px; flex-wrap:wrap; align-items:center; margin-bottom:10px;">
+        <input type="text" id="ichSearch" placeholder="製造番号・現場名で検索" style="width:220px;font-family:inherit;font-size:14px;padding:9px;border:1px solid #ccc;border-radius:8px;">
+        <select id="ichFilterKubun" style="font-family:inherit;font-size:13px;padding:9px;border:1px solid #ccc;border-radius:8px;"><option value="">区分: すべて</option></select>
+        <select id="ichFilterSeisaku" style="font-family:inherit;font-size:13px;padding:9px;border:1px solid #ccc;border-radius:8px;"><option value="">製作区分: すべて</option></select>
+        <span id="ichSelectedCount" style="font-size:12px;color:#666;"></span>
+      </div>
       <div class="listStatus" id="ichListStatus">読み込み中...</div>
       <div class="tableWrap"><table id="ichListTable"><thead></thead><tbody></tbody></table></div>
     </div>
@@ -271,9 +284,12 @@
   // ================= 一覧 =================
   let ichAllRows = [];
   let ichHeader = [];
+  let ichSelected = new Set();
 
   async function initIchiran() {
-    document.getElementById("ichSearch").addEventListener("input", (e) => ichRenderTable(e.target.value.trim()));
+    document.getElementById("ichSearch").addEventListener("input", () => ichRenderTable());
+    document.getElementById("ichFilterKubun").addEventListener("change", () => ichRenderTable());
+    document.getElementById("ichFilterSeisaku").addEventListener("change", () => ichRenderTable());
     const statusEl = document.getElementById("ichListStatus");
     statusEl.textContent = "読み込み中...";
     try {
@@ -283,37 +299,103 @@
       const idxSeizou = ichHeader.indexOf("製造番号");
       const idxGenba = ichHeader.indexOf("現場名");
       ichAllRows = rows.slice(1).filter(r => r[idxSeizou] && r[idxGenba]); // 製造番号・現場名の両方がある行のみ(説明文などを除外)
-      ichRenderTable("");
+      ichPopulateFilters();
+      ichRenderTable();
     } catch (e) {
       statusEl.textContent = "読み込みに失敗しました: " + e.message;
     }
   }
 
-  function ichRenderTable(query) {
+  function ichPopulateFilters() {
+    const idxKubun = ichHeader.indexOf("区分");
+    const idxSeisaku = ichHeader.indexOf("製作区分");
+    const fillOptions = (selectId, idx) => {
+      const values = [...new Set(ichAllRows.map(r => r[idx]).filter(Boolean))].sort();
+      const sel = document.getElementById(selectId);
+      values.forEach(v => {
+        const opt = document.createElement("option");
+        opt.value = v; opt.textContent = v;
+        sel.appendChild(opt);
+      });
+    };
+    if (idxKubun >= 0) fillOptions("ichFilterKubun", idxKubun);
+    if (idxSeisaku >= 0) fillOptions("ichFilterSeisaku", idxSeisaku);
+  }
+
+  function ichRenderTable() {
     const statusEl = document.getElementById("ichListStatus");
     const table = document.getElementById("ichListTable");
     table.querySelector("thead") && (table.innerHTML = "<thead></thead><tbody></tbody>");
     const idxSeizou = ichHeader.indexOf("製造番号");
     const idxGenba = ichHeader.indexOf("現場名");
     const idxNouki = ichHeader.indexOf("納期");
+    const idxToukiroku = ichHeader.indexOf("登録日");
+    const idxZumen = ichHeader.indexOf("図面リンク");
+    const idxKubun = ichHeader.indexOf("区分");
+    const idxSeisaku = ichHeader.indexOf("製作区分");
+
+    const query = document.getElementById("ichSearch").value.trim();
+    const fKubun = document.getElementById("ichFilterKubun").value;
+    const fSeisaku = document.getElementById("ichFilterSeisaku").value;
+
     let rows = ichAllRows;
-    if (query) {
-      rows = rows.filter(r => (r[idxSeizou] || "").includes(query) || (r[idxGenba] || "").includes(query));
-    }
+    if (query) rows = rows.filter(r => (r[idxSeizou] || "").includes(query) || (r[idxGenba] || "").includes(query));
+    if (fKubun) rows = rows.filter(r => r[idxKubun] === fKubun);
+    if (fSeisaku) rows = rows.filter(r => r[idxSeisaku] === fSeisaku);
+
     statusEl.textContent = rows.length + "件(全" + ichAllRows.length + "件)";
+
     const trh = document.createElement("tr");
+    trh.appendChild(document.createElement("th")); // チェックボックス列の見出しは空欄
     ichHeader.forEach(h => { const th = document.createElement("th"); th.textContent = h; trh.appendChild(th); });
     table.querySelector("thead").appendChild(trh);
+
     const tbody = table.querySelector("tbody");
     rows.slice().reverse().forEach(r => {
+      const seizou = r[idxSeizou];
       const tr = document.createElement("tr");
+
+      const tdCheck = document.createElement("td");
+      const cb = document.createElement("input");
+      cb.type = "checkbox";
+      cb.checked = ichSelected.has(seizou);
+      cb.addEventListener("change", () => {
+        if (cb.checked) ichSelected.add(seizou); else ichSelected.delete(seizou);
+        ichUpdateSelectedCount();
+      });
+      tdCheck.appendChild(cb);
+      tr.appendChild(tdCheck);
+
       r.forEach((c, i) => {
         const td = document.createElement("td");
-        td.textContent = (i === idxNouki) ? formatDateOnly(c) : c; // 納期列は日付形式を整える
+        td.className = "dense";
+        if (i === idxNouki || i === idxToukiroku) {
+          td.textContent = formatDateShort(c);
+          td.title = formatDateOnly(c);
+        } else if (i === idxZumen && c) {
+          const a = document.createElement("a");
+          a.href = c; a.target = "_blank"; a.rel = "noopener"; a.textContent = "図面";
+          td.appendChild(a);
+        } else {
+          td.textContent = c;
+          if (c && String(c).length > 8) td.title = c; // 長い内容はカーソルを合わせると全文表示
+        }
         tr.appendChild(td);
       });
       tbody.appendChild(tr);
     });
+  }
+
+  function ichUpdateSelectedCount() {
+    const el = document.getElementById("ichSelectedCount");
+    el.textContent = ichSelected.size > 0 ? ichSelected.size + "件選択中" : "";
+  }
+
+  // 「2026/11/7」→「11/7」のように年を省略した短い表示にする(カーソルを合わせると年まで見える)
+  function formatDateShort(v) {
+    const full = formatDateOnly(v);
+    const m = full.match(/^\d{4}\/(\d{1,2}\/\d{1,2})$/);
+    return m ? m[1] : full;
   }
 
   // ================= 製作手配 =================
