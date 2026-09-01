@@ -115,6 +115,7 @@
     <div id="homeMenu">
       <button class="menuPrimary" onclick="nav('seisaku')">製作手配</button>
       <div class="menuGrid">
+        <button onclick="nav('ichiran')">一覧</button>
         <button onclick="nav('tosou')">塗装</button>
         <button onclick="nav('shukka')">出荷</button>
         <button onclick="nav('renraku')">連絡</button>
@@ -181,6 +182,17 @@
     </div>
   </div>
 
+  <!-- ============ 一覧 ============ -->
+  <div class="screen" id="screen-ichiran">
+    <button class="backBtn" onclick="nav('home')">← メニューに戻る</button>
+    <h1>一覧</h1>
+    <div class="box">
+      <input type="text" id="ichSearch" placeholder="製造番号・現場名で検索" style="width:100%;max-width:300px;font-family:inherit;font-size:14px;padding:9px;border:1px solid #ccc;border-radius:8px;margin-bottom:10px;">
+      <div class="listStatus" id="ichListStatus">読み込み中...</div>
+      <div class="tableWrap"><table id="ichListTable"><thead></thead><tbody></tbody></table></div>
+    </div>
+  </div>
+
   <!-- ============ 塗装 ============ -->
   <div class="screen" id="screen-tosou">
     <button class="backBtn" onclick="nav('home')">← メニューに戻る</button>
@@ -244,7 +256,7 @@
   const GAS_URL = "https://script.google.com/macros/s/AKfycbxsFKa97XhdXtugAVSXMp0Vz64-fR-XrcmkF2U_W_A_Dl9PvCds6KfdtHhjXX7GxjYA6Q/exec";
 
   // ================= ナビゲーション =================
-  const initialized = { seisaku: false, tosou: false, shukka: false, renraku: false };
+  const initialized = { seisaku: false, tosou: false, shukka: false, renraku: false, ichiran: false };
 
   function nav(screen) {
     document.querySelectorAll(".screen").forEach(s => s.classList.remove("active"));
@@ -253,6 +265,49 @@
     if (screen === "tosou" && !initialized.tosou) { initTosou(); initialized.tosou = true; }
     if (screen === "shukka" && !initialized.shukka) { initShukka(); initialized.shukka = true; }
     if (screen === "renraku" && !initialized.renraku) { initRenraku(); initialized.renraku = true; }
+    if (screen === "ichiran" && !initialized.ichiran) { initIchiran(); initialized.ichiran = true; }
+  }
+
+  // ================= 一覧 =================
+  let ichAllRows = [];
+  let ichHeader = [];
+
+  async function initIchiran() {
+    document.getElementById("ichSearch").addEventListener("input", (e) => ichRenderTable(e.target.value.trim()));
+    const statusEl = document.getElementById("ichListStatus");
+    statusEl.textContent = "読み込み中...";
+    try {
+      const res = await fetch(GAS_URL + "?type=products");
+      const rows = await res.json();
+      ichHeader = rows[0];
+      const idxSeizou = ichHeader.indexOf("製造番号");
+      ichAllRows = rows.slice(1).filter(r => r[idxSeizou]);
+      ichRenderTable("");
+    } catch (e) {
+      statusEl.textContent = "読み込みに失敗しました: " + e.message;
+    }
+  }
+
+  function ichRenderTable(query) {
+    const statusEl = document.getElementById("ichListStatus");
+    const table = document.getElementById("ichListTable");
+    table.querySelector("thead") && (table.innerHTML = "<thead></thead><tbody></tbody>");
+    const idxSeizou = ichHeader.indexOf("製造番号");
+    const idxGenba = ichHeader.indexOf("現場名");
+    let rows = ichAllRows;
+    if (query) {
+      rows = rows.filter(r => (r[idxSeizou] || "").includes(query) || (r[idxGenba] || "").includes(query));
+    }
+    statusEl.textContent = rows.length + "件(全" + ichAllRows.length + "件)";
+    const trh = document.createElement("tr");
+    ichHeader.forEach(h => { const th = document.createElement("th"); th.textContent = h; trh.appendChild(th); });
+    table.querySelector("thead").appendChild(trh);
+    const tbody = table.querySelector("tbody");
+    rows.slice().reverse().forEach(r => {
+      const tr = document.createElement("tr");
+      r.forEach(c => { const td = document.createElement("td"); td.textContent = c; tr.appendChild(td); });
+      tbody.appendChild(tr);
+    });
   }
 
   // ================= 製作手配 =================
