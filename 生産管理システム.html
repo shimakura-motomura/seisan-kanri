@@ -102,6 +102,17 @@
   .progressDot.done { background:#0F6E56; }
   .progressDot.yotei { background:#D98324; }
   .progressDot.empty { background:#ddd; }
+  .progressPill {
+    display:inline-block; font-size:10px; padding:2px 5px; border-radius:4px;
+    margin-right:3px; cursor:pointer; white-space:nowrap;
+  }
+  .progressPill.done { background:#E1F5EE; color:#0F6E56; }
+  .progressPill.yotei { background:#FAEEDA; color:#854F0B; }
+  .progressPill.empty { background:#F1EFE8; color:#888780; }
+  .zumenBtnSmall {
+    display:inline-block; padding:3px 10px; border:1px solid #123C5C; border-radius:6px;
+    color:#123C5C; text-decoration:none; font-size:11px;
+  }
   .tableWrap { overflow-x: auto; }
   .listStatus { font-size: 12px; color: #888; margin-bottom: 8px; }
 
@@ -157,8 +168,25 @@
       <div class="field"><label>品名</label><input id="f_hinmei"></div>
       <div class="field"><label>寸法</label><input id="f_sunpou"></div>
       <div class="grid2">
-        <div class="field"><label>区分</label><input id="f_kubun"></div>
-        <div class="field"><label>製作区分</label><input id="f_seisakuKubun"></div>
+        <div class="field"><label>区</label>
+          <select id="f_kubun">
+            <option value=""></option>
+            <option value="外">外(適用外)</option>
+            <option value="一">一(一圧)</option>
+            <option value="二">二(二圧)</option>
+            <option value="小">小(小型圧力容器)</option>
+            <option value="消">消(消防検査)</option>
+          </select>
+        </div>
+        <div class="field"><label>製作</label>
+          <select id="f_seisakuKubun">
+            <option value=""></option>
+            <option value="1">1(第一工場)</option>
+            <option value="S">S(SUS工場)</option>
+            <option value="杉">杉(杉原)</option>
+            <option value="コ">コ(コイル)</option>
+          </select>
+        </div>
       </div>
       <div class="field"><label>塗装仕様(自由記述・参考メモ)</label><input id="f_tosouShiyou"></div>
       <div class="grid2">
@@ -169,7 +197,7 @@
         <div class="field"><label>質量</label><input id="f_shitsuryou"></div>
         <div class="field"><label>型番</label><input id="f_katabangou"></div>
       </div>
-      <div class="field"><label>特記仕様</label><input id="f_tokkiShiyou"></div>
+      <div class="field"><label>備考</label><input id="f_tokkiShiyou"></div>
       <div class="field"><label>図面リンク(自動で入ります)</label><input id="f_zumenLink" readonly></div>
 
       <div class="tosouSection">
@@ -323,6 +351,8 @@
   }
 
   const PROGRESS_COLS = ["受注日", "製作日", "完成日", "内装日", "外装日", "出荷日"];
+  const PROGRESS_LABELS = ["受", "製", "完", "内", "外", "出"];
+  const HIDDEN_COLS = ["登録日"]; // 受注日と重複するため一覧では非表示
 
   function ichRenderTable() {
     const statusEl = document.getElementById("ichListStatus");
@@ -331,11 +361,12 @@
     const idxSeizou = ichHeader.indexOf("製造番号");
     const idxGenba = ichHeader.indexOf("現場名");
     const idxNouki = ichHeader.indexOf("納期");
-    const idxToukiroku = ichHeader.indexOf("登録日");
     const idxZumen = ichHeader.indexOf("図面リンク");
     const idxKubun = ichHeader.indexOf("区分");
     const idxSeisaku = ichHeader.indexOf("製作区分");
     const progressIdx = PROGRESS_COLS.map(name => ichHeader.indexOf(name));
+    const hiddenIdx = HIDDEN_COLS.map(name => ichHeader.indexOf(name));
+    const skipIdx = (i) => progressIdx.includes(i) || hiddenIdx.includes(i);
 
     const query = document.getElementById("ichSearch").value.trim();
     const fKubun = document.getElementById("ichFilterKubun").value;
@@ -354,7 +385,7 @@
     thProgress.textContent = "進捗";
     trh.appendChild(thProgress);
     ichHeader.forEach((h, i) => {
-      if (progressIdx.includes(i)) return; // 進捗列は上のまとめ表示に統合するので個別列は省略
+      if (skipIdx(i)) return;
       const th = document.createElement("th"); th.textContent = h; trh.appendChild(th);
     });
     table.querySelector("thead").appendChild(trh);
@@ -375,34 +406,36 @@
       tdCheck.appendChild(cb);
       tr.appendChild(tdCheck);
 
-      // 進捗ドット(受注→製作→完成→内装→外装→出荷)
+      // 進捗バッジ(受/製/完/内/外/出+日付)
       const tdProgress = document.createElement("td");
       tdProgress.style.whiteSpace = "nowrap";
       PROGRESS_COLS.forEach((colName, i) => {
         const idx = progressIdx[i];
         const val = idx >= 0 ? r[idx] : "";
-        const dot = document.createElement("span");
-        dot.className = "progressDot " + ichDotClass(val);
-        dot.title = colName + (val ? ": " + formatDateOnly(val) : ": 未定 (クリックで日付入力)");
-        dot.addEventListener("click", () => ichEditProgress(seizou, colName, val));
-        tdProgress.appendChild(dot);
+        const pill = document.createElement("span");
+        pill.className = "progressPill " + ichDotClass(val);
+        pill.textContent = PROGRESS_LABELS[i] + (val ? formatDateShort(val) : "");
+        pill.title = colName + (val ? ": " + formatDateOnly(val) : ": 未定 (クリックで日付入力)");
+        pill.addEventListener("click", () => ichEditProgress(seizou, colName, val));
+        tdProgress.appendChild(pill);
       });
       tr.appendChild(tdProgress);
 
       r.forEach((c, i) => {
-        if (progressIdx.includes(i)) return; // 進捗列は上でまとめて表示済み
+        if (skipIdx(i)) return;
         const td = document.createElement("td");
         td.className = "dense";
-        if (i === idxNouki || i === idxToukiroku) {
+        if (i === idxNouki) {
           td.textContent = formatDateShort(c);
           td.title = formatDateOnly(c);
         } else if (i === idxZumen && c) {
           const a = document.createElement("a");
           a.href = c; a.target = "_blank"; a.rel = "noopener"; a.textContent = "図面";
+          a.className = "zumenBtnSmall";
           td.appendChild(a);
         } else {
           td.textContent = c;
-          if (c && String(c).length > 8) td.title = c; // 長い内容はカーソルを合わせると全文表示
+          if (c && String(c).length > 8) td.title = c;
         }
         tr.appendChild(td);
       });
