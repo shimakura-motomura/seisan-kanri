@@ -473,8 +473,15 @@
     });
   }
 
+  let ocrCooldownUntil = 0; // 連打防止:前回の送信から5秒間は次の送信を受け付けない
+
   async function handleFile(file) {
     if (file.type !== "application/pdf") { alert("PDFファイルを選んでください"); return; }
+    if (Date.now() < ocrCooldownUntil) {
+      alert("連続送信を防ぐため、少し間隔をあけてお試しください(あと" + Math.ceil((ocrCooldownUntil - Date.now()) / 1000) + "秒)");
+      return;
+    }
+    ocrCooldownUntil = Date.now() + 5000;
     const dropZone = document.getElementById("dropZone");
     const ocrStatus = document.getElementById("ocrStatus");
     ocrStatus.style.display = "block";
