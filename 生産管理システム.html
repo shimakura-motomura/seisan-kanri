@@ -281,7 +281,8 @@
       const rows = await res.json();
       ichHeader = rows[0];
       const idxSeizou = ichHeader.indexOf("製造番号");
-      ichAllRows = rows.slice(1).filter(r => r[idxSeizou]);
+      const idxGenba = ichHeader.indexOf("現場名");
+      ichAllRows = rows.slice(1).filter(r => r[idxSeizou] && r[idxGenba]); // 製造番号・現場名の両方がある行のみ(説明文などを除外)
       ichRenderTable("");
     } catch (e) {
       statusEl.textContent = "読み込みに失敗しました: " + e.message;
@@ -294,6 +295,7 @@
     table.querySelector("thead") && (table.innerHTML = "<thead></thead><tbody></tbody>");
     const idxSeizou = ichHeader.indexOf("製造番号");
     const idxGenba = ichHeader.indexOf("現場名");
+    const idxNouki = ichHeader.indexOf("納期");
     let rows = ichAllRows;
     if (query) {
       rows = rows.filter(r => (r[idxSeizou] || "").includes(query) || (r[idxGenba] || "").includes(query));
@@ -305,7 +307,11 @@
     const tbody = table.querySelector("tbody");
     rows.slice().reverse().forEach(r => {
       const tr = document.createElement("tr");
-      r.forEach(c => { const td = document.createElement("td"); td.textContent = c; tr.appendChild(td); });
+      r.forEach((c, i) => {
+        const td = document.createElement("td");
+        td.textContent = (i === idxNouki) ? formatDateOnly(c) : c; // 納期列は日付形式を整える
+        tr.appendChild(td);
+      });
       tbody.appendChild(tr);
     });
   }
