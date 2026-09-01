@@ -181,7 +181,7 @@
       const header = rows[0];
       const idxGenba = header.indexOf("現場名");
       const idxNouki = header.indexOf("納期");
-      const idxZumen = header.indexOf("図面リンク");
+      const idxZumen = header.indexOf("図");
       const body = rows.slice(1).filter(r => r[0] && r[idxGenba]); // 製造番号・現場名の両方が入っている行だけ(説明文の行などは除外)
 
       if (body.length === 0) {
