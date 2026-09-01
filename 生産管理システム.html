@@ -1,0 +1,737 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>生産管理システム</title>
+<style>
+  * { box-sizing: border-box; }
+  body {
+    font-family: "Yu Gothic", "Hiragino Sans", sans-serif;
+    background: #F5F6F4;
+    color: #1F2933;
+    margin: 0;
+    padding: 20px;
+  }
+  h1 { font-size: 18px; font-weight: 500; margin: 0 0 16px; color: #123C5C; }
+  h2 { font-size: 15px; font-weight: 500; margin: 0 0 12px; color: #123C5C; }
+
+  .screen { display: none; }
+  .screen.active { display: block; }
+
+  .backBtn {
+    background: none; border: none; color: #123C5C; font-size: 13px;
+    padding: 0; margin-bottom: 14px; cursor: pointer;
+  }
+
+  /* ホームメニュー */
+  #homeMenu { max-width: 420px; }
+  .menuPrimary {
+    width: 100%; height: 60px; background: #123C5C; color: #fff; border: none;
+    border-radius: 10px; font-size: 15px; font-weight: 500; margin-bottom: 10px;
+  }
+  .menuGrid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 10px; }
+  .menuGrid button {
+    height: 72px; background: #fff; border: 1px solid #ddd; border-radius: 10px;
+    font-size: 13px; color: #1F2933; font-family: inherit;
+  }
+
+  .box {
+    background: #fff; border-radius: 10px; padding: 18px; margin-bottom: 16px;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.06);
+  }
+  .field { margin-bottom: 12px; }
+  .field label { display: block; font-size: 12px; color: #666; margin-bottom: 4px; }
+  .field.filled label { color: #0F6E56; }
+  .field input, .field textarea, .field select {
+    width: 100%; font-family: inherit; font-size: 14px; padding: 10px;
+    border: 1px solid #ccc; border-radius: 8px;
+  }
+  .field.filled input { background: #F5FBF9; border-color: #B7E4D5; }
+  .grid2 { display: grid; grid-template-columns: 1fr 1fr; gap: 0 12px; }
+  .hint { font-size: 12px; color: #b00020; margin: -4px 0 16px; }
+
+  #dropZone {
+    border: 2px dashed #ccc; border-radius: 10px; padding: 30px 20px; text-align: center;
+    color: #888; font-size: 14px; cursor: pointer;
+  }
+  #dropZone.dragover { border-color: #123C5C; background: #F0F4F7; color: #123C5C; }
+  #dropZone .sub { font-size: 12px; margin-top: 6px; color: #aaa; }
+  #ocrStatus { font-size: 13px; color: #888; margin-top: 10px; display: none; }
+  #skForm { display: none; }
+
+  .tosouSection { margin: 20px 0 16px; padding-top: 16px; border-top: 1px solid #eee; }
+  .sectionLabel { display: block; font-size: 13px; color: #123C5C; font-weight: 500; margin-bottom: 8px; }
+  .tosouAddRow { display: flex; gap: 8px; margin-bottom: 10px; align-items: center; }
+  .tosouAddRow select { flex: 1; font-family: inherit; font-size: 13px; padding: 8px; border: 1px solid #ccc; border-radius: 8px; }
+  .tosouAddRow input { width: 80px; font-family: inherit; font-size: 13px; padding: 8px; border: 1px solid #ccc; border-radius: 8px; }
+  .tosouAddRow .unitLabel { font-size: 12px; color: #666; white-space: nowrap; }
+  .tosouAddRow button { padding: 8px 14px; background: #123C5C; color: #fff; border: none; border-radius: 8px; font-size: 13px; }
+  .tosouItem {
+    display: flex; justify-content: space-between; align-items: center;
+    background: #F5FBF9; border: 1px solid #B7E4D5; border-radius: 8px;
+    padding: 8px 12px; margin-bottom: 6px; font-size: 13px;
+  }
+  .tosouItem button { background: none; border: none; color: #b00020; font-size: 12px; }
+
+  #skRegisterBtn, #tsAddBtn, #rkPostBtn, #skkAddBtn {
+    padding: 12px 20px; background: #123C5C; color: #fff; border: none;
+    border-radius: 8px; font-size: 14px; font-weight: 500;
+  }
+  #skResultMsg, #tsAddResult, #skkAddResult { font-size: 14px; margin-top: 12px; display: none; margin-left: 10px; }
+  #skResultMsg.success, #tsAddResult.success, #skkAddResult.success { color: #0F6E56; }
+  #skResultMsg.error, #tsAddResult.error, #skkAddResult.error { color: #b00020; }
+
+  /* 塗装 */
+  .tabbar { display: flex; flex-wrap: wrap; gap: 6px; margin-bottom: 16px; }
+  .tabbar button {
+    padding: 8px 14px; border-radius: 999px; border: 1px solid #ccc; background: #fff;
+    font-size: 13px; color: #666; font-family: inherit;
+  }
+  .tabbar button.active { background: #123C5C; color: #fff; border-color: #123C5C; }
+  .grid3 { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px 12px; margin-bottom: 10px; }
+
+  table { width: 100%; border-collapse: collapse; font-size: 12px; }
+  th, td { text-align: left; padding: 6px 8px; border-bottom: 1px solid #eee; white-space: nowrap; }
+  th { color: #666; font-weight: 500; border-bottom: 1px solid #ccc; }
+  .tableWrap { overflow-x: auto; }
+  .listStatus { font-size: 12px; color: #888; margin-bottom: 8px; }
+
+  /* 連絡 */
+  #rkPostForm input, #rkPostForm textarea {
+    width: 100%; font-family: inherit; font-size: 14px; padding: 10px;
+    border: 1px solid #ccc; border-radius: 8px; margin-bottom: 8px;
+  }
+  .msg { background: #F5F6F4; border-radius: 10px; padding: 12px 14px; margin-bottom: 10px; }
+  .msg .head { display: flex; justify-content: space-between; font-size: 12px; color: #888; margin-bottom: 4px; }
+  .msg .body { font-size: 14px; white-space: pre-wrap; }
+</style>
+</head>
+<body>
+
+  <!-- ============ ホームメニュー ============ -->
+  <div class="screen active" id="screen-home">
+    <h1>生産管理システム</h1>
+    <div id="homeMenu">
+      <button class="menuPrimary" onclick="nav('seisaku')">製作手配</button>
+      <div class="menuGrid">
+        <button onclick="nav('tosou')">塗装</button>
+        <button onclick="nav('shukka')">出荷</button>
+        <button onclick="nav('renraku')">連絡</button>
+        <button onclick="nav('setting')">設定</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ============ 製作手配 ============ -->
+  <div class="screen" id="screen-seisaku">
+    <button class="backBtn" onclick="nav('home')">← メニューに戻る</button>
+    <h1>製作手配</h1>
+
+    <div class="box">
+      <div id="dropZone">
+        図面PDFをここにドラッグ&ドロップ<br>
+        (またはタップしてファイルを選択)
+        <div class="sub">読み取り結果は仮入力されます。内容を確認・修正してください。</div>
+      </div>
+      <input type="file" id="fileInput" accept="application/pdf" style="display:none;">
+      <div id="ocrStatus">読み取り中です。少々お待ちください...</div>
+    </div>
+
+    <div class="box" id="skForm">
+      <div class="hint">※黄緑色の項目は読み取り結果からの仮入力です。内容を確認してください。</div>
+      <div class="field"><label>製造番号</label><input id="f_seizouBangou"></div>
+      <div class="grid2">
+        <div class="field"><label>納期</label><input id="f_nouki"></div>
+        <div class="field"><label>現場名</label><input id="f_genbaMei"></div>
+      </div>
+      <div class="field"><label>品名</label><input id="f_hinmei"></div>
+      <div class="field"><label>寸法</label><input id="f_sunpou"></div>
+      <div class="grid2">
+        <div class="field"><label>区分</label><input id="f_kubun"></div>
+        <div class="field"><label>製作区分</label><input id="f_seisakuKubun"></div>
+      </div>
+      <div class="field"><label>塗装仕様(自由記述・参考メモ)</label><input id="f_tosouShiyou"></div>
+      <div class="grid2">
+        <div class="field"><label>担当者</label><input id="f_tantou"></div>
+        <div class="field"><label>m寸法</label><input id="f_mSunpou"></div>
+      </div>
+      <div class="grid2">
+        <div class="field"><label>質量</label><input id="f_shitsuryou"></div>
+        <div class="field"><label>型番</label><input id="f_katabangou"></div>
+      </div>
+      <div class="field"><label>特記仕様</label><input id="f_tokkiShiyou"></div>
+      <div class="field"><label>図面リンク(自動で入ります)</label><input id="f_zumenLink" readonly></div>
+
+      <div class="tosouSection">
+        <label class="sectionLabel">塗装仕様(必要な処理を追加してください)</label>
+        <div class="tosouAddRow">
+          <select id="t_tab"></select>
+          <select id="t_bui"></select>
+          <select id="t_naiyou"></select>
+          <input id="t_vol" type="number" step="0.1" placeholder="vol">
+          <span class="unitLabel" id="t_unit"></span>
+          <button type="button" id="t_addBtn">追加</button>
+        </div>
+        <div id="tosouList"></div>
+      </div>
+
+      <button id="skRegisterBtn">登録する</button>
+      <div id="skResultMsg"></div>
+    </div>
+  </div>
+
+  <!-- ============ 塗装 ============ -->
+  <div class="screen" id="screen-tosou">
+    <button class="backBtn" onclick="nav('home')">← メニューに戻る</button>
+    <h1>塗装</h1>
+    <div class="tabbar" id="tsTabbar"></div>
+    <div class="box" id="tsFormBox"></div>
+    <div class="box">
+      <div class="listStatus" id="tsListStatus">読み込み中...</div>
+      <div class="tableWrap"><table id="tsListTable"><thead></thead><tbody></tbody></table></div>
+    </div>
+  </div>
+
+  <!-- ============ 出荷 ============ -->
+  <div class="screen" id="screen-shukka">
+    <button class="backBtn" onclick="nav('home')">← メニューに戻る</button>
+    <h1>出荷</h1>
+    <div class="box">
+      <h2>新規登録</h2>
+      <div class="grid3">
+        <div class="field"><label>製造番号</label><input id="skk_seizou"></div>
+        <div class="field"><label>出荷予定日</label><input id="skk_yotei" placeholder="例: 10/28"></div>
+        <div class="field"><label>搬入日</label><input id="skk_hannyuu" placeholder="例: 10/29"></div>
+        <div class="field"><label>出荷先</label><input id="skk_saki"></div>
+        <div class="field"><label>運送業者</label><input id="skk_unsou"></div>
+        <div class="field"><label>備考</label><input id="skk_biko"></div>
+      </div>
+      <button id="skkAddBtn">登録する</button>
+      <span id="skkAddResult"></span>
+    </div>
+    <div class="box">
+      <div class="listStatus" id="skkListStatus">読み込み中...</div>
+      <div class="tableWrap"><table id="skkListTable"><thead></thead><tbody></tbody></table></div>
+    </div>
+  </div>
+
+  <!-- ============ 連絡 ============ -->
+  <div class="screen" id="screen-renraku">
+    <button class="backBtn" onclick="nav('home')">← メニューに戻る</button>
+    <h1>連絡</h1>
+    <div class="box" id="rkPostForm">
+      <div class="field"><label>お名前</label><input id="rk_toukousha"></div>
+      <div class="field"><label>連絡内容</label><textarea id="rk_naiyou" rows="3"></textarea></div>
+      <button id="rkPostBtn">投稿する</button>
+    </div>
+    <div class="box">
+      <div class="listStatus" id="rkStatus">読み込み中...</div>
+      <div id="rkList"></div>
+    </div>
+  </div>
+
+  <!-- ============ 設定 ============ -->
+  <div class="screen" id="screen-setting">
+    <button class="backBtn" onclick="nav('home')">← メニューに戻る</button>
+    <h1>設定</h1>
+    <div class="box">
+      <p style="font-size:13px;color:#888;margin:0;">準備中です。担当者マスタの編集や、部位・処理内容の選択肢の管理などを、今後ここに追加していく予定です。</p>
+    </div>
+  </div>
+
+<script>
+  const GAS_URL = "https://script.google.com/macros/s/AKfycbxsFKa97XhdXtugAVSXMp0Vz64-fR-XrcmkF2U_W_A_Dl9PvCds6KfdtHhjXX7GxjYA6Q/exec";
+
+  // ================= ナビゲーション =================
+  const initialized = { seisaku: false, tosou: false, shukka: false, renraku: false };
+
+  function nav(screen) {
+    document.querySelectorAll(".screen").forEach(s => s.classList.remove("active"));
+    document.getElementById("screen-" + screen).classList.add("active");
+    if (screen === "seisaku" && !initialized.seisaku) { initSeisaku(); initialized.seisaku = true; }
+    if (screen === "tosou" && !initialized.tosou) { initTosou(); initialized.tosou = true; }
+    if (screen === "shukka" && !initialized.shukka) { initShukka(); initialized.shukka = true; }
+    if (screen === "renraku" && !initialized.renraku) { initRenraku(); initialized.renraku = true; }
+  }
+
+  // ================= 製作手配 =================
+  const TOSOU_TABS = [
+    { key: "酸洗", unit: "㎡", naiyou: ["酸洗","酸洗+脱脂"] },
+    { key: "研磨", unit: "㎡", naiyou: ["研磨"] },
+    { key: "エポ", unit: "㎡", naiyou: ["内エポ","ブラスト"] },
+    { key: "FRP", unit: "KL", naiyou: ["FRP直","FRP2","ゴムシート10t","ゴムシート3t","消防立会"] },
+    { key: "メッキ", unit: "kg", naiyou: ["メッキ"] },
+    { key: "外装", unit: "㎡", naiyou: ["錆止","耐熱","耐塩(アルテクトプライマー)","エポ系錆止(ハイポンファインデクロ)","その他"] },
+  ];
+  let tosouItems = [];
+
+  function initSeisaku() {
+    const dropZone = document.getElementById("dropZone");
+    const fileInput = document.getElementById("fileInput");
+    dropZone.addEventListener("click", () => fileInput.click());
+    dropZone.addEventListener("dragover", (e) => { e.preventDefault(); dropZone.classList.add("dragover"); });
+    dropZone.addEventListener("dragleave", () => dropZone.classList.remove("dragover"));
+    dropZone.addEventListener("drop", (e) => {
+      e.preventDefault(); dropZone.classList.remove("dragover");
+      if (e.dataTransfer.files.length > 0) handleFile(e.dataTransfer.files[0]);
+    });
+    fileInput.addEventListener("change", (e) => { if (e.target.files.length > 0) handleFile(e.target.files[0]); });
+
+    const tabSel = document.getElementById("t_tab");
+    tabSel.innerHTML = TOSOU_TABS.map(t => `<option value="${t.key}">${t.key}</option>`).join("");
+    tabSel.addEventListener("change", updateNaiyouOptions);
+    updateNaiyouOptions();
+
+    fetch(GAS_URL + "?type=bui").then(r => r.json()).then(rows => {
+      const buiList = rows.slice(1).map(r => r[0]).filter(Boolean);
+      document.getElementById("t_bui").innerHTML = buiList.map(b => `<option value="${b}">${b}</option>`).join("");
+    }).catch(e => console.error("部位マスタ読み込み失敗", e));
+
+    document.getElementById("t_addBtn").addEventListener("click", () => {
+      tosouItems.push({
+        tab: document.getElementById("t_tab").value,
+        bui: document.getElementById("t_bui").value,
+        naiyou: document.getElementById("t_naiyou").value,
+        vol: document.getElementById("t_vol").value.trim(),
+      });
+      document.getElementById("t_vol").value = "";
+      renderTosouList();
+    });
+
+    document.getElementById("skRegisterBtn").addEventListener("click", submitSeisaku);
+  }
+
+  function updateNaiyouOptions() {
+    const tabKey = document.getElementById("t_tab").value;
+    const tab = TOSOU_TABS.find(t => t.key === tabKey);
+    document.getElementById("t_naiyou").innerHTML = tab.naiyou.map(n => `<option value="${n}">${n}</option>`).join("");
+    document.getElementById("t_unit").textContent = tab.unit;
+  }
+
+  function renderTosouList() {
+    const listEl = document.getElementById("tosouList");
+    listEl.innerHTML = "";
+    tosouItems.forEach((item, i) => {
+      const div = document.createElement("div");
+      div.className = "tosouItem";
+      div.innerHTML = `<span>${item.tab} / ${item.bui} / ${item.naiyou}${item.vol ? " / " + item.vol : ""}</span><button type="button">削除</button>`;
+      div.querySelector("button").addEventListener("click", () => { tosouItems.splice(i, 1); renderTosouList(); });
+      listEl.appendChild(div);
+    });
+  }
+
+  function fileToBase64(file) {
+    return new Promise((resolve, reject) => {
+      const reader = new FileReader();
+      reader.onload = () => resolve(reader.result.split(",")[1]);
+      reader.onerror = reject;
+      reader.readAsDataURL(file);
+    });
+  }
+
+  async function handleFile(file) {
+    if (file.type !== "application/pdf") { alert("PDFファイルを選んでください"); return; }
+    const dropZone = document.getElementById("dropZone");
+    const ocrStatus = document.getElementById("ocrStatus");
+    ocrStatus.style.display = "block";
+    dropZone.style.display = "none";
+    try {
+      const base64 = await fileToBase64(file);
+      const res = await fetch(GAS_URL, { method: "POST", body: JSON.stringify({ type: "ocr", filename: file.name, base64 }) });
+      if (!res.ok) throw new Error("通信エラー: " + res.status);
+      const data = await res.json();
+      if (data.result !== "success") throw new Error(data.message || data.error || "読み取りに失敗しました");
+      fillFormFromOcr(data.fields || {}, data.pdfUrl);
+      ocrStatus.style.display = "none";
+      document.getElementById("skForm").style.display = "block";
+    } catch (e) {
+      ocrStatus.style.display = "none";
+      dropZone.style.display = "block";
+      alert("読み取りに失敗しました。もう一度お試しいただくか、手入力で進めてください。\n詳細: " + e.message);
+      document.getElementById("skForm").style.display = "block";
+    }
+  }
+
+  function fillFormFromOcr(fields, pdfUrl) {
+    document.getElementById("f_zumenLink").value = pdfUrl;
+    const map = { seizouBangou: "f_seizouBangou", nouki: "f_nouki", genbaMei: "f_genbaMei", hinmei: "f_hinmei", sunpou: "f_sunpou" };
+    for (const [key, id] of Object.entries(map)) {
+      const val = fields[key];
+      if (val) {
+        const el = document.getElementById(id);
+        el.value = val;
+        el.closest(".field").classList.add("filled");
+      }
+    }
+  }
+
+  async function submitSeisaku() {
+    const seizouBangou = document.getElementById("f_seizouBangou").value.trim();
+    if (!seizouBangou) { alert("製造番号を入力してください"); return; }
+    const btn = document.getElementById("skRegisterBtn");
+    const resultMsg = document.getElementById("skResultMsg");
+    btn.disabled = true; btn.textContent = "登録中...";
+
+    const payload = {
+      type: "addProduct", seizouBangou,
+      nouki: document.getElementById("f_nouki").value.trim(),
+      genbaMei: document.getElementById("f_genbaMei").value.trim(),
+      hinmei: document.getElementById("f_hinmei").value.trim(),
+      sunpou: document.getElementById("f_sunpou").value.trim(),
+      kubun: document.getElementById("f_kubun").value.trim(),
+      seisakuKubun: document.getElementById("f_seisakuKubun").value.trim(),
+      tosouShiyou: document.getElementById("f_tosouShiyou").value.trim(),
+      tantou: document.getElementById("f_tantou").value.trim(),
+      mSunpou: document.getElementById("f_mSunpou").value.trim(),
+      shitsuryou: document.getElementById("f_shitsuryou").value.trim(),
+      katabangou: document.getElementById("f_katabangou").value.trim(),
+      tokkiShiyou: document.getElementById("f_tokkiShiyou").value.trim(),
+      zumenLink: document.getElementById("f_zumenLink").value.trim(),
+    };
+
+    try {
+      const res = await fetch(GAS_URL, { method: "POST", body: JSON.stringify(payload) });
+      if (!res.ok) throw new Error("通信エラー: " + res.status);
+
+      for (const item of tosouItems) {
+        await fetch(GAS_URL, {
+          method: "POST",
+          body: JSON.stringify({
+            type: "addTosou", tab: item.tab, seizouBangou,
+            nouki: payload.nouki, genbaMei: payload.genbaMei, hinmei: payload.hinmei, sunpou: payload.sunpou,
+            bui: item.bui, naiyou: item.naiyou, vol: item.vol || "",
+            zairyou: "", kakaku: "", gyousha: "", hankomiYotei: "", kanseiNouhin: "", biko: "",
+          }),
+        });
+      }
+
+      resultMsg.textContent = "登録しました:" + seizouBangou + "(塗装仕様 " + tosouItems.length + "件も連動登録)";
+      resultMsg.className = "success"; resultMsg.style.display = "block";
+      btn.textContent = "登録する"; btn.disabled = false;
+      tosouItems = []; renderTosouList();
+    } catch (e) {
+      resultMsg.textContent = "登録に失敗しました。詳細: " + e.message;
+      resultMsg.className = "error"; resultMsg.style.display = "block";
+      btn.textContent = "登録する"; btn.disabled = false;
+    }
+  }
+
+  // ================= 塗装 =================
+  let tsCurrentTab = TOSOU_TABS[0].key;
+  const TS_SCHEDULE_KEY = "メッキスケ";
+  let tsBuiList = [];
+  let tsProductMap = {};
+
+  async function initTosou() {
+    await tsLoadMasters();
+    tsRender();
+  }
+
+  async function tsLoadMasters() {
+    try {
+      const [buiRes, prodRes] = await Promise.all([fetch(GAS_URL + "?type=bui"), fetch(GAS_URL + "?type=products")]);
+      const buiRows = await buiRes.json();
+      tsBuiList = buiRows.slice(1).map(r => r[0]).filter(Boolean);
+      const prodRows = await prodRes.json();
+      const header = prodRows[0];
+      const idxSeizou = header.indexOf("製造番号"), idxGenba = header.indexOf("現場名"), idxHinmei = header.indexOf("品名"), idxSunpou = header.indexOf("寸法");
+      prodRows.slice(1).forEach(r => {
+        if (r[idxSeizou]) tsProductMap[r[idxSeizou]] = { genbaMei: r[idxGenba] || "", hinmei: r[idxHinmei] || "", sunpou: r[idxSunpou] || "" };
+      });
+    } catch (e) { console.error("マスタ読み込み失敗", e); }
+  }
+
+  function tsRenderTabbar() {
+    const bar = document.getElementById("tsTabbar");
+    bar.innerHTML = "";
+    [...TOSOU_TABS.map(t => t.key), TS_SCHEDULE_KEY].forEach(key => {
+      const btn = document.createElement("button");
+      btn.textContent = key;
+      btn.className = key === tsCurrentTab ? "active" : "";
+      btn.addEventListener("click", () => { tsCurrentTab = key; tsRender(); });
+      bar.appendChild(btn);
+    });
+  }
+
+  function tsRender() {
+    tsRenderTabbar();
+    if (tsCurrentTab === TS_SCHEDULE_KEY) { tsRenderScheduleForm(); tsLoadScheduleList(); }
+    else { const tab = TOSOU_TABS.find(t => t.key === tsCurrentTab); tsRenderForm(tab); tsLoadList(tab); }
+  }
+
+  function tsRenderForm(tab) {
+    const box = document.getElementById("tsFormBox");
+    box.innerHTML = `
+      <h2>${tab.key} - 新規追加</h2>
+      <div class="grid3">
+        <div class="field"><label>製造番号(任意入力可)</label><input id="ts_seizou"></div>
+        <div class="field"><label>現場名</label><input id="ts_genba"></div>
+        <div class="field"><label>品名</label><input id="ts_hinmei"></div>
+        <div class="field"><label>寸法</label><input id="ts_sunpou"></div>
+        <div class="field"><label>納期</label><input id="ts_nouki"></div>
+        <div class="field"><label>部位</label><select id="ts_bui"><option value=""></option>${tsBuiList.map(b => `<option value="${b}">${b}</option>`).join("")}</select></div>
+        <div class="field"><label>内容</label><select id="ts_naiyou"><option value=""></option>${tab.naiyou.map(n => `<option value="${n}">${n}</option>`).join("")}</select></div>
+        <div class="field"><label>vol(${tab.unit})</label><input id="ts_vol" type="number" step="0.1"></div>
+        <div class="field"><label>材質</label><input id="ts_zairyou"></div>
+        <div class="field"><label>価格</label><input id="ts_kakaku" type="number"></div>
+        <div class="field"><label>業者</label><input id="ts_gyousha"></div>
+        <div class="field"><label>搬込予定</label><input id="ts_hankomi" placeholder="例: 10/1"></div>
+        <div class="field"><label>完成/納品日</label><input id="ts_kansei" placeholder="例: 10/10"></div>
+        <div class="field"><label>備考</label><input id="ts_biko"></div>
+      </div>
+      <button id="tsAddBtn">追加する</button>
+      <span id="tsAddResult"></span>
+    `;
+    document.getElementById("ts_seizou").addEventListener("blur", (e) => {
+      const p = tsProductMap[e.target.value.trim()];
+      if (p) {
+        document.getElementById("ts_genba").value = p.genbaMei;
+        document.getElementById("ts_hinmei").value = p.hinmei;
+        document.getElementById("ts_sunpou").value = p.sunpou;
+      }
+    });
+    document.getElementById("tsAddBtn").addEventListener("click", () => tsSubmit(tab));
+  }
+
+  async function tsSubmit(tab) {
+    const bui = document.getElementById("ts_bui").value;
+    const naiyou = document.getElementById("ts_naiyou").value;
+    const resultEl = document.getElementById("tsAddResult");
+    if (!bui || !naiyou) { alert("部位と内容は必須です"); return; }
+    const btn = document.getElementById("tsAddBtn");
+    btn.disabled = true; btn.textContent = "追加中...";
+    const payload = {
+      type: "addTosou", tab: tab.key,
+      seizouBangou: document.getElementById("ts_seizou").value.trim(),
+      nouki: document.getElementById("ts_nouki").value.trim(),
+      genbaMei: document.getElementById("ts_genba").value.trim(),
+      hinmei: document.getElementById("ts_hinmei").value.trim(),
+      sunpou: document.getElementById("ts_sunpou").value.trim(),
+      bui, naiyou,
+      vol: document.getElementById("ts_vol").value.trim(),
+      zairyou: document.getElementById("ts_zairyou").value.trim(),
+      kakaku: document.getElementById("ts_kakaku").value.trim(),
+      gyousha: document.getElementById("ts_gyousha").value.trim(),
+      hankomiYotei: document.getElementById("ts_hankomi").value.trim(),
+      kanseiNouhin: document.getElementById("ts_kansei").value.trim(),
+      biko: document.getElementById("ts_biko").value.trim(),
+    };
+    try {
+      const res = await fetch(GAS_URL, { method: "POST", body: JSON.stringify(payload) });
+      const data = await res.json();
+      if (data.result !== "success") throw new Error(data.message || "登録に失敗しました");
+      resultEl.textContent = "追加しました"; resultEl.className = "success";
+      tsRenderForm(tab); tsLoadList(tab);
+    } catch (e) {
+      resultEl.textContent = "失敗: " + e.message; resultEl.className = "error";
+      btn.disabled = false; btn.textContent = "追加する";
+    }
+  }
+
+  async function tsLoadList(tab) {
+    const statusEl = document.getElementById("tsListStatus");
+    const table = document.getElementById("tsListTable");
+    statusEl.textContent = "読み込み中...";
+    table.querySelector("thead").innerHTML = ""; table.querySelector("tbody").innerHTML = "";
+    try {
+      const res = await fetch(GAS_URL + "?type=tosou_" + encodeURIComponent(tab.key));
+      const rows = await res.json();
+      const header = rows[0];
+      const body = rows.slice(1).filter(r => r[5] && r[6]);
+      statusEl.textContent = body.length + "件";
+      const trh = document.createElement("tr");
+      header.forEach(h => { const th = document.createElement("th"); th.textContent = h; trh.appendChild(th); });
+      table.querySelector("thead").appendChild(trh);
+      const tbody = table.querySelector("tbody");
+      body.slice().reverse().forEach(r => {
+        const tr = document.createElement("tr");
+        r.forEach(c => { const td = document.createElement("td"); td.textContent = c; tr.appendChild(td); });
+        tbody.appendChild(tr);
+      });
+    } catch (e) { statusEl.textContent = "読み込みに失敗しました: " + e.message; }
+  }
+
+  function tsRenderScheduleForm() {
+    const box = document.getElementById("tsFormBox");
+    box.innerHTML = `
+      <h2>メッキスケ - 新規追加</h2>
+      <div class="grid3">
+        <div class="field"><label>日付</label><input id="ts_s_hiduke" placeholder="例: 2026/9/24"></div>
+        <div class="field"><label>区分</label><select id="ts_s_kubun"><option value="持込">持込</option><option value="引取">引取</option></select></div>
+        <div class="field"><label>現場名</label><input id="ts_s_genba"></div>
+        <div class="field"><label>基数</label><input id="ts_s_kisuu" type="number"></div>
+        <div class="field"><label>備考</label><input id="ts_s_biko"></div>
+      </div>
+      <button id="tsAddBtn">追加する</button>
+      <span id="tsAddResult"></span>
+    `;
+    document.getElementById("tsAddBtn").addEventListener("click", tsSubmitSchedule);
+  }
+
+  async function tsSubmitSchedule() {
+    const resultEl = document.getElementById("tsAddResult");
+    const btn = document.getElementById("tsAddBtn");
+    btn.disabled = true; btn.textContent = "追加中...";
+    const payload = {
+      type: "addSchedule",
+      hiduke: document.getElementById("ts_s_hiduke").value.trim(),
+      kubun: document.getElementById("ts_s_kubun").value,
+      genbaMei: document.getElementById("ts_s_genba").value.trim(),
+      kisuu: document.getElementById("ts_s_kisuu").value.trim(),
+      biko: document.getElementById("ts_s_biko").value.trim(),
+    };
+    try {
+      const res = await fetch(GAS_URL, { method: "POST", body: JSON.stringify(payload) });
+      const data = await res.json();
+      if (data.result !== "success") throw new Error(data.message || "登録に失敗しました");
+      resultEl.textContent = "追加しました"; resultEl.className = "success";
+      tsRenderScheduleForm(); tsLoadScheduleList();
+    } catch (e) {
+      resultEl.textContent = "失敗: " + e.message; resultEl.className = "error";
+      btn.disabled = false; btn.textContent = "追加する";
+    }
+  }
+
+  async function tsLoadScheduleList() {
+    const statusEl = document.getElementById("tsListStatus");
+    const table = document.getElementById("tsListTable");
+    statusEl.textContent = "読み込み中...";
+    table.querySelector("thead").innerHTML = ""; table.querySelector("tbody").innerHTML = "";
+    try {
+      const res = await fetch(GAS_URL + "?type=tosou_メッキスケ");
+      const rows = await res.json();
+      const header = rows[0];
+      const body = rows.slice(1).filter(r => r[0] && r[1]);
+      statusEl.textContent = body.length + "件";
+      const trh = document.createElement("tr");
+      header.forEach(h => { const th = document.createElement("th"); th.textContent = h; trh.appendChild(th); });
+      table.querySelector("thead").appendChild(trh);
+      const tbody = table.querySelector("tbody");
+      body.slice().reverse().forEach(r => {
+        const tr = document.createElement("tr");
+        r.forEach(c => { const td = document.createElement("td"); td.textContent = c; tr.appendChild(td); });
+        tbody.appendChild(tr);
+      });
+    } catch (e) { statusEl.textContent = "読み込みに失敗しました: " + e.message; }
+  }
+
+  // ================= 出荷 =================
+  function initShukka() {
+    document.getElementById("skkAddBtn").addEventListener("click", async () => {
+      const seizouBangou = document.getElementById("skk_seizou").value.trim();
+      if (!seizouBangou) { alert("製造番号を入力してください"); return; }
+      const btn = document.getElementById("skkAddBtn");
+      const resultEl = document.getElementById("skkAddResult");
+      btn.disabled = true; btn.textContent = "登録中...";
+      const payload = {
+        type: "addShukka",
+        seizouBangou,
+        shukkaYotei: document.getElementById("skk_yotei").value.trim(),
+        hannyuubi: document.getElementById("skk_hannyuu").value.trim(),
+        shukkasaki: document.getElementById("skk_saki").value.trim(),
+        unsougyousha: document.getElementById("skk_unsou").value.trim(),
+        biko: document.getElementById("skk_biko").value.trim(),
+      };
+      try {
+        const res = await fetch(GAS_URL, { method: "POST", body: JSON.stringify(payload) });
+        const data = await res.json();
+        if (data.result !== "success") throw new Error(data.message || "登録に失敗しました");
+        resultEl.textContent = "登録しました"; resultEl.className = "success"; resultEl.style.display = "inline-block";
+        ["skk_seizou","skk_yotei","skk_hannyuu","skk_saki","skk_unsou","skk_biko"].forEach(id => document.getElementById(id).value = "");
+        skkLoadList();
+      } catch (e) {
+        resultEl.textContent = "失敗: " + e.message; resultEl.className = "error"; resultEl.style.display = "inline-block";
+      } finally {
+        btn.disabled = false; btn.textContent = "登録する";
+      }
+    });
+    skkLoadList();
+  }
+
+  async function skkLoadList() {
+    const statusEl = document.getElementById("skkListStatus");
+    const table = document.getElementById("skkListTable");
+    statusEl.textContent = "読み込み中...";
+    table.querySelector("thead").innerHTML = ""; table.querySelector("tbody").innerHTML = "";
+    try {
+      const res = await fetch(GAS_URL + "?type=shukka");
+      const rows = await res.json();
+      const header = rows[0];
+      const body = rows.slice(1).filter(r => r[0]);
+      statusEl.textContent = body.length + "件";
+      const trh = document.createElement("tr");
+      header.forEach(h => { const th = document.createElement("th"); th.textContent = h; trh.appendChild(th); });
+      table.querySelector("thead").appendChild(trh);
+      const tbody = table.querySelector("tbody");
+      body.slice().reverse().forEach(r => {
+        const tr = document.createElement("tr");
+        r.forEach((c, i) => {
+          const td = document.createElement("td");
+          td.textContent = (i === 1 || i === 2) ? formatDateOnly(c) : c; // 出荷予定日・搬入日は日付形式を整える
+          tr.appendChild(td);
+        });
+        tbody.appendChild(tr);
+      });
+    } catch (e) { statusEl.textContent = "読み込みに失敗しました: " + e.message; }
+  }
+
+  function formatDateOnly(v) {
+    if (!v) return v;
+    const d = new Date(v);
+    if (isNaN(d.getTime())) return v; // 元々「10/28」のような文字列で読み取れない場合はそのまま表示
+    if (typeof v === "string" && !v.includes("T")) return v; // 既に整形済みの文字列はそのまま
+    return `${d.getFullYear()}/${d.getMonth()+1}/${d.getDate()}`;
+  }
+  function initRenraku() {
+    document.getElementById("rkPostBtn").addEventListener("click", async () => {
+      const toukousha = document.getElementById("rk_toukousha").value.trim();
+      const naiyou = document.getElementById("rk_naiyou").value.trim();
+      if (!toukousha || !naiyou) { alert("お名前と連絡内容を入力してください"); return; }
+      const btn = document.getElementById("rkPostBtn");
+      btn.disabled = true; btn.textContent = "送信中...";
+      try {
+        const res = await fetch(GAS_URL, { method: "POST", body: JSON.stringify({ type: "message", toukousha, naiyou }) });
+        if (!res.ok) throw new Error("通信エラー: " + res.status);
+        document.getElementById("rk_naiyou").value = "";
+        rkLoadList();
+      } catch (e) {
+        alert("送信に失敗しました。\n詳細: " + e.message);
+      } finally {
+        btn.disabled = false; btn.textContent = "投稿する";
+      }
+    });
+    rkLoadList();
+  }
+
+  function formatDate(v) {
+    if (!v) return v;
+    const d = new Date(v);
+    if (isNaN(d.getTime())) return v;
+    const p = n => String(n).padStart(2, "0");
+    return `${d.getMonth()+1}/${d.getDate()} ${p(d.getHours())}:${p(d.getMinutes())}`;
+  }
+
+  async function rkLoadList() {
+    const statusEl = document.getElementById("rkStatus");
+    const listEl = document.getElementById("rkList");
+    listEl.innerHTML = ""; statusEl.textContent = "読み込み中...";
+    try {
+      const res = await fetch(GAS_URL + "?type=messages");
+      const rows = await res.json();
+      const body = rows.slice(1).filter(r => r[0] && r[1]);
+      if (body.length === 0) { statusEl.textContent = "まだ連絡はありません"; return; }
+      statusEl.textContent = "";
+      body.slice().reverse().forEach(r => {
+        const div = document.createElement("div");
+        div.className = "msg";
+        div.innerHTML = `<div class="head"><span>${r[0]}</span><span>${formatDate(r[1])}</span></div><div class="body"></div>`;
+        div.querySelector(".body").textContent = r[2];
+        listEl.appendChild(div);
+      });
+    } catch (e) { statusEl.textContent = "読み込みに失敗しました: " + e.message; }
+  }
+</script>
+
+</body>
+</html>

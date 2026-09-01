@@ -1,0 +1,293 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>工場連絡</title>
+<style>
+  * { box-sizing: border-box; }
+  body {
+    font-family: "Yu Gothic", "Hiragino Sans", sans-serif;
+    background: #F5F6F4;
+    color: #1F2933;
+    margin: 0;
+    padding: 16px;
+    padding-bottom: 90px; /* 下タブ分の余白 */
+  }
+  h1 {
+    font-size: 18px;
+    font-weight: 500;
+    margin: 0 0 12px;
+    color: #123C5C;
+  }
+  #status { font-size: 13px; color: #888; margin-bottom: 10px; }
+  #error { color: #b00020; font-size: 13px; margin-top: 12px; white-space: pre-wrap; }
+
+  .card {
+    background: #fff;
+    border-radius: 10px;
+    padding: 14px;
+    margin-bottom: 10px;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.06);
+  }
+  .card .seizou { font-size: 15px; font-weight: 500; }
+  .card .genba { font-size: 12px; color: #666; margin-top: 2px; }
+  .card .nouki { font-size: 12px; color: #666; margin-top: 2px; }
+  .zumenBtn {
+    margin-top: 10px;
+    display: inline-block;
+    padding: 8px 16px;
+    border-radius: 8px;
+    border: 1px solid #123C5C;
+    color: #123C5C;
+    background: #fff;
+    font-size: 13px;
+    text-decoration: none;
+  }
+  .zumenBtn.disabled {
+    border-color: #ccc;
+    color: #ccc;
+    pointer-events: none;
+  }
+
+  /* 伝言板 */
+  .msg {
+    background: #fff;
+    border-radius: 10px;
+    padding: 12px 14px;
+    margin-bottom: 10px;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.06);
+  }
+  .msg .head {
+    display: flex;
+    justify-content: space-between;
+    font-size: 12px;
+    color: #888;
+    margin-bottom: 4px;
+  }
+  .msg .body { font-size: 14px; white-space: pre-wrap; }
+
+  #postForm {
+    background: #fff;
+    border-radius: 10px;
+    padding: 14px;
+    margin-bottom: 16px;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.06);
+  }
+  #postForm input, #postForm textarea {
+    width: 100%;
+    font-family: inherit;
+    font-size: 14px;
+    padding: 10px;
+    border: 1px solid #ccc;
+    border-radius: 8px;
+    margin-bottom: 8px;
+  }
+  #postForm textarea { resize: vertical; min-height: 60px; }
+  #postForm button {
+    width: 100%;
+    padding: 12px;
+    background: #123C5C;
+    color: #fff;
+    border: none;
+    border-radius: 8px;
+    font-size: 14px;
+    font-weight: 500;
+  }
+
+  /* 下タブ */
+  .tabbar {
+    position: fixed;
+    bottom: 0; left: 0; right: 0;
+    background: #fff;
+    display: flex;
+    border-top: 1px solid #ddd;
+  }
+  .tabbar button {
+    flex: 1;
+    padding: 14px 0;
+    background: none;
+    border: none;
+    font-size: 14px;
+    color: #888;
+    font-family: inherit;
+  }
+  .tabbar button.active { color: #123C5C; font-weight: 500; }
+
+  .screen { display: none; }
+  .screen.active { display: block; }
+</style>
+</head>
+<body>
+
+  <div id="seizouScreen" class="screen active">
+    <h1>製造</h1>
+    <div id="seizouStatus">読み込み中...</div>
+    <div id="seizouList"></div>
+    <div id="seizouError"></div>
+  </div>
+
+  <div id="renrakuScreen" class="screen">
+    <h1>連絡</h1>
+    <div id="postForm">
+      <input type="text" id="toukousha" placeholder="お名前">
+      <textarea id="naiyou" placeholder="連絡内容"></textarea>
+      <button id="postBtn">投稿する</button>
+    </div>
+    <div id="renrakuStatus">読み込み中...</div>
+    <div id="renrakuList"></div>
+    <div id="renrakuError"></div>
+  </div>
+
+  <div class="tabbar">
+    <button id="tabSeizou" class="active">製造</button>
+    <button id="tabRenraku">連絡</button>
+  </div>
+
+<script>
+  // ↓↓↓ ここに、Apps Scriptで発行したウェブアプリのURLを貼り付けてください ↓↓↓
+  const GAS_URL = "https://script.google.com/macros/s/AKfycbxsFKa97XhdXtugAVSXMp0Vz64-fR-XrcmkF2U_W_A_Dl9PvCds6KfdtHhjXX7GxjYA6Q/exec";
+  // ↑↑↑ 例: https://script.google.com/macros/s/xxxxxxxxxxxx/exec
+
+  // ---- タブ切り替え ----
+  const tabSeizou = document.getElementById("tabSeizou");
+  const tabRenraku = document.getElementById("tabRenraku");
+  const seizouScreen = document.getElementById("seizouScreen");
+  const renrakuScreen = document.getElementById("renrakuScreen");
+
+  tabSeizou.addEventListener("click", () => {
+    tabSeizou.classList.add("active");
+    tabRenraku.classList.remove("active");
+    seizouScreen.classList.add("active");
+    renrakuScreen.classList.remove("active");
+  });
+  tabRenraku.addEventListener("click", () => {
+    tabRenraku.classList.add("active");
+    tabSeizou.classList.remove("active");
+    renrakuScreen.classList.add("active");
+    seizouScreen.classList.remove("active");
+    loadMessages(); // 開くたびに最新を取得
+  });
+
+  // ---- 製造(製作手配一覧の閲覧) ----
+  async function loadProducts() {
+    const statusEl = document.getElementById("seizouStatus");
+    const errorEl = document.getElementById("seizouError");
+    const listEl = document.getElementById("seizouList");
+    try {
+      const res = await fetch(GAS_URL + "?type=products");
+      if (!res.ok) throw new Error("通信エラー: " + res.status);
+      const rows = await res.json();
+      const header = rows[0];
+      const idxGenba = header.indexOf("現場名");
+      const idxNouki = header.indexOf("納期");
+      const idxZumen = header.indexOf("図面リンク");
+      const body = rows.slice(1).filter(r => r[0] && r[idxGenba]); // 製造番号・現場名の両方が入っている行だけ(説明文の行などは除外)
+
+      if (body.length === 0) {
+        statusEl.textContent = "対象の製品がありません";
+        return;
+      }
+      statusEl.textContent = body.length + "件";
+
+      body.forEach(r => {
+        const seizouBangou = r[0];
+        const genba = r[idxGenba] || "";
+        const nouki = r[idxNouki] || "";
+        const zumen = r[idxZumen] || "";
+
+        const card = document.createElement("div");
+        card.className = "card";
+        card.innerHTML = `
+          <div class="seizou">${seizouBangou}</div>
+          <div class="genba">${genba}</div>
+          <div class="nouki">納期: ${nouki}</div>
+          ${zumen
+            ? `<a class="zumenBtn" href="${zumen}" target="_blank" rel="noopener">図面を見る</a>`
+            : `<span class="zumenBtn disabled">図面なし</span>`}
+        `;
+        listEl.appendChild(card);
+      });
+
+    } catch (e) {
+      statusEl.textContent = "";
+      errorEl.textContent = "読み込みに失敗しました。GAS_URLが正しいか確認してください。\n詳細: " + e.message;
+    }
+  }
+
+  // ---- 連絡(伝言板) ----
+  function formatDate(v) {
+    if (!v) return v;
+    const d = new Date(v);
+    if (isNaN(d.getTime())) return v;
+    const p = n => String(n).padStart(2, "0");
+    return `${d.getMonth()+1}/${d.getDate()} ${p(d.getHours())}:${p(d.getMinutes())}`;
+  }
+
+  async function loadMessages() {
+    const statusEl = document.getElementById("renrakuStatus");
+    const errorEl = document.getElementById("renrakuError");
+    const listEl = document.getElementById("renrakuList");
+    listEl.innerHTML = "";
+    statusEl.textContent = "読み込み中...";
+    try {
+      const res = await fetch(GAS_URL + "?type=messages");
+      if (!res.ok) throw new Error("通信エラー: " + res.status);
+      const rows = await res.json();
+      const body = rows.slice(1).filter(r => r[0] && r[1]); // 投稿者・日時の両方が入っている行だけ(説明文の行などは除外)
+
+      if (body.length === 0) {
+        statusEl.textContent = "まだ連絡はありません";
+        return;
+      }
+      statusEl.textContent = "";
+
+      // 新しい投稿を上に表示
+      body.slice().reverse().forEach(r => {
+        const div = document.createElement("div");
+        div.className = "msg";
+        div.innerHTML = `
+          <div class="head"><span>${r[0]}</span><span>${formatDate(r[1])}</span></div>
+          <div class="body"></div>
+        `;
+        div.querySelector(".body").textContent = r[2];
+        listEl.appendChild(div);
+      });
+
+    } catch (e) {
+      statusEl.textContent = "";
+      errorEl.textContent = "読み込みに失敗しました。\n詳細: " + e.message;
+    }
+  }
+
+  document.getElementById("postBtn").addEventListener("click", async () => {
+    const toukousha = document.getElementById("toukousha").value.trim();
+    const naiyou = document.getElementById("naiyou").value.trim();
+    if (!toukousha || !naiyou) {
+      alert("お名前と連絡内容を入力してください");
+      return;
+    }
+    const btn = document.getElementById("postBtn");
+    btn.disabled = true;
+    btn.textContent = "送信中...";
+    try {
+      const res = await fetch(GAS_URL, {
+        method: "POST",
+        body: JSON.stringify({ type: "message", toukousha, naiyou })
+      });
+      if (!res.ok) throw new Error("通信エラー: " + res.status);
+      document.getElementById("naiyou").value = "";
+      loadMessages();
+    } catch (e) {
+      alert("送信に失敗しました。電波の良い場所でもう一度お試しください。\n詳細: " + e.message);
+    } finally {
+      btn.disabled = false;
+      btn.textContent = "投稿する";
+    }
+  });
+
+  loadProducts();
+</script>
+
+</body>
+</html>
