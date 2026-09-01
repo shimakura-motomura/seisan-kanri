@@ -322,6 +322,8 @@
     if (idxSeisaku >= 0) fillOptions("ichFilterSeisaku", idxSeisaku);
   }
 
+  const PROGRESS_COLS = ["受注日", "製作日", "完成日", "内装日", "外装日", "出荷日"];
+
   function ichRenderTable() {
     const statusEl = document.getElementById("ichListStatus");
     const table = document.getElementById("ichListTable");
@@ -333,6 +335,7 @@
     const idxZumen = ichHeader.indexOf("図面リンク");
     const idxKubun = ichHeader.indexOf("区分");
     const idxSeisaku = ichHeader.indexOf("製作区分");
+    const progressIdx = PROGRESS_COLS.map(name => ichHeader.indexOf(name));
 
     const query = document.getElementById("ichSearch").value.trim();
     const fKubun = document.getElementById("ichFilterKubun").value;
@@ -347,7 +350,13 @@
 
     const trh = document.createElement("tr");
     trh.appendChild(document.createElement("th")); // チェックボックス列の見出しは空欄
-    ichHeader.forEach(h => { const th = document.createElement("th"); th.textContent = h; trh.appendChild(th); });
+    const thProgress = document.createElement("th");
+    thProgress.textContent = "進捗";
+    trh.appendChild(thProgress);
+    ichHeader.forEach((h, i) => {
+      if (progressIdx.includes(i)) return; // 進捗列は上のまとめ表示に統合するので個別列は省略
+      const th = document.createElement("th"); th.textContent = h; trh.appendChild(th);
+    });
     table.querySelector("thead").appendChild(trh);
 
     const tbody = table.querySelector("tbody");
@@ -366,7 +375,22 @@
       tdCheck.appendChild(cb);
       tr.appendChild(tdCheck);
 
+      // 進捗ドット(受注→製作→完成→内装→外装→出荷)
+      const tdProgress = document.createElement("td");
+      tdProgress.style.whiteSpace = "nowrap";
+      PROGRESS_COLS.forEach((colName, i) => {
+        const idx = progressIdx[i];
+        const val = idx >= 0 ? r[idx] : "";
+        const dot = document.createElement("span");
+        dot.className = "progressDot " + ichDotClass(val);
+        dot.title = colName + (val ? ": " + formatDateOnly(val) : ": 未定 (クリックで日付入力)");
+        dot.addEventListener("click", () => ichEditProgress(seizou, colName, val));
+        tdProgress.appendChild(dot);
+      });
+      tr.appendChild(tdProgress);
+
       r.forEach((c, i) => {
+        if (progressIdx.includes(i)) return; // 進捗列は上でまとめて表示済み
         const td = document.createElement("td");
         td.className = "dense";
         if (i === idxNouki || i === idxToukiroku) {
@@ -384,6 +408,36 @@
       });
       tbody.appendChild(tr);
     });
+  }
+
+  function ichDotClass(val) {
+    if (!val) return "empty";
+    const d = new Date(val);
+    if (isNaN(d.getTime())) return "empty";
+    const today = new Date(); today.setHours(0,0,0,0);
+    return d <= today ? "done" : "yotei";
+  }
+
+  async function ichEditProgress(seizou, columnName, currentVal) {
+    const currentDisplay = currentVal ? formatDateOnly(currentVal) : "";
+    const input = prompt(seizou + " の「" + columnName + "」を入力してください(例: 2026/10/15)。空欄でクリアできます。", currentDisplay);
+    if (input === null) return; // キャンセル
+    try {
+      const res = await fetch(GAS_URL, {
+        method: "POST",
+        body: JSON.stringify({ type: "updateProgress", seizouBangou: seizou, columnName, value: input.trim() }),
+      });
+      const data = await res.json();
+      if (data.result !== "success") throw new Error(data.message || "更新に失敗しました");
+      // ローカルのデータも更新して再描画
+      const idxSeizou = ichHeader.indexOf("製造番号");
+      const idxCol = ichHeader.indexOf(columnName);
+      const row = ichAllRows.find(r => r[idxSeizou] === seizou);
+      if (row) row[idxCol] = input.trim();
+      ichRenderTable();
+    } catch (e) {
+      alert("更新に失敗しました: " + e.message);
+    }
   }
 
   function ichUpdateSelectedCount() {
