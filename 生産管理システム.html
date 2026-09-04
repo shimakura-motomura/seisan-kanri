@@ -137,6 +137,22 @@
     background: #F5F6F4; color: #123C5C; font-weight: 500; font-size: 11px;
     border-bottom: 2px solid #ccc; text-align: center;
   }
+  .groupHeaderRow th.fixedCol { background: #1F2933; color: #fff; }
+  .groupHeaderRow th.groupProgress { background: #B0281E; color: #fff; }
+  .groupHeaderRow th.groupDetail { background: #E7E9E5; color: #123C5C; }
+
+  /* 一覧:クイックフィルタ(チップボタン) */
+  .chipbar { display: flex; gap: 6px; }
+  .chip {
+    padding: 8px 14px; border-radius: 999px; border: 1px solid #ccc; background: #fff;
+    font-size: 13px; color: #666; font-family: inherit; cursor: pointer;
+  }
+  .chip.active { background: #B0281E; color: #fff; border-color: #B0281E; }
+
+  .jumpBtn {
+    padding: 5px 12px; border-radius: 999px; border: 1px solid #123C5C; background: #fff;
+    color: #123C5C; font-size: 12px; font-family: inherit; cursor: pointer;
+  }
 
   /* 連絡 */
   #rkPostForm input, #rkPostForm textarea {
@@ -249,12 +265,23 @@
     <div class="box">
       <div style="display:flex; gap:10px; flex-wrap:wrap; align-items:center; margin-bottom:10px;">
         <input type="text" id="ichSearch" placeholder="製造番号・現場名で検索" style="width:220px;font-family:inherit;font-size:14px;padding:9px;border:1px solid #ccc;border-radius:8px;">
+        <div class="chipbar" id="ichQuickFilter">
+          <button type="button" class="chip active" data-filter="all">全件</button>
+          <button type="button" class="chip" data-filter="soon">出荷間近</button>
+          <button type="button" class="chip" data-filter="notstarted">着手待ち</button>
+        </div>
         <select id="ichFilterKubun" style="font-family:inherit;font-size:13px;padding:9px;border:1px solid #ccc;border-radius:8px;"><option value="">区分: すべて</option></select>
         <select id="ichFilterSeisaku" style="font-family:inherit;font-size:13px;padding:9px;border:1px solid #ccc;border-radius:8px;"><option value="">製作区分: すべて</option></select>
         <span id="ichSelectedCount" style="font-size:12px;color:#666;"></span>
       </div>
+      <div style="display:flex; gap:8px; margin-bottom:10px;">
+        <span style="font-size:12px;color:#888;align-self:center;">列へ移動:</span>
+        <button type="button" class="jumpBtn" data-jump="fixed">識別</button>
+        <button type="button" class="jumpBtn" data-jump="progress">進捗</button>
+        <button type="button" class="jumpBtn" data-jump="detail">詳細</button>
+      </div>
       <div class="listStatus" id="ichListStatus">読み込み中...</div>
-      <div class="tableWrap"><table id="ichListTable"><thead></thead><tbody></tbody></table></div>
+      <div class="tableWrap" id="ichTableWrap"><table id="ichListTable"><thead></thead><tbody></tbody></table></div>
     </div>
   </div>
 
@@ -337,11 +364,30 @@
   let ichAllRows = [];
   let ichHeader = [];
   let ichSelected = new Set();
+  let ichQuickFilter = "all";
+
+  function ichJumpTo(target) {
+    const wrap = document.getElementById("ichTableWrap");
+    if (target === "fixed") { wrap.scrollLeft = 0; return; }
+    const el = document.querySelector(`#ichListTable th[data-jump-target="${target}"]`);
+    if (el) wrap.scrollLeft = el.offsetLeft - 40;
+  }
 
   async function initIchiran() {
     document.getElementById("ichSearch").addEventListener("input", () => ichRenderTable());
     document.getElementById("ichFilterKubun").addEventListener("change", () => ichRenderTable());
     document.getElementById("ichFilterSeisaku").addEventListener("change", () => ichRenderTable());
+    document.querySelectorAll("#ichQuickFilter .chip").forEach(btn => {
+      btn.addEventListener("click", () => {
+        document.querySelectorAll("#ichQuickFilter .chip").forEach(b => b.classList.remove("active"));
+        btn.classList.add("active");
+        ichQuickFilter = btn.dataset.filter;
+        ichRenderTable();
+      });
+    });
+    document.querySelectorAll(".jumpBtn").forEach(btn => {
+      btn.addEventListener("click", () => ichJumpTo(btn.dataset.jump));
+    });
     const statusEl = document.getElementById("ichListStatus");
     statusEl.textContent = "読み込み中...";
     try {
@@ -443,6 +489,21 @@
     if (query) rows = rows.filter(r => (r[idxSeizou] || "").includes(query) || (r[idxGenba] || "").includes(query));
     if (fKubun) rows = rows.filter(r => r[idxKubun] === fKubun);
     if (fSeisaku) rows = rows.filter(r => r[idxSeisaku] === fSeisaku);
+    if (ichQuickFilter === "soon") {
+      const idxShukka = ichHeader.indexOf("出荷日");
+      rows = rows.filter(r => {
+        const v = r[idxShukka];
+        if (!v) return false;
+        const d = new Date(v);
+        if (isNaN(d.getTime())) return false;
+        const today = new Date(); today.setHours(0,0,0,0);
+        const diffDays = Math.round((d - today) / 86400000);
+        return diffDays >= 0 && diffDays <= 7;
+      });
+    } else if (ichQuickFilter === "notstarted") {
+      const idxJuchu = ichHeader.indexOf("受注日");
+      rows = rows.filter(r => !r[idxJuchu]);
+    }
 
     statusEl.textContent = rows.length + "件(全" + ichAllRows.length + "件)";
 
@@ -460,10 +521,12 @@
     trGroup.appendChild(thGroupFixed);
     const thGroupProgress = document.createElement("th");
     thGroupProgress.textContent = "進捗";
+    thGroupProgress.className = "groupProgress";
     trGroup.appendChild(thGroupProgress);
     const thGroupRest = document.createElement("th");
     thGroupRest.colSpan = restCount;
     thGroupRest.textContent = "詳細";
+    thGroupRest.className = "groupDetail";
     trGroup.appendChild(thGroupRest);
     thead.appendChild(trGroup);
 
@@ -483,10 +546,13 @@
     });
     const thProgress = document.createElement("th");
     thProgress.textContent = "進捗";
+    thProgress.dataset.jumpTarget = "progress";
     trh.appendChild(thProgress);
+    let detailMarked = false;
     ichHeader.forEach((h, i) => {
       if (skipIdx(i)) return;
       const th = document.createElement("th"); th.textContent = h; trh.appendChild(th);
+      if (!detailMarked) { th.dataset.jumpTarget = "detail"; detailMarked = true; }
     });
     thead.appendChild(trh);
 
