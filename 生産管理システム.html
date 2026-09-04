@@ -398,9 +398,9 @@
     const counts = { total: ichAllRows.length, dai1: 0, sus: 0, coil: 0, other: 0 };
     ichAllRows.forEach(r => {
       const v = idxSeisaku >= 0 ? (r[idxSeisaku] || "") : "";
-      if (v === "1") counts.dai1++;
+      if (v === "1" || v === "第一") counts.dai1++;
       else if (v === "S") counts.sus++;
-      else if (v === "コ") counts.coil++;
+      else if (v === "コ" || v === "コイル") counts.coil++;
       else counts.other++;
     });
     const cards = [
