@@ -360,7 +360,7 @@
 
   function ichPopulateFilters() {
     const idxKubun = ichHeader.indexOf("区分");
-    const idxSeisaku = ichHeader.indexOf("製作区分");
+    const idxSeisaku = ichHeader.indexOf("製");
     const fillOptions = (selectId, idx) => {
       const values = [...new Set(ichAllRows.map(r => r[idx]).filter(Boolean))].sort();
       const sel = document.getElementById(selectId);
@@ -394,7 +394,7 @@
   function ichRenderSummaryCards() {
     const wrap = document.getElementById("ichSummaryCards");
     wrap.innerHTML = "";
-    const idxSeisaku = ichHeader.indexOf("製作区分");
+    const idxSeisaku = ichHeader.indexOf("製");
     const counts = { total: ichAllRows.length, dai1: 0, sus: 0, coil: 0, other: 0 };
     ichAllRows.forEach(r => {
       const v = idxSeisaku >= 0 ? (r[idxSeisaku] || "") : "";
@@ -427,7 +427,7 @@
     const idxNouki = ichHeader.indexOf("納期");
     const idxZumen = ichHeader.indexOf("図");
     const idxKubun = ichHeader.indexOf("区分");
-    const idxSeisaku = ichHeader.indexOf("製作区分");
+    const idxSeisaku = ichHeader.indexOf("製");
     const progressIdx = PROGRESS_COLS.map(name => ichHeader.indexOf(name));
     const hiddenIdx = HIDDEN_COLS.map(name => ichHeader.indexOf(name));
     const fixedIdx = FIXED_COLS.map(name => ichHeader.indexOf(name));
