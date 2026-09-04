@@ -189,6 +189,7 @@
       </div>
       <div class="field"><label>品名</label><input id="f_hinmei"></div>
       <div class="field"><label>寸法</label><input id="f_sunpou"></div>
+      <div class="field"><label>受・完(検査日/完成予定日)</label><input id="f_jukenKansei" placeholder="例: 2026/10/15"></div>
       <div class="grid2">
         <div class="field"><label>区</label>
           <select id="f_kubun">
@@ -425,6 +426,7 @@
     const idxSeizou = ichHeader.indexOf("製造番号");
     const idxGenba = ichHeader.indexOf("現場名");
     const idxNouki = ichHeader.indexOf("納期");
+    const idxJuken = ichHeader.indexOf("受・完");
     const idxZumen = ichHeader.indexOf("図");
     const idxKubun = ichHeader.indexOf("区分");
     const idxSeisaku = ichHeader.indexOf("製");
@@ -537,7 +539,7 @@
         if (skipIdx(i)) return;
         const td = document.createElement("td");
         td.className = "dense";
-        if (i === idxNouki) {
+        if (i === idxNouki || i === idxJuken) {
           td.textContent = formatDateShort(c);
           td.title = formatDateOnly(c);
         } else if (i === idxZumen && c) {
@@ -728,6 +730,7 @@
       genbaMei: document.getElementById("f_genbaMei").value.trim(),
       hinmei: document.getElementById("f_hinmei").value.trim(),
       sunpou: document.getElementById("f_sunpou").value.trim(),
+      jukenKansei: document.getElementById("f_jukenKansei").value.trim(),
       kubun: document.getElementById("f_kubun").value.trim(),
       seisakuKubun: document.getElementById("f_seisakuKubun").value.trim(),
       tosouShiyou: document.getElementById("f_tosouShiyou").value.trim(),
