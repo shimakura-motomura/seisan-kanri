@@ -30,11 +30,33 @@
     margin-bottom: 10px;
     box-shadow: 0 1px 3px rgba(0,0,0,0.06);
   }
+  .card .topRow { display: flex; justify-content: space-between; align-items: baseline; }
   .card .seizou { font-size: 15px; font-weight: 500; }
-  .card .genba { font-size: 12px; color: #666; margin-top: 2px; }
-  .card .nouki { font-size: 12px; color: #666; margin-top: 2px; }
+  .card .nouki { font-size: 12px; color: #666; }
+  .card .genba { font-size: 12px; color: #666; margin-top: 2px; margin-bottom: 10px; }
+  .card .sunpou {
+    font-size: 20px; font-weight: 700; color: #123C5C;
+    background: #F5F6F4; border-radius: 8px; padding: 10px 12px; margin-bottom: 8px;
+  }
+  .card .sunpou .label { font-size: 11px; color: #888; font-weight: 500; display: block; margin-bottom: 2px; }
+  .card .tosou {
+    font-size: 13px; color: #1F2933; background: #F5F6F4; border-radius: 8px;
+    padding: 8px 12px; margin-bottom: 8px; white-space: pre-wrap;
+  }
+  .card .tosou .label { font-size: 11px; color: #888; font-weight: 500; display: block; margin-bottom: 2px; }
+  .card .jukenBox {
+    display: flex; justify-content: space-between; align-items: center;
+    border-radius: 8px; padding: 10px 12px; margin-bottom: 10px;
+  }
+  .card .jukenBox .label { font-size: 11px; font-weight: 500; }
+  .card .jukenBox .val { font-size: 18px; font-weight: 700; }
+  .jukenBox.overdue { background: #FBE3E1; }
+  .jukenBox.overdue .label, .jukenBox.overdue .val { color: #B0281E; }
+  .jukenBox.soon { background: #FAEEDA; }
+  .jukenBox.soon .label, .jukenBox.soon .val { color: #854F0B; }
+  .jukenBox.normal { background: #F5F6F4; }
+  .jukenBox.normal .label, .jukenBox.normal .val { color: #666; }
   .zumenBtn {
-    margin-top: 10px;
     display: inline-block;
     padding: 8px 16px;
     border-radius: 8px;
@@ -48,6 +70,16 @@
     border-color: #ccc;
     color: #ccc;
     pointer-events: none;
+  }
+
+  /* 製造:検索・並び替え */
+  #seizouTools { display: flex; gap: 8px; margin-bottom: 12px; }
+  #seizouSearch {
+    flex: 1; font-family: inherit; font-size: 14px; padding: 10px;
+    border: 1px solid #ccc; border-radius: 8px;
+  }
+  #seizouSort {
+    font-family: inherit; font-size: 13px; padding: 10px; border: 1px solid #ccc; border-radius: 8px;
   }
 
   /* 伝言板 */
@@ -122,6 +154,13 @@
 
   <div id="seizouScreen" class="screen active">
     <h1>製造</h1>
+    <div id="seizouTools">
+      <input type="text" id="seizouSearch" placeholder="製造番号・現場名で検索">
+      <select id="seizouSort">
+        <option value="juken">受・完が近い順</option>
+        <option value="seizou">製造番号順</option>
+      </select>
+    </div>
     <div id="seizouStatus">読み込み中...</div>
     <div id="seizouList"></div>
     <div id="seizouError"></div>
@@ -170,49 +209,107 @@
   });
 
   // ---- 製造(製作手配一覧の閲覧) ----
+  let seizouRows = [];
+  let seizouHeader = [];
+
   async function loadProducts() {
     const statusEl = document.getElementById("seizouStatus");
     const errorEl = document.getElementById("seizouError");
-    const listEl = document.getElementById("seizouList");
     try {
       const res = await fetch(GAS_URL + "?type=products");
       if (!res.ok) throw new Error("通信エラー: " + res.status);
       const rows = await res.json();
-      const header = rows[0];
-      const idxGenba = header.indexOf("現場名");
-      const idxNouki = header.indexOf("納期");
-      const idxZumen = header.indexOf("図");
-      const body = rows.slice(1).filter(r => r[0] && r[idxGenba]); // 製造番号・現場名の両方が入っている行だけ(説明文の行などは除外)
-
-      if (body.length === 0) {
-        statusEl.textContent = "対象の製品がありません";
-        return;
-      }
-      statusEl.textContent = body.length + "件";
-
-      body.forEach(r => {
-        const seizouBangou = r[0];
-        const genba = r[idxGenba] || "";
-        const nouki = r[idxNouki] || "";
-        const zumen = r[idxZumen] || "";
-
-        const card = document.createElement("div");
-        card.className = "card";
-        card.innerHTML = `
-          <div class="seizou">${seizouBangou}</div>
-          <div class="genba">${genba}</div>
-          <div class="nouki">納期: ${nouki}</div>
-          ${zumen
-            ? `<a class="zumenBtn" href="${zumen}" target="_blank" rel="noopener">図面を見る</a>`
-            : `<span class="zumenBtn disabled">図面なし</span>`}
-        `;
-        listEl.appendChild(card);
-      });
-
+      seizouHeader = rows[0];
+      const idxGenba = seizouHeader.indexOf("現場名");
+      seizouRows = rows.slice(1).filter(r => r[0] && r[idxGenba]); // 製造番号・現場名の両方が入っている行だけ(説明文の行などは除外)
+      document.getElementById("seizouSearch").addEventListener("input", renderProducts);
+      document.getElementById("seizouSort").addEventListener("change", renderProducts);
+      renderProducts();
     } catch (e) {
       statusEl.textContent = "";
       errorEl.textContent = "読み込みに失敗しました。GAS_URLが正しいか確認してください。\n詳細: " + e.message;
     }
+  }
+
+  // 受・完(検査日/完成予定日)までの残日数に応じた色分け
+  function jukenStatus(val) {
+    if (!val) return { cls: "normal", text: "未定" };
+    const d = new Date(val);
+    if (isNaN(d.getTime())) return { cls: "normal", text: val };
+    const today = new Date(); today.setHours(0,0,0,0);
+    const diffDays = Math.round((d - today) / 86400000);
+    const m = d.getMonth() + 1, day = d.getDate();
+    let text = `${m}/${day}`;
+    if (diffDays < 0) return { cls: "overdue", text: text + "(期限超過)" };
+    if (diffDays === 0) return { cls: "overdue", text: text + "(本日)" };
+    if (diffDays <= 2) return { cls: "soon", text: text + `(あと${diffDays}日)` };
+    return { cls: "normal", text: text + `(あと${diffDays}日)` };
+  }
+
+  function renderProducts() {
+    const statusEl = document.getElementById("seizouStatus");
+    const listEl = document.getElementById("seizouList");
+    listEl.innerHTML = "";
+
+    const idxGenba = seizouHeader.indexOf("現場名");
+    const idxNouki = seizouHeader.indexOf("納期");
+    const idxSunpou = seizouHeader.indexOf("寸法");
+    const idxJuken = seizouHeader.indexOf("受・完");
+    const idxTosou = seizouHeader.indexOf("塗装仕様");
+    const idxZumen = seizouHeader.indexOf("図");
+
+    const query = document.getElementById("seizouSearch").value.trim();
+    const sortKey = document.getElementById("seizouSort").value;
+
+    let rows = seizouRows;
+    if (query) rows = rows.filter(r => (r[0] || "").includes(query) || (r[idxGenba] || "").includes(query));
+
+    rows = rows.slice();
+    if (sortKey === "juken") {
+      rows.sort((a, b) => {
+        const da = a[idxJuken] ? new Date(a[idxJuken]).getTime() : Infinity;
+        const db = b[idxJuken] ? new Date(b[idxJuken]).getTime() : Infinity;
+        return da - db;
+      });
+    } else {
+      rows.sort((a, b) => (a[0] || "").localeCompare(b[0] || ""));
+    }
+
+    if (rows.length === 0) {
+      statusEl.textContent = "対象の製品がありません";
+      return;
+    }
+    statusEl.textContent = rows.length + "件";
+
+    rows.forEach(r => {
+      const seizouBangou = r[0];
+      const genba = r[idxGenba] || "";
+      const nouki = r[idxNouki] || "";
+      const sunpou = r[idxSunpou] || "(未入力)";
+      const tosou = r[idxTosou] || "(未入力)";
+      const zumen = r[idxZumen] || "";
+      const juken = jukenStatus(r[idxJuken]);
+
+      const card = document.createElement("div");
+      card.className = "card";
+      card.innerHTML = `
+        <div class="topRow">
+          <span class="seizou">${seizouBangou}</span>
+          <span class="nouki">納期 ${nouki}</span>
+        </div>
+        <div class="genba">${genba}</div>
+        <div class="sunpou"><span class="label">寸法</span>${sunpou}</div>
+        <div class="tosou"><span class="label">塗装仕様</span>${tosou}</div>
+        <div class="jukenBox ${juken.cls}">
+          <span class="label">受・完(検査日/完成予定日)</span>
+          <span class="val">${juken.text}</span>
+        </div>
+        ${zumen
+          ? `<a class="zumenBtn" href="${zumen}" target="_blank" rel="noopener">図面を見る</a>`
+          : `<span class="zumenBtn disabled">図面なし</span>`}
+      `;
+      listEl.appendChild(card);
+    });
   }
 
   // ---- 連絡(伝言板) ----
