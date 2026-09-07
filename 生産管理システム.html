@@ -194,6 +194,14 @@
    * 一覧画面(Claude Code版デザインをそのまま移植・.ich2- 名前空間で分離)
    * ================================================================ */
   .ich2 { display: flex; flex-direction: column; height: calc(100vh - 90px); }
+  .ich2 .input {
+    width: 100%; font: inherit; color: var(--color-text);
+    background: var(--color-neutral-100);
+    border: 1px solid var(--color-divider);
+  }
+  .ich2 .input:hover { border-color: rgba(32, 30, 29, 0.55); }
+  .ich2 .input:focus-visible { border-color: var(--color-accent); outline: none; }
+
   .ich2-summary { display: grid; grid-template-columns: repeat(5, 1fr); border: 2px solid var(--color-divider); border-bottom: 2px solid var(--color-divider); flex: none; }
   .ich2-summary .cell { padding: 7px 16px; }
   .ich2-summary .cell + .cell { border-left: 1px solid var(--color-divider); }
