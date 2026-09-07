@@ -20,7 +20,15 @@
     --color-divider: rgba(32,30,29,0.4);
     --color-neutral-100: #f8f4f4;
     --color-neutral-200: #eae7e7;
+    --color-neutral-300: #d7d3d3;
+    --color-neutral-400: #bab6b6;
+    --color-neutral-500: #9b9797;
     --color-neutral-600: #7d7979;
+    --color-neutral-700: #605d5d;
+    --color-neutral-800: #444141;
+    --color-neutral-900: #2d2b2b;
+    --color-accent-200: #ffe0d9;
+    --color-accent-300: #ffc4b8;
     --font-heading: "Archivo", "Noto Sans JP", sans-serif;
     --font-body: "Archivo", "Noto Sans JP", sans-serif;
   }
@@ -182,6 +190,57 @@
   .msg { background: var(--color-bg); border-radius: 0px; padding: 12px 14px; margin-bottom: 10px; }
   .msg .head { display: flex; justify-content: space-between; font-size: 12px; color: #888; margin-bottom: 4px; }
   .msg .body { font-size: 14px; white-space: pre-wrap; }
+  /* ================================================================
+   * 一覧画面(Claude Code版デザインをそのまま移植・.ich2- 名前空間で分離)
+   * ================================================================ */
+  .ich2 { display: flex; flex-direction: column; height: calc(100vh - 90px); }
+  .ich2-summary { display: grid; grid-template-columns: repeat(5, 1fr); border: 2px solid var(--color-divider); border-bottom: 2px solid var(--color-divider); flex: none; background: #fff; }
+  .ich2-summary .cell { padding: 7px 16px; }
+  .ich2-summary .cell + .cell { border-left: 1px solid var(--color-divider); }
+  .ich2-summary .label { font-size: 10px; letter-spacing: 0.1em; color: var(--color-neutral-600); }
+  .ich2-summary .value { font-size: 21px; font-weight: 800; line-height: 1.15; font-variant-numeric: tabular-nums; }
+  .ich2-summary .value span { font-size: 12px; font-weight: 500; margin-left: 3px; }
+
+  .ich2-toolbar { display: flex; align-items: center; gap: 12px; padding: 8px 0; border-bottom: 2px solid var(--color-divider); flex: none; flex-wrap: wrap; }
+  .ich2-search { width: 260px; }
+  .ich2-search input { padding: 8px 10px; min-height: 32px; font-size: 13px; }
+  .ich2-filter-group { display: flex; border: 1px solid var(--color-divider); }
+  .ich2-filter-group button { border: 0; border-left: 1px solid var(--color-divider); cursor: pointer; font: inherit; font-size: 12px; padding: 6px 12px; background: transparent; color: var(--color-text); }
+  .ich2-filter-group button:first-child { border-left: 0; }
+  .ich2-filter-group button.active { background: var(--color-accent); color: var(--color-bg); }
+  .ich2-sort-label { display: flex; align-items: center; gap: 6px; font-size: 12px; color: var(--color-neutral-700); }
+  .ich2-sort-label select { width: 110px; min-height: 32px; font-size: 12px; }
+  .ich2-jump-group { display: flex; gap: 4px; align-items: center; font-size: 12px; color: var(--color-neutral-700); }
+  .ich2-jump-group button { border: 1px solid var(--color-divider); background: transparent; color: var(--color-text); font: inherit; font-size: 12px; padding: 5px 9px; cursor: pointer; }
+  .ich2-jump-group button:hover { background: rgba(32,30,29,0.07); }
+  .ich2-toolbar-right { margin-left: auto; }
+  .ich2-count { font-size: 12px; color: var(--color-neutral-700); font-variant-numeric: tabular-nums; }
+
+  #ich2Scroller { flex: 1; overflow: auto; border-bottom: 2px solid var(--color-divider); }
+  table.ich2-list { table-layout: fixed; border-collapse: separate; border-spacing: 0; font-size: 11px; width: 100%; background: #fff; }
+  .ich2-grp { position: sticky; top: 0; z-index: 4; padding: 1px 5px; font-size: 9px; letter-spacing: 0.08em; border-bottom: 1px solid var(--color-neutral-700); text-align: left; }
+  .ich2-grp.identify { left: 0; z-index: 6; background: var(--color-neutral-900); color: var(--color-neutral-100); border-right: 2px solid var(--color-text); }
+  .ich2-grp.dim { background: var(--color-neutral-800); color: var(--color-neutral-100); border-right: 2px solid var(--color-text); }
+  .ich2-grp.progress { background: var(--color-accent-700); color: var(--color-bg); border-right: 2px solid var(--color-text); }
+  .ich2-grp.pic { background: var(--color-neutral-800); color: var(--color-neutral-100); }
+  .ich2-colh { position: sticky; top: 17px; z-index: 3; background: var(--color-bg); padding: 2px 3px; font-size: 10px; text-align: left; border-bottom: 2px solid var(--color-text); }
+  .ich2-colh.sticky-id { z-index: 6; }
+  .ich2-colh.center { text-align: center; }
+  .ich2-colh.right { text-align: right; }
+  .ich2-list .grp-end { border-right: 2px solid var(--color-text); }
+  table.ich2-list tbody td { padding: 1px 4px; border-bottom: 1px solid var(--color-divider); }
+  .ich2-sticky-col { position: sticky; z-index: 2; background: var(--rowbg); }
+  .ich2-nowrap { white-space: nowrap; }
+  .ich2-ellipsis { overflow: hidden; text-overflow: ellipsis; }
+  .ich2-tabular { font-variant-numeric: tabular-nums; }
+  .ich2-muted { color: var(--color-neutral-700); }
+  .ich2-no-btn { display: flex; align-items: center; gap: 4px; width: 100%; padding: 0; font: inherit; font-size: inherit; font-weight: 700; white-space: nowrap; text-align: left; cursor: pointer; background: transparent; border: 0; color: var(--color-text); text-decoration: underline; text-decoration-color: var(--color-accent); text-underline-offset: 2px; }
+  .ich2-no-btn:hover { color: var(--color-accent-700); }
+  .ich2-chip { display: inline-block; max-width: 100%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; padding: 0 3px; font-size: 10px; font-weight: 700; line-height: 1.5; border: 1px solid transparent; }
+  .ich2-badge { display: inline-flex; align-items: center; justify-content: center; gap: 3px; height: 16px; width: 34px; font-size: 10px; font-variant-numeric: tabular-nums; border: 1px solid transparent; }
+  .ich2-badge .dot { width: 4px; height: 4px; flex: none; }
+  .ich2-footnote { padding: 6px 4px; font-size: 11px; color: var(--color-neutral-700); flex: none; }
+  .ich2-empty { padding: 48px 20px; text-align: center; color: var(--color-neutral-600); font-size: 13px; }
 </style>
 </head>
 <body>
@@ -277,31 +336,87 @@
     </div>
   </div>
 
-  <!-- ============ 一覧 ============ -->
+  <!-- ============ 一覧(Claude Code版デザインを統合) ============ -->
   <div class="screen" id="screen-ichiran">
     <button class="backBtn" onclick="nav('home')">← メニューに戻る</button>
-    <h1>一覧</h1>
-    <div class="summaryCards" id="ichSummaryCards"></div>
-    <div class="box">
-      <div style="display:flex; gap:10px; flex-wrap:wrap; align-items:center; margin-bottom:10px;">
-        <input type="text" id="ichSearch" placeholder="製造番号・現場名で検索" style="width:220px;font-family:inherit;font-size:14px;padding:9px;border:1px solid #ccc;border-radius: 0px;">
-        <div class="chipbar" id="ichQuickFilter">
-          <button type="button" class="chip active" data-filter="all">全件</button>
-          <button type="button" class="chip" data-filter="soon">出荷間近</button>
-          <button type="button" class="chip" data-filter="notstarted">着手待ち</button>
+    <div class="ich2">
+      <div class="ich2-summary" id="ich2Summary"></div>
+      <div class="ich2-toolbar">
+        <div class="ich2-search">
+          <input class="input" id="ich2Query" placeholder="製造番号・現場名・品名・担当で検索">
         </div>
-        <select id="ichFilterKubun" style="font-family:inherit;font-size:13px;padding:9px;border:1px solid #ccc;border-radius: 0px;"><option value="">区分: すべて</option></select>
-        <select id="ichFilterSeisaku" style="font-family:inherit;font-size:13px;padding:9px;border:1px solid #ccc;border-radius: 0px;"><option value="">製作区分: すべて</option></select>
-        <span id="ichSelectedCount" style="font-size:12px;color:#666;"></span>
+        <div class="ich2-filter-group" id="ich2FilterGroup">
+          <button data-filter="all" class="active">全件</button>
+          <button data-filter="soon">納期間近</button>
+          <button data-filter="waiting">未着手</button>
+        </div>
+        <label class="ich2-sort-label">
+          並び順
+          <select class="input" id="ich2Sort">
+            <option value="due">納期順</option>
+            <option value="no">製造番号順</option>
+          </select>
+        </label>
+        <div class="ich2-jump-group">
+          列へ移動
+          <button data-jump="ich2-col-a">寸法・塗装</button>
+          <button data-jump="ich2-col-b">進捗</button>
+          <button data-jump="ich2-col-c">担当・詳細</button>
+        </div>
+        <div class="ich2-toolbar-right">
+          <div class="ich2-count" id="ich2Count"></div>
+        </div>
       </div>
-      <div style="display:flex; gap:8px; margin-bottom:10px;">
-        <span style="font-size:12px;color:#888;align-self:center;">列へ移動:</span>
-        <button type="button" class="jumpBtn" data-jump="fixed">識別</button>
-        <button type="button" class="jumpBtn" data-jump="progress">進捗</button>
-        <button type="button" class="jumpBtn" data-jump="detail">詳細</button>
+      <div id="ich2Scroller">
+        <table class="ich2-list">
+          <colgroup>
+            <col style="width:28px"><col style="width:72px"><col style="width:48px"><col style="width:124px"><col style="width:96px">
+            <col style="width:96px"><col style="width:44px"><col style="width:32px"><col style="width:40px"><col style="width:170px">
+            <col style="width:38px"><col style="width:38px"><col style="width:38px"><col style="width:38px"><col style="width:38px"><col style="width:38px">
+            <col style="width:44px"><col style="width:74px"><col style="width:44px"><col style="width:64px"><col style="width:120px"><col style="width:46px">
+          </colgroup>
+          <thead>
+            <tr>
+              <th class="ich2-grp identify" colspan="5">識別(固定表示)</th>
+              <th class="ich2-grp dim" colspan="5">寸法・製作・塗装</th>
+              <th class="ich2-grp progress" colspan="6">進捗</th>
+              <th class="ich2-grp pic" colspan="6">担当・詳細</th>
+            </tr>
+            <tr>
+              <th class="ich2-colh sticky-id" style="left:0;">
+                <input type="checkbox" id="ich2SelectAll" style="width:13px;height:13px;accent-color:var(--color-accent);cursor:pointer;display:block;margin:0 auto;">
+              </th>
+              <th class="ich2-colh sticky-id" style="left:28px;">製造番号</th>
+              <th class="ich2-colh sticky-id" style="left:100px;">納期</th>
+              <th class="ich2-colh sticky-id" style="left:148px;">現場名</th>
+              <th class="ich2-colh sticky-id grp-end" style="left:272px;">品名</th>
+
+              <th id="ich2-col-a" class="ich2-colh">寸法</th>
+              <th class="ich2-colh">受・完</th>
+              <th class="ich2-colh center">区</th>
+              <th class="ich2-colh">製作</th>
+              <th class="ich2-colh grp-end">塗装仕様</th>
+
+              <th id="ich2-col-b" class="ich2-colh center">受</th>
+              <th class="ich2-colh center">製</th>
+              <th class="ich2-colh center">完</th>
+              <th class="ich2-colh center">内</th>
+              <th class="ich2-colh center">外</th>
+              <th class="ich2-colh center grp-end">出</th>
+
+              <th id="ich2-col-c" class="ich2-colh">担当</th>
+              <th class="ich2-colh">m寸法</th>
+              <th class="ich2-colh right">質量</th>
+              <th class="ich2-colh">型番</th>
+              <th class="ich2-colh">備考</th>
+              <th class="ich2-colh center">図</th>
+            </tr>
+          </thead>
+          <tbody id="ich2Tbody"></tbody>
+        </table>
+        <div class="ich2-empty" id="ich2Empty" hidden>該当する案件がありません。検索条件を変えてください。</div>
       </div>
-      <div class="listStatus" id="ichListStatus">読み込み中...</div>
-      <div class="tableWrap" id="ichTableWrap"><table id="ichListTable"><thead></thead><tbody></tbody></table></div>
+      <div class="ich2-footnote">製造番号・納期・現場名・品名は固定表示。横スクロールで 寸法・塗装 → 進捗 → 担当・詳細 の順。</div>
     </div>
   </div>
 
@@ -380,309 +495,146 @@
     if (screen === "ichiran" && !initialized.ichiran) { initIchiran(); initialized.ichiran = true; }
   }
 
-  // ================= 一覧 =================
-  let ichAllRows = [];
-  let ichHeader = [];
-  let ichSelected = new Set();
-  let ichQuickFilter = "all";
+  // ================= 一覧(Claude Code版デザイン + 実データ接続) =================
+  let ich2All = [];
+  let ich2Header = [];
+  const ich2State = { query: "", filter: "all", sort: "due" };
 
-  function ichJumpTo(target) {
-    const wrap = document.getElementById("ichTableWrap");
-    if (target === "fixed") { wrap.scrollLeft = 0; return; }
-    const el = document.querySelector(`#ichListTable th[data-jump-target="${target}"]`);
-    if (el) wrap.scrollLeft = el.offsetLeft - 40;
+  function ich2Esc(s) {
+    return String(s ?? "").replace(/[&<>"']/g, c => ({ "&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;" }[c]));
+  }
+
+  // 進捗1マスの色分け(空欄=グレー/未来日=オレンジ/当日以前=緑)
+  function ich2Cell(raw) {
+    const s = (raw || "").toString().trim();
+    if (!s) return { text: "—", bg: "var(--color-neutral-200)", fg: "var(--color-neutral-500)", bd: "var(--color-neutral-300)", dot: "var(--color-neutral-400)", fw: "400" };
+    const d = new Date(s);
+    const isPast = !isNaN(d.getTime()) && d.setHours(0,0,0,0) <= new Date().setHours(0,0,0,0);
+    return isPast
+      ? { text: formatDateShort(s), bg: "#dfeee4", fg: "#1e5c37", bd: "#2f7d4f", dot: "#2f7d4f", fw: "500" }
+      : { text: formatDateShort(s), bg: "#fbe8cc", fg: "#7a4a05", bd: "#c87a12", dot: "#c87a12", fw: "700" };
+  }
+
+  function ich2Badge(c) {
+    return '<span class="ich2-badge" style="background:'+c.bg+';color:'+c.fg+';border-color:'+c.bd+';font-weight:'+c.fw+';">' +
+      '<span class="dot" style="background:'+c.dot+';"></span>'+ich2Esc(c.text)+'</span>';
+  }
+
+  function ich2Kubun(seisaku, ku) {
+    const v = String(seisaku || "");
+    if ((ku||"").includes("コイル") || v.includes("コイル")) return "コイル";
+    if (v === "1" || v === "第一") return "第1工場";
+    if (v === "S") return "SUS工場";
+    return "他";
   }
 
   async function initIchiran() {
-    document.getElementById("ichSearch").addEventListener("input", () => ichRenderTable());
-    document.getElementById("ichFilterKubun").addEventListener("change", () => ichRenderTable());
-    document.getElementById("ichFilterSeisaku").addEventListener("change", () => ichRenderTable());
-    document.querySelectorAll("#ichQuickFilter .chip").forEach(btn => {
-      btn.addEventListener("click", () => {
-        document.querySelectorAll("#ichQuickFilter .chip").forEach(b => b.classList.remove("active"));
-        btn.classList.add("active");
-        ichQuickFilter = btn.dataset.filter;
-        ichRenderTable();
-      });
-    });
-    document.querySelectorAll(".jumpBtn").forEach(btn => {
-      btn.addEventListener("click", () => ichJumpTo(btn.dataset.jump));
-    });
-    const statusEl = document.getElementById("ichListStatus");
-    statusEl.textContent = "読み込み中...";
+    const statusEl = document.getElementById("ich2Count");
     try {
       const res = await fetch(GAS_URL + "?type=products");
       const rows = await res.json();
-      ichHeader = rows[0];
-      const idxSeizou = ichHeader.indexOf("製造番号");
-      const idxGenba = ichHeader.indexOf("現場名");
-      ichAllRows = rows.slice(1).filter(r => r[idxSeizou] && r[idxGenba]); // 製造番号・現場名の両方がある行のみ(説明文などを除外)
-      ichPopulateFilters();
-      ichRenderSummaryCards();
-      ichRenderTable();
+      ich2Header = rows[0];
+      const idxGenba = ich2Header.indexOf("現場名");
+      ich2All = rows.slice(1).filter(r => r[0] && r[idxGenba]);
     } catch (e) {
       statusEl.textContent = "読み込みに失敗しました: " + e.message;
+      return;
     }
-  }
 
-  function ichPopulateFilters() {
-    const idxKubun = ichHeader.indexOf("区分");
-    const idxSeisaku = ichHeader.indexOf("製");
-    const fillOptions = (selectId, idx) => {
-      const values = [...new Set(ichAllRows.map(r => r[idx]).filter(Boolean))].sort();
-      const sel = document.getElementById(selectId);
-      values.forEach(v => {
-        const opt = document.createElement("option");
-        opt.value = v; opt.textContent = v;
-        sel.appendChild(opt);
+    document.getElementById("ich2Query").addEventListener("input", e => { ich2State.query = e.target.value; ich2Render(); });
+    document.querySelectorAll("#ich2FilterGroup button").forEach(btn => {
+      btn.addEventListener("click", () => {
+        document.querySelectorAll("#ich2FilterGroup button").forEach(b => b.classList.remove("active"));
+        btn.classList.add("active");
+        ich2State.filter = btn.dataset.filter;
+        ich2Render();
       });
-    };
-    if (idxKubun >= 0) fillOptions("ichFilterKubun", idxKubun);
-    if (idxSeisaku >= 0) fillOptions("ichFilterSeisaku", idxSeisaku);
+    });
+    document.getElementById("ich2Sort").addEventListener("change", e => { ich2State.sort = e.target.value; ich2Render(); });
+    document.querySelectorAll(".ich2-jump-group button[data-jump]").forEach(btn => {
+      btn.addEventListener("click", () => {
+        const sc = document.getElementById("ich2Scroller");
+        const el = document.getElementById(btn.dataset.jump);
+        if (el) sc.scrollTo({ left: Math.max(0, el.offsetLeft - 390), behavior: "smooth" });
+      });
+    });
+
+    ich2Render();
   }
 
-  const PROGRESS_COLS = ["受注日", "製作日", "完成日", "内装日", "外装日", "出荷日"];
-  const PROGRESS_LABELS = ["受", "製", "完", "内", "外", "出"];
-  const HIDDEN_COLS = ["登録日"]; // 受注日と重複するため一覧では非表示
+  function ich2Render() {
+    const H = ich2Header;
+    const idx = name => H.indexOf(name);
+    const iSeizou = idx("製造番号"), iNouki = idx("納期"), iGenba = idx("現場名"), iHinmei = idx("品名"),
+      iSunpou = idx("寸法"), iJuken = idx("受・完"), iKu = idx("区"), iSeisaku = idx("製"), iTosou = idx("塗装仕様"),
+      iJuchu = idx("受注日"), iSeisakuDay = idx("製作日"), iKansei = idx("完成日"), iNaiso = idx("内装日"), iGaiso = idx("外装日"), iShukka = idx("出荷日"),
+      iTantou = idx("担当者"), iMsunpou = idx("m寸法"), iShitsuryou = idx("質量"), iKatabangou = idx("型番"), iBiko = idx("備考"), iZumen = idx("図");
 
-  // 横スクロールしても常に見える固定列(左から:製造番号・品名・現場名)
-  const FIXED_COLS = ["製造番号", "品名", "現場名"];
-  const FIXED_WIDTHS = [90, 150, 140]; // px。チェックボックス列(32px)の右から順に並ぶ
-  const CHECK_WIDTH = 32;
+    const q = ich2State.query.trim().toLowerCase();
+    let rows = ich2All.filter(r => {
+      if (q && !((r[iSeizou]||"")+(r[iGenba]||"")+(r[iHinmei]||"")+(r[iTantou]||"")).toLowerCase().includes(q)) return false;
+      if (ich2State.filter === "soon") {
+        const v = r[iShukka]; if (!v) return false;
+        const d = new Date(v); if (isNaN(d.getTime())) return false;
+        const diff = Math.round((d.setHours(0,0,0,0) - new Date().setHours(0,0,0,0)) / 86400000);
+        return diff >= 0 && diff <= 7;
+      }
+      if (ich2State.filter === "waiting") return !r[iJuchu];
+      return true;
+    });
 
-  function ichFixedLeft(i) {
-    // i番目の固定列(0始まり)の左オフセット(px)。チェックボックス列の幅を起点にする
-    let left = CHECK_WIDTH;
-    for (let k = 0; k < i; k++) left += FIXED_WIDTHS[k];
-    return left;
-  }
+    rows = rows.slice();
+    if (ich2State.sort === "due") {
+      rows.sort((a,b) => {
+        const da = a[iNouki] ? new Date(a[iNouki]).getTime() : Infinity;
+        const db = b[iNouki] ? new Date(b[iNouki]).getTime() : Infinity;
+        return da - db;
+      });
+    } else {
+      rows.sort((a,b) => (a[iSeizou]||"").localeCompare(b[iSeizou]||""));
+    }
 
-  // 区分別サマリーカード(全数・第1工場・SUS工場・コイル・他)
-  function ichRenderSummaryCards() {
-    const wrap = document.getElementById("ichSummaryCards");
-    wrap.innerHTML = "";
-    const idxSeisaku = ichHeader.indexOf("製");
-    const counts = { total: ichAllRows.length, dai1: 0, sus: 0, coil: 0, other: 0 };
-    ichAllRows.forEach(r => {
-      const v = idxSeisaku >= 0 ? (r[idxSeisaku] || "") : "";
-      if (v === "1" || v === "第一") counts.dai1++;
-      else if (v === "S") counts.sus++;
-      else if (v === "コ" || v === "コイル") counts.coil++;
+    // 区分別サマリー
+    const counts = { total: ich2All.length, dai1: 0, sus: 0, coil: 0, other: 0 };
+    ich2All.forEach(r => {
+      const k = ich2Kubun(r[iSeisaku], r[iKu]);
+      if (k === "第1工場") counts.dai1++;
+      else if (k === "SUS工場") counts.sus++;
+      else if (k === "コイル") counts.coil++;
       else counts.other++;
     });
-    const cards = [
-      ["全数", counts.total],
-      ["第1工場", counts.dai1],
-      ["SUS工場", counts.sus],
-      ["コイル", counts.coil],
-      ["他", counts.other],
-    ];
-    cards.forEach(([label, num]) => {
-      const card = document.createElement("div");
-      card.className = "summaryCard";
-      card.innerHTML = `<div class="label">${label}</div><div class="num">${num}<span class="unit">件</span></div>`;
-      wrap.appendChild(card);
-    });
-  }
+    document.getElementById("ich2Summary").innerHTML = [
+      ["全数", counts.total], ["第1工場", counts.dai1], ["SUS工場", counts.sus], ["コイル", counts.coil], ["他", counts.other]
+    ].map(([label,val]) => '<div class="cell"><div class="label">'+label+'</div><div class="value">'+val+'<span>件</span></div></div>').join("");
 
-  function ichRenderTable() {
-    const statusEl = document.getElementById("ichListStatus");
-    const table = document.getElementById("ichListTable");
-    table.querySelector("thead") && (table.innerHTML = "<thead></thead><tbody></tbody>");
-    const idxSeizou = ichHeader.indexOf("製造番号");
-    const idxGenba = ichHeader.indexOf("現場名");
-    const idxNouki = ichHeader.indexOf("納期");
-    const idxJuken = ichHeader.indexOf("受・完");
-    const idxZumen = ichHeader.indexOf("図");
-    const idxKubun = ichHeader.indexOf("区分");
-    const idxSeisaku = ichHeader.indexOf("製");
-    const progressIdx = PROGRESS_COLS.map(name => ichHeader.indexOf(name));
-    const hiddenIdx = HIDDEN_COLS.map(name => ichHeader.indexOf(name));
-    const fixedIdx = FIXED_COLS.map(name => ichHeader.indexOf(name));
-    const skipIdx = (i) => progressIdx.includes(i) || hiddenIdx.includes(i) || fixedIdx.includes(i);
+    document.getElementById("ich2Count").textContent = rows.length + " / " + ich2All.length + " 件";
+    document.getElementById("ich2Empty").hidden = rows.length !== 0;
 
-    const query = document.getElementById("ichSearch").value.trim();
-    const fKubun = document.getElementById("ichFilterKubun").value;
-    const fSeisaku = document.getElementById("ichFilterSeisaku").value;
-
-    let rows = ichAllRows;
-    if (query) rows = rows.filter(r => (r[idxSeizou] || "").includes(query) || (r[idxGenba] || "").includes(query));
-    if (fKubun) rows = rows.filter(r => r[idxKubun] === fKubun);
-    if (fSeisaku) rows = rows.filter(r => r[idxSeisaku] === fSeisaku);
-    if (ichQuickFilter === "soon") {
-      const idxShukka = ichHeader.indexOf("出荷日");
-      rows = rows.filter(r => {
-        const v = r[idxShukka];
-        if (!v) return false;
-        const d = new Date(v);
-        if (isNaN(d.getTime())) return false;
-        const today = new Date(); today.setHours(0,0,0,0);
-        const diffDays = Math.round((d - today) / 86400000);
-        return diffDays >= 0 && diffDays <= 7;
-      });
-    } else if (ichQuickFilter === "notstarted") {
-      const idxJuchu = ichHeader.indexOf("受注日");
-      rows = rows.filter(r => !r[idxJuchu]);
-    }
-
-    statusEl.textContent = rows.length + "件(全" + ichAllRows.length + "件)";
-
-    const restCount = ichHeader.filter((h, i) => !skipIdx(i)).length;
-
-    // グループヘッダー行(識別(固定表示)/進捗/詳細)
-    const thead = table.querySelector("thead");
-    const trGroup = document.createElement("tr");
-    trGroup.className = "groupHeaderRow";
-    const thGroupFixed = document.createElement("th");
-    thGroupFixed.colSpan = 1 + FIXED_COLS.length; // チェックボックス + 固定列
-    thGroupFixed.textContent = "識別(固定表示)";
-    thGroupFixed.className = "fixedCol";
-    thGroupFixed.style.left = "0px";
-    trGroup.appendChild(thGroupFixed);
-    const thGroupProgress = document.createElement("th");
-    thGroupProgress.textContent = "進捗";
-    thGroupProgress.className = "groupProgress";
-    trGroup.appendChild(thGroupProgress);
-    const thGroupRest = document.createElement("th");
-    thGroupRest.colSpan = restCount;
-    thGroupRest.textContent = "詳細";
-    thGroupRest.className = "groupDetail";
-    trGroup.appendChild(thGroupRest);
-    thead.appendChild(trGroup);
-
-    const trh = document.createElement("tr");
-    const thCheck = document.createElement("th");
-    thCheck.className = "fixedCol";
-    thCheck.style.left = "0px";
-    thCheck.style.width = CHECK_WIDTH + "px";
-    trh.appendChild(thCheck); // チェックボックス列の見出しは空欄
-    FIXED_COLS.forEach((name, i) => {
-      const th = document.createElement("th");
-      th.textContent = name;
-      th.className = "fixedCol";
-      th.style.left = ichFixedLeft(i) + "px";
-      th.style.width = FIXED_WIDTHS[i] + "px";
-      trh.appendChild(th);
-    });
-    const thProgress = document.createElement("th");
-    thProgress.textContent = "進捗";
-    thProgress.dataset.jumpTarget = "progress";
-    trh.appendChild(thProgress);
-    let detailMarked = false;
-    ichHeader.forEach((h, i) => {
-      if (skipIdx(i)) return;
-      const th = document.createElement("th"); th.textContent = h; trh.appendChild(th);
-      if (!detailMarked) { th.dataset.jumpTarget = "detail"; detailMarked = true; }
-    });
-    thead.appendChild(trh);
-
-    const tbody = table.querySelector("tbody");
-    rows.slice().reverse().forEach(r => {
-      const seizou = r[idxSeizou];
-      const tr = document.createElement("tr");
-
-      const tdCheck = document.createElement("td");
-      const cb = document.createElement("input");
-      cb.type = "checkbox";
-      cb.checked = ichSelected.has(seizou);
-      cb.addEventListener("change", () => {
-        if (cb.checked) ichSelected.add(seizou); else ichSelected.delete(seizou);
-        ichUpdateSelectedCount();
-      });
-      tdCheck.appendChild(cb);
-      tdCheck.className = "fixedCol";
-      tdCheck.style.left = "0px";
-      tr.appendChild(tdCheck);
-
-      // 固定列(製造番号・品名・現場名)
-      FIXED_COLS.forEach((name, fi) => {
-        const idx = fixedIdx[fi];
-        const td = document.createElement("td");
-        td.className = "fixedCol dense";
-        td.style.left = ichFixedLeft(fi) + "px";
-        td.style.maxWidth = FIXED_WIDTHS[fi] + "px";
-        td.textContent = idx >= 0 ? (r[idx] || "") : "";
-        if (td.textContent && td.textContent.length > 8) td.title = td.textContent;
-        tr.appendChild(td);
-      });
-
-      // 進捗バッジ(受/製/完/内/外/出+日付)
-      const tdProgress = document.createElement("td");
-      tdProgress.style.whiteSpace = "nowrap";
-      PROGRESS_COLS.forEach((colName, i) => {
-        const idx = progressIdx[i];
-        const val = idx >= 0 ? r[idx] : "";
-        const pill = document.createElement("span");
-        pill.className = "progressPill " + ichDotClass(val);
-        pill.textContent = PROGRESS_LABELS[i] + (val ? formatDateShort(val) : "");
-        pill.title = colName + (val ? ": " + formatDateOnly(val) : ": 未定 (クリックで日付入力)");
-        pill.addEventListener("click", () => ichEditProgress(seizou, colName, val));
-        tdProgress.appendChild(pill);
-      });
-      tr.appendChild(tdProgress);
-
-      r.forEach((c, i) => {
-        if (skipIdx(i)) return;
-        const td = document.createElement("td");
-        td.className = "dense";
-        if (i === idxNouki || i === idxJuken) {
-          td.textContent = formatDateShort(c);
-          td.title = formatDateOnly(c);
-        } else if (i === idxZumen && c) {
-          const a = document.createElement("a");
-          a.href = c; a.target = "_blank"; a.rel = "noopener"; a.textContent = "図面";
-          a.className = "zumenBtnSmall";
-          td.appendChild(a);
-        } else {
-          td.textContent = c;
-          if (c && String(c).length > 8) td.title = c;
-        }
-        tr.appendChild(td);
-      });
-      tbody.appendChild(tr);
-    });
-  }
-
-  function ichDotClass(val) {
-    if (!val) return "empty";
-    const d = new Date(val);
-    if (isNaN(d.getTime())) return "empty";
-    const today = new Date(); today.setHours(0,0,0,0);
-    return d <= today ? "done" : "yotei";
-  }
-
-  async function ichEditProgress(seizou, columnName, currentVal) {
-    const currentDisplay = currentVal ? formatDateOnly(currentVal) : "";
-    const input = prompt(seizou + " の「" + columnName + "」を入力してください(例: 2026/10/15)。空欄でクリアできます。", currentDisplay);
-    if (input === null) return; // キャンセル
-    try {
-      const res = await fetch(GAS_URL, {
-        method: "POST",
-        body: JSON.stringify({ type: "updateProgress", seizouBangou: seizou, columnName, value: input.trim() }),
-      });
-      const data = await res.json();
-      if (data.result !== "success") throw new Error(data.message || "更新に失敗しました");
-      // ローカルのデータも更新して再描画
-      const idxSeizou = ichHeader.indexOf("製造番号");
-      const idxCol = ichHeader.indexOf(columnName);
-      const row = ichAllRows.find(r => r[idxSeizou] === seizou);
-      if (row) row[idxCol] = input.trim();
-      ichRenderTable();
-    } catch (e) {
-      alert("更新に失敗しました: " + e.message);
-    }
-  }
-
-  function ichUpdateSelectedCount() {
-    const el = document.getElementById("ichSelectedCount");
-    el.textContent = ichSelected.size > 0 ? ichSelected.size + "件選択中" : "";
-  }
-
-  // 「2026/11/7」→「11/7」のように年を省略した短い表示にする(カーソルを合わせると年まで見える)
-  function formatDateShort(v) {
-    const full = formatDateOnly(v);
-    const m = full.match(/^\d{4}\/(\d{1,2}\/\d{1,2})$/);
-    return m ? m[1] : full;
+    document.getElementById("ich2Tbody").innerHTML = rows.map(r => {
+      const cells = [r[iJuchu], r[iSeisakuDay], r[iKansei], r[iNaiso], r[iGaiso], r[iShukka]].map(ich2Cell);
+      const zumen = r[iZumen] || "";
+      return (
+        '<tr style="--rowbg:#fff;">' +
+        '<td class="ich2-sticky-col center" style="left:0;"><input type="checkbox" style="width:13px;height:13px;accent-color:var(--color-accent);"></td>' +
+        '<td class="ich2-sticky-col" style="left:28px;">'+ich2Esc(r[iSeizou])+'</td>' +
+        '<td class="ich2-sticky-col ich2-tabular" style="left:100px;">'+ich2Esc(formatDateShort(r[iNouki]))+'</td>' +
+        '<td class="ich2-sticky-col ich2-nowrap ich2-ellipsis" style="left:148px;">'+ich2Esc(r[iGenba])+'</td>' +
+        '<td class="ich2-sticky-col ich2-muted ich2-nowrap ich2-ellipsis grp-end" style="left:272px;">'+ich2Esc(r[iHinmei])+'</td>' +
+        '<td class="ich2-nowrap ich2-tabular">'+ich2Esc(r[iSunpou])+'</td>' +
+        '<td class="ich2-nowrap ich2-tabular ich2-muted">'+ich2Esc(formatDateShort(r[iJuken]))+'</td>' +
+        '<td class="center ich2-muted">'+ich2Esc(r[iKu])+'</td>' +
+        '<td class="ich2-nowrap"><span class="ich2-chip" style="background:var(--color-accent-100);color:var(--color-accent-800);border-color:var(--color-accent-300);">'+ich2Esc(r[iSeisaku])+'</span></td>' +
+        '<td class="ich2-nowrap ich2-ellipsis grp-end" title="'+ich2Esc(r[iTosou])+'">'+ich2Esc(r[iTosou])+'</td>' +
+        cells.map(c => '<td class="center">'+ich2Badge(c)+'</td>').join("") +
+        '<td class="ich2-nowrap">'+ich2Esc(r[iTantou])+'</td>' +
+        '<td class="ich2-nowrap ich2-ellipsis ich2-tabular ich2-muted" title="'+ich2Esc(r[iMsunpou])+'">'+ich2Esc(r[iMsunpou])+'</td>' +
+        '<td class="right ich2-tabular">'+ich2Esc(r[iShitsuryou])+'</td>' +
+        '<td class="ich2-nowrap ich2-ellipsis ich2-tabular" title="'+ich2Esc(r[iKatabangou])+'">'+ich2Esc(r[iKatabangou])+'</td>' +
+        '<td class="ich2-nowrap ich2-ellipsis" title="'+ich2Esc(r[iBiko])+'">'+ich2Esc(r[iBiko])+'</td>' +
+        '<td class="center">'+(zumen ? '<a class="ich2-no-btn" href="'+ich2Esc(zumen)+'" target="_blank" rel="noopener">図面</a>' : '<span class="ich2-muted">—</span>')+'</td>' +
+        '</tr>'
+      );
+    }).join("");
   }
 
   // ================= 製作手配 =================
