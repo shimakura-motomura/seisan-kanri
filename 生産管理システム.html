@@ -52,16 +52,27 @@
   }
 
   /* ホームメニュー */
-  #homeMenu { max-width: 420px; }
+  #homeMenu { max-width: 640px; margin: 0 auto; }
+  .homeHeader { text-align: center; margin-bottom: 28px; padding-top: 30px; }
+  .homeHeader .brand {
+    font-family: var(--font-heading); font-weight: 800; font-size: 24px;
+    letter-spacing: -0.02em; margin-bottom: 4px;
+  }
+  .homeHeader .today {
+    font-size: 12px; color: var(--color-neutral-600); font-variant-numeric: tabular-nums;
+  }
   .menuPrimary {
-    width: 100%; height: 60px; background: var(--color-accent); color: #fff; border: none;
-    border-radius: 0px; font-size: 15px; font-weight: 500; margin-bottom: 10px;
+    width: 100%; height: 64px; background: var(--color-accent); color: var(--color-bg); border: none;
+    border-radius: 0px; font-family: var(--font-heading); font-size: 16px; font-weight: 800;
+    margin-bottom: 12px; cursor: pointer; letter-spacing: 0.01em;
   }
-  .menuGrid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 10px; }
+  .menuPrimary:hover { background: var(--color-accent-600); }
+  .menuGrid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 12px; }
   .menuGrid button {
-    height: 72px; background: #fff; border: 1px solid #ddd; border-radius: 0px;
-    font-size: 13px; color: var(--color-text); font-family: inherit;
+    height: 78px; background: #fff; border: 2px solid var(--color-divider); border-radius: 0px;
+    font-size: 13px; font-weight: 500; color: var(--color-text); font-family: inherit; cursor: pointer;
   }
+  .menuGrid button:hover { border-color: var(--color-accent); color: var(--color-accent-700); }
 
   .box {
     background: #fff; border-radius: 0px; padding: 18px; margin-bottom: 16px;
@@ -272,8 +283,11 @@
 
   <!-- ============ ホームメニュー ============ -->
   <div class="screen active" id="screen-home">
-    <h1>生産管理システム</h1>
     <div id="homeMenu">
+      <div class="homeHeader">
+        <div class="brand">生産管理システム</div>
+        <div class="today" id="homeToday"></div>
+      </div>
       <button class="menuPrimary" onclick="nav('seisaku')">製作手配</button>
       <div class="menuGrid">
         <button onclick="nav('ichiran')">一覧</button>
@@ -518,6 +532,13 @@
 
   // ================= ナビゲーション =================
   const initialized = { seisaku: false, tosou: false, shukka: false, renraku: false, ichiran: false };
+
+  (function initHomeToday() {
+    const WEEKDAY = ["日","月","火","水","木","金","土"];
+    const t = new Date();
+    const el = document.getElementById("homeToday");
+    if (el) el.textContent = t.getFullYear() + "/" + String(t.getMonth()+1).padStart(2,"0") + "/" + String(t.getDate()).padStart(2,"0") + "(" + WEEKDAY[t.getDay()] + ")";
+  })();
 
   function nav(screen) {
     document.querySelectorAll(".screen").forEach(s => s.classList.remove("active"));
