@@ -194,7 +194,7 @@
    * 一覧画面(Claude Code版デザインをそのまま移植・.ich2- 名前空間で分離)
    * ================================================================ */
   .ich2 { display: flex; flex-direction: column; height: calc(100vh - 90px); }
-  .ich2-summary { display: grid; grid-template-columns: repeat(5, 1fr); border: 2px solid var(--color-divider); border-bottom: 2px solid var(--color-divider); flex: none; background: #fff; }
+  .ich2-summary { display: grid; grid-template-columns: repeat(5, 1fr); border: 2px solid var(--color-divider); border-bottom: 2px solid var(--color-divider); flex: none; }
   .ich2-summary .cell { padding: 7px 16px; }
   .ich2-summary .cell + .cell { border-left: 1px solid var(--color-divider); }
   .ich2-summary .label { font-size: 10px; letter-spacing: 0.1em; color: var(--color-neutral-600); }
@@ -217,7 +217,7 @@
   .ich2-count { font-size: 12px; color: var(--color-neutral-700); font-variant-numeric: tabular-nums; }
 
   #ich2Scroller { flex: 1; overflow: auto; border-bottom: 2px solid var(--color-divider); }
-  table.ich2-list { table-layout: fixed; border-collapse: separate; border-spacing: 0; font-size: 11px; width: 100%; background: #fff; }
+  table.ich2-list { table-layout: fixed; border-collapse: separate; border-spacing: 0; font-size: 11px; width: 100%; }
   .ich2-grp { position: sticky; top: 0; z-index: 4; padding: 1px 5px; font-size: 9px; letter-spacing: 0.08em; border-bottom: 1px solid var(--color-neutral-700); text-align: left; }
   .ich2-grp.identify { left: 0; z-index: 6; background: var(--color-neutral-900); color: var(--color-neutral-100); border-right: 2px solid var(--color-text); }
   .ich2-grp.dim { background: var(--color-neutral-800); color: var(--color-neutral-100); border-right: 2px solid var(--color-text); }
@@ -373,14 +373,14 @@
             <col style="width:28px"><col style="width:72px"><col style="width:48px"><col style="width:124px"><col style="width:96px">
             <col style="width:96px"><col style="width:44px"><col style="width:32px"><col style="width:40px"><col style="width:170px">
             <col style="width:38px"><col style="width:38px"><col style="width:38px"><col style="width:38px"><col style="width:38px"><col style="width:38px">
-            <col style="width:44px"><col style="width:74px"><col style="width:44px"><col style="width:64px"><col style="width:120px"><col style="width:46px">
+            <col style="width:44px"><col style="width:74px"><col style="width:44px"><col style="width:64px"><col style="width:120px">
           </colgroup>
           <thead>
             <tr>
               <th class="ich2-grp identify" colspan="5">識別(固定表示)</th>
               <th class="ich2-grp dim" colspan="5">寸法・製作・塗装</th>
               <th class="ich2-grp progress" colspan="6">進捗</th>
-              <th class="ich2-grp pic" colspan="6">担当・詳細</th>
+              <th class="ich2-grp pic" colspan="5">担当・詳細</th>
             </tr>
             <tr>
               <th class="ich2-colh sticky-id" style="left:0;">
@@ -409,14 +409,13 @@
               <th class="ich2-colh right">質量</th>
               <th class="ich2-colh">型番</th>
               <th class="ich2-colh">備考</th>
-              <th class="ich2-colh center">図</th>
             </tr>
           </thead>
           <tbody id="ich2Tbody"></tbody>
         </table>
         <div class="ich2-empty" id="ich2Empty" hidden>該当する案件がありません。検索条件を変えてください。</div>
       </div>
-      <div class="ich2-footnote">製造番号・納期・現場名・品名は固定表示。横スクロールで 寸法・塗装 → 進捗 → 担当・詳細 の順。</div>
+      <div class="ich2-footnote">製造番号・納期・現場名・品名は固定表示。製造番号をクリックすると図面が開きます。横スクロールで 寸法・塗装 → 進捗 → 担当・詳細 の順。</div>
     </div>
   </div>
 
@@ -614,9 +613,9 @@
       const cells = [r[iJuchu], r[iSeisakuDay], r[iKansei], r[iNaiso], r[iGaiso], r[iShukka]].map(ich2Cell);
       const zumen = r[iZumen] || "";
       return (
-        '<tr style="--rowbg:#fff;">' +
+        '<tr style="--rowbg:var(--color-bg);">' +
         '<td class="ich2-sticky-col center" style="left:0;"><input type="checkbox" style="width:13px;height:13px;accent-color:var(--color-accent);"></td>' +
-        '<td class="ich2-sticky-col" style="left:28px;">'+ich2Esc(r[iSeizou])+'</td>' +
+        '<td class="ich2-sticky-col" style="left:28px;">'+(zumen ? '<a class="ich2-no-btn" href="'+ich2Esc(zumen)+'" target="_blank" rel="noopener" title="図面を開く">'+ich2Esc(r[iSeizou])+'</a>' : ich2Esc(r[iSeizou]))+'</td>' +
         '<td class="ich2-sticky-col ich2-tabular" style="left:100px;">'+ich2Esc(formatDateShort(r[iNouki]))+'</td>' +
         '<td class="ich2-sticky-col ich2-nowrap ich2-ellipsis" style="left:148px;">'+ich2Esc(r[iGenba])+'</td>' +
         '<td class="ich2-sticky-col ich2-muted ich2-nowrap ich2-ellipsis grp-end" style="left:272px;">'+ich2Esc(r[iHinmei])+'</td>' +
@@ -631,7 +630,6 @@
         '<td class="right ich2-tabular">'+ich2Esc(r[iShitsuryou])+'</td>' +
         '<td class="ich2-nowrap ich2-ellipsis ich2-tabular" title="'+ich2Esc(r[iKatabangou])+'">'+ich2Esc(r[iKatabangou])+'</td>' +
         '<td class="ich2-nowrap ich2-ellipsis" title="'+ich2Esc(r[iBiko])+'">'+ich2Esc(r[iBiko])+'</td>' +
-        '<td class="center">'+(zumen ? '<a class="ich2-no-btn" href="'+ich2Esc(zumen)+'" target="_blank" rel="noopener">図面</a>' : '<span class="ich2-muted">—</span>')+'</td>' +
         '</tr>'
       );
     }).join("");
