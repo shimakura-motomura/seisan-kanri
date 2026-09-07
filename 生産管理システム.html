@@ -1073,6 +1073,13 @@
     if (typeof v === "string" && !v.includes("T")) return v; // 既に整形済みの文字列はそのまま
     return `${d.getFullYear()}/${d.getMonth()+1}/${d.getDate()}`;
   }
+  // 日付を「M/D」の短い形式にする(一覧画面の列幅を詰めるため)
+  function formatDateShort(v) {
+    if (!v) return v;
+    const full = formatDateOnly(v);
+    const m = full.match(/^\d{4}\/(\d{1,2}\/\d{1,2})$/);
+    return m ? m[1] : full;
+  }
   function initRenraku() {
     document.getElementById("rkPostBtn").addEventListener("click", async () => {
       const toukousha = document.getElementById("rk_toukousha").value.trim();
