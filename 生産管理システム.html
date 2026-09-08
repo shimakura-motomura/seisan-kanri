@@ -51,29 +51,6 @@
     padding: 0; margin-bottom: 14px; cursor: pointer;
   }
 
-  /* ホームメニュー */
-  #homeMenu { max-width: 640px; margin: 0 auto; }
-  .homeHeader { text-align: center; margin-bottom: 28px; padding-top: 30px; }
-  .homeHeader .brand {
-    font-family: var(--font-heading); font-weight: 800; font-size: 24px;
-    letter-spacing: -0.02em; margin-bottom: 4px;
-  }
-  .homeHeader .today {
-    font-size: 12px; color: var(--color-neutral-600); font-variant-numeric: tabular-nums;
-  }
-  .menuPrimary {
-    width: 100%; height: 64px; background: var(--color-accent); color: var(--color-bg); border: none;
-    border-radius: 0px; font-family: var(--font-heading); font-size: 16px; font-weight: 800;
-    margin-bottom: 12px; cursor: pointer; letter-spacing: 0.01em;
-  }
-  .menuPrimary:hover { background: var(--color-accent-600); }
-  .menuGrid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 12px; }
-  .menuGrid button {
-    height: 78px; background: #fff; border: 2px solid var(--color-divider); border-radius: 0px;
-    font-size: 13px; font-weight: 500; color: var(--color-text); font-family: inherit; cursor: pointer;
-  }
-  .menuGrid button:hover { border-color: var(--color-accent); color: var(--color-accent-700); }
-
   .box {
     background: #fff; border-radius: 0px; padding: 18px; margin-bottom: 16px;
     box-shadow: 0 1px 3px rgba(0,0,0,0.06);
@@ -277,26 +254,159 @@
   .ich2-badge .dot { width: 4px; height: 4px; flex: none; }
   .ich2-footnote { padding: 6px 4px; font-size: 11px; color: var(--color-neutral-700); flex: none; }
   .ich2-empty { padding: 48px 20px; text-align: center; color: var(--color-neutral-600); font-size: 13px; }
+
+  /* ================================================================
+   * ホームメニュー(Claude Code版デザインをそのまま移植)
+   * ================================================================ */
+  .page-header {
+    display: flex; flex-wrap: wrap; align-items: flex-end; justify-content: space-between;
+    gap: 16px; padding: 24px 0 18px; border-bottom: 2px solid var(--color-divider); margin-bottom: 28px;
+  }
+  .brand { display: flex; flex-direction: column; gap: 6px; }
+  .brand .kicker { color: var(--color-accent); }
+  .brand h1 { margin: 0; font-family: var(--font-body); font-weight: 800; font-size: 34px; line-height: 1.1; letter-spacing: 0.02em; color: var(--color-text); }
+  .kicker { font-family: var(--font-heading); font-size: 11px; font-weight: 700; letter-spacing: 0.18em; text-transform: uppercase; }
+  .today { display: flex; flex-direction: column; gap: 4px; text-align: left; }
+  .today .kicker { color: rgba(32, 30, 29, 0.6); }
+  .today-value { display: flex; align-items: baseline; gap: 12px; }
+  .today-numeric { font-family: var(--font-heading); font-weight: 800; font-size: 26px; line-height: 1; }
+  .today-ja { font-family: "Noto Sans JP", sans-serif; font-weight: 500; font-size: 15px; line-height: 1; }
+
+  .section-label { display: flex; align-items: center; gap: 14px; margin-bottom: 14px; }
+  .section-label .rule { flex: 1; height: 2px; background: var(--color-divider); }
+
+  .primary-action {
+    appearance: none; border: 2px solid var(--color-accent); background: var(--color-accent); color: #fff;
+    cursor: pointer; padding: 30px 32px; display: flex; align-items: center; justify-content: space-between;
+    gap: 24px; text-align: left; font-family: var(--font-body); transition: background .12s linear, border-color .12s linear;
+    text-decoration: none; margin-bottom: 2px;
+  }
+  .primary-action:hover { background: var(--color-accent-600); border-color: var(--color-accent-600); color: #fff; }
+  .primary-action:active { background: var(--color-accent-700); border-color: var(--color-accent-700); }
+  .primary-action-content { display: flex; align-items: center; gap: 24px; }
+  .primary-action-text { display: flex; flex-direction: column; gap: 6px; }
+  .primary-action-title { font-weight: 800; font-size: 38px; line-height: 1; letter-spacing: 0.02em; }
+  .primary-action-desc { font-family: "Noto Sans JP", sans-serif; font-weight: 500; font-size: 14px; line-height: 1.3; color: rgba(255,255,255,0.92); }
+
+  .menu-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 2px; background: var(--color-divider); border: 2px solid var(--color-divider); }
+  .menu-item {
+    appearance: none; border: 0; background: #fff; color: var(--color-text); cursor: pointer; min-height: 132px;
+    padding: 24px 26px; display: flex; align-items: center; justify-content: space-between; gap: 20px;
+    text-align: left; font-family: var(--font-body); transition: background .12s linear, color .12s linear; text-decoration: none;
+  }
+  .menu-item:hover { background: var(--color-text); color: var(--color-bg); }
+  .menu-item:active { background: var(--color-accent-700); color: #fff; }
+  .menu-item-content { display: flex; align-items: center; gap: 20px; }
+  .menu-item-text { display: flex; flex-direction: column; gap: 6px; }
+  .menu-item-label { font-weight: 800; font-size: 28px; line-height: 1; letter-spacing: 0.02em; }
+  .menu-item-desc { font-family: "Noto Sans JP", sans-serif; font-weight: 400; font-size: 13px; line-height: 1.3; }
+  .menu-item-en { font-family: var(--font-heading); font-size: 11px; font-weight: 700; letter-spacing: 0.16em; text-transform: uppercase; }
+  .menu-filler { background: var(--color-bg); min-height: 132px; }
+
+  .page-footer {
+    border-top: 2px solid var(--color-divider); padding: 14px 0; margin-top: 28px;
+    display: flex; flex-wrap: wrap; gap: 20px; justify-content: space-between;
+    font-family: var(--font-body); font-size: 12px; font-weight: 500; color: rgba(32,30,29,0.7);
+  }
 </style>
 </head>
 <body>
 
-  <!-- ============ ホームメニュー ============ -->
+  <!-- ============ ホームメニュー(Claude Code版デザインを統合) ============ -->
   <div class="screen active" id="screen-home">
-    <div id="homeMenu">
-      <div class="homeHeader">
-        <div class="brand">生産管理システム</div>
-        <div class="today" id="homeToday"></div>
+    <header class="page-header">
+      <div class="brand">
+        <span class="kicker">Production Control</span>
+        <h1>生産管理システム</h1>
       </div>
-      <button class="menuPrimary" onclick="nav('seisaku')">製作手配</button>
-      <div class="menuGrid">
-        <button onclick="nav('ichiran')">一覧</button>
-        <button onclick="nav('tosou')">塗装</button>
-        <button onclick="nav('shukka')">出荷</button>
-        <button onclick="nav('renraku')">連絡</button>
-        <button onclick="nav('setting')">設定</button>
+      <div class="today">
+        <span class="kicker">Today</span>
+        <div class="today-value">
+          <span class="today-numeric" id="today-numeric"></span>
+          <span class="today-ja" id="today-ja"></span>
+        </div>
       </div>
+    </header>
+
+    <div class="section-label">
+      <span class="kicker">Menu / メニュー</span>
+      <span class="rule"></span>
     </div>
+
+    <a class="primary-action" href="#" onclick="nav('seisaku');return false;">
+      <span class="primary-action-content">
+        <svg width="44" height="44" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="square" stroke-linejoin="miter" aria-hidden="true"><rect x="8" y="2" width="8" height="4"></rect><path d="M16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2"></path><path d="M8 11h8"></path><path d="M8 15h8"></path><path d="M8 19h5"></path></svg>
+        <span class="primary-action-text">
+          <span class="primary-action-title">製作手配</span>
+          <span class="primary-action-desc">手配の新規登録・進捗の入力</span>
+        </span>
+      </span>
+      <svg width="34" height="34" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="square" stroke-linejoin="miter" aria-hidden="true"><path d="M5 12h14"></path><path d="m13 6 6 6-6 6"></path></svg>
+    </a>
+
+    <div class="menu-grid">
+      <a class="menu-item" href="#" onclick="nav('ichiran');return false;">
+        <span class="menu-item-content">
+          <svg width="34" height="34" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="square" stroke-linejoin="miter" aria-hidden="true"><path d="M8 6h13"></path><path d="M8 12h13"></path><path d="M8 18h13"></path><path d="M3 6h.01"></path><path d="M3 12h.01"></path><path d="M3 18h.01"></path></svg>
+          <span class="menu-item-text">
+            <span class="menu-item-label">一覧</span>
+            <span class="menu-item-desc">手配・進捗の一覧表示</span>
+          </span>
+        </span>
+        <span class="menu-item-en">List</span>
+      </a>
+
+      <a class="menu-item" href="#" onclick="nav('tosou');return false;">
+        <span class="menu-item-content">
+          <svg width="34" height="34" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="square" stroke-linejoin="miter" aria-hidden="true"><path d="M4 3h12v6H4z"></path><path d="M16 6h2a2 2 0 0 1 2 2v2a2 2 0 0 1-2 2h-6"></path><path d="M12 14h2v7h-2z"></path></svg>
+          <span class="menu-item-text">
+            <span class="menu-item-label">塗装</span>
+            <span class="menu-item-desc">塗装工程の状況入力</span>
+          </span>
+        </span>
+        <span class="menu-item-en">Paint</span>
+      </a>
+
+      <a class="menu-item" href="#" onclick="nav('shukka');return false;">
+        <span class="menu-item-content">
+          <svg width="34" height="34" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="square" stroke-linejoin="miter" aria-hidden="true"><path d="M2 6h11v11H2z"></path><path d="M13 10h4l3 3v4h-7"></path><path d="M6 20a2 2 0 1 0 0-4 2 2 0 0 0 0 4Z"></path><path d="M17 20a2 2 0 1 0 0-4 2 2 0 0 0 0 4Z"></path></svg>
+          <span class="menu-item-text">
+            <span class="menu-item-label">出荷</span>
+            <span class="menu-item-desc">出荷予定・実績の管理</span>
+          </span>
+        </span>
+        <span class="menu-item-en">Ship</span>
+      </a>
+
+      <a class="menu-item" href="#" onclick="nav('renraku');return false;">
+        <span class="menu-item-content">
+          <svg width="34" height="34" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="square" stroke-linejoin="miter" aria-hidden="true"><path d="M21 15a2 2 0 0 1-2 2H8l-4 4V5a2 2 0 0 1 2-2h13a2 2 0 0 1 2 2z"></path><path d="M8 9h9"></path><path d="M8 13h6"></path></svg>
+          <span class="menu-item-text">
+            <span class="menu-item-label">連絡</span>
+            <span class="menu-item-desc">社内連絡・申し送り</span>
+          </span>
+        </span>
+        <span class="menu-item-en">Notice</span>
+      </a>
+
+      <a class="menu-item" href="#" onclick="nav('setting');return false;">
+        <span class="menu-item-content">
+          <svg width="34" height="34" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="square" stroke-linejoin="miter" aria-hidden="true"><path d="M12 15a3 3 0 1 0 0-6 3 3 0 0 0 0 6Z"></path><path d="M19.4 15a1.7 1.7 0 0 0 .34 1.87l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06A1.7 1.7 0 0 0 15 19.4a1.7 1.7 0 0 0-1 1.55V21a2 2 0 1 1-4 0v-.09A1.7 1.7 0 0 0 9 19.4a1.7 1.7 0 0 0-1.87.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06A1.7 1.7 0 0 0 4.6 15a1.7 1.7 0 0 0-1.55-1H3a2 2 0 1 1 0-4h.09A1.7 1.7 0 0 0 4.6 9a1.7 1.7 0 0 0-.33-1.87l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06A1.7 1.7 0 0 0 9 4.6h.09A1.7 1.7 0 0 0 10 3.05V3a2 2 0 1 1 4 0v.09a1.7 1.7 0 0 0 1 1.55 1.7 1.7 0 0 0 1.87-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06A1.7 1.7 0 0 0 19.4 9v.09a1.7 1.7 0 0 0 1.55 1H21a2 2 0 1 1 0 4h-.09a1.7 1.7 0 0 0-1.51 1Z"></path></svg>
+          <span class="menu-item-text">
+            <span class="menu-item-label">設定</span>
+            <span class="menu-item-desc">マスタ・利用者の設定</span>
+          </span>
+        </span>
+        <span class="menu-item-en">Settings</span>
+      </a>
+
+      <div class="menu-filler" aria-hidden="true"></div>
+    </div>
+
+    <footer class="page-footer">
+      <span>社内専用 / 事務所PC</span>
+      <span>生産管理システム v1.0</span>
+    </footer>
   </div>
 
   <!-- ============ 製作手配 ============ -->
@@ -536,8 +646,10 @@
   (function initHomeToday() {
     const WEEKDAY = ["日","月","火","水","木","金","土"];
     const t = new Date();
-    const el = document.getElementById("homeToday");
-    if (el) el.textContent = t.getFullYear() + "/" + String(t.getMonth()+1).padStart(2,"0") + "/" + String(t.getDate()).padStart(2,"0") + "(" + WEEKDAY[t.getDay()] + ")";
+    const numEl = document.getElementById("today-numeric");
+    const jaEl = document.getElementById("today-ja");
+    if (numEl) numEl.textContent = t.getFullYear() + "." + String(t.getMonth()+1).padStart(2,"0") + "." + String(t.getDate()).padStart(2,"0");
+    if (jaEl) jaEl.textContent = (t.getMonth()+1) + "月" + t.getDate() + "日(" + WEEKDAY[t.getDay()] + ")";
   })();
 
   function nav(screen) {
