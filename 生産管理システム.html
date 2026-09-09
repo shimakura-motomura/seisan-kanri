@@ -113,6 +113,7 @@
   .ts2-toolbar { display: flex; align-items: center; gap: 10px; padding: 10px 0; flex-wrap: wrap; }
   .ts2-search { width: 260px; font-family: inherit; font-size: 13px; padding: 8px 10px; border: 1px solid var(--color-divider); background: var(--color-neutral-100); color: var(--color-text); }
   .ts2-count { font-size: 12px; color: var(--color-neutral-600); margin-left: auto; }
+  .ts2-footnote { display: flex; justify-content: flex-end; padding: 6px 2px 0; font-size: 12px; font-weight: 700; color: var(--color-text); }
 
   .ts2-list-scroll { overflow: auto; border: 1px solid var(--color-divider); background: #fff; max-height: 65vh; }
   table.ts2-data { border-collapse: collapse; width: 100%; font-size: 12px; }
@@ -618,14 +619,29 @@
 
   <!-- ============ 塗装 ============ -->
   <div class="screen" id="screen-tosou">
-    <button class="backBtn" onclick="nav('home')">← メニューに戻る</button>
-    <h1>塗装</h1>
+    <header class="ich2-topbar">
+      <button class="ich2-back" onclick="nav('home')">← メニューに戻る</button>
+      <div class="ich2-brand">塗装</div>
+      <nav class="ich2-topnav">
+        <a href="#" onclick="nav('home');return false;">トップ</a>
+        <a href="#" onclick="nav('ichiran');return false;">一覧</a>
+        <a href="#" onclick="nav('seisaku');return false;">製作手配</a>
+        <a href="#" class="active" onclick="return false;">塗装</a>
+      </nav>
+      <div class="ich2-today">次長 / 事務所PC</div>
+    </header>
     <div class="tabbar" id="tsTabbar"></div>
     <div class="ts2-toolbar">
       <input type="text" id="tsSearch" class="ts2-search" placeholder="製造番号・現場名・品名で絞り込み">
+      <div class="chipbar" id="tsStatusFilter">
+        <button type="button" class="chip active" data-status="all">すべて</button>
+        <button type="button" class="chip" data-status="open">未完</button>
+        <button type="button" class="chip" data-status="done">完了</button>
+      </div>
       <span class="ts2-count" id="tsListStatus">読み込み中...</span>
     </div>
     <div class="ts2-list-scroll"><table class="ts2-data" id="tsListTable"><thead></thead><tbody></tbody></table></div>
+    <div class="ts2-footnote" id="tsFootnote"></div>
     <button type="button" class="ts2-add-toggle" id="tsAddToggle">
       <span class="ts2-add-toggle-sign">＋</span>
       <span class="ts2-add-toggle-label">手動で案件を追加</span>
@@ -1036,6 +1052,14 @@
       if (tsCurrentTab === TS_SCHEDULE_KEY) tsLoadScheduleList();
       else tsLoadList(TOSOU_TABS.find(t => t.key === tsCurrentTab));
     });
+    document.querySelectorAll("#tsStatusFilter .chip").forEach(btn => {
+      btn.addEventListener("click", () => {
+        document.querySelectorAll("#tsStatusFilter .chip").forEach(b => b.classList.remove("active"));
+        btn.classList.add("active");
+        tsStatus = btn.dataset.status;
+        if (tsCurrentTab !== TS_SCHEDULE_KEY) tsLoadList(TOSOU_TABS.find(t => t.key === tsCurrentTab));
+      });
+    });
     document.getElementById("tsAddToggle").addEventListener("click", () => {
       const box = document.getElementById("tsFormBox");
       const sign = document.querySelector("#tsAddToggle .ts2-add-toggle-sign");
@@ -1147,6 +1171,8 @@
     }
   }
 
+  let tsStatus = "all";
+
   async function tsLoadList(tab) {
     const statusEl = document.getElementById("tsListStatus");
     const table = document.getElementById("tsListTable");
@@ -1159,16 +1185,20 @@
       const idxSeizou = header.indexOf("製造番号");
       const idxGenba = header.indexOf("現場名");
       const idxHinmei = header.indexOf("品名");
+      const idxDone = header.findIndex(h => h.includes("納品")) >= 0 ? header.findIndex(h => h.includes("納品")) : header.findIndex(h => h.includes("完成"));
       let body = rows.slice(1).filter(r => r[5] && r[6]);
       const q = tsQuery.toLowerCase();
       if (q) body = body.filter(r => ((r[idxSeizou]||"")+(r[idxGenba]||"")+(r[idxHinmei]||"")).toLowerCase().includes(q));
+      if (idxDone >= 0 && tsStatus === "open") body = body.filter(r => !r[idxDone]);
+      if (idxDone >= 0 && tsStatus === "done") body = body.filter(r => !!r[idxDone]);
       statusEl.textContent = body.length + "件";
       tsRenderTable(table, header, body.slice().reverse(), idxSeizou);
     } catch (e) { statusEl.textContent = "読み込みに失敗しました: " + e.message; }
   }
 
-  // 塗装系シート・メッキスケシート共通のテーブル描画(先頭列を固定表示・製造番号クリックで図面を開く)
+  // 塗装系シート・メッキスケシート共通のテーブル描画(先頭列を固定表示・製造番号クリックで図面を開く・日付は短縮表示・価格は合計を表示)
   function tsRenderTable(table, header, body, idxSeizou) {
+    const idxPrice = header.findIndex(h => h.includes("価格"));
     const trh = document.createElement("tr");
     header.forEach((h, i) => {
       const th = document.createElement("th");
@@ -1178,6 +1208,7 @@
     });
     table.querySelector("thead").appendChild(trh);
     const tbody = table.querySelector("tbody");
+    let priceSum = 0;
     body.forEach(r => {
       const tr = document.createElement("tr");
       r.forEach((c, i) => {
@@ -1193,13 +1224,19 @@
           } else {
             td.textContent = c;
           }
+        } else if (i === idxPrice) {
+          const n = parseFloat(String(c).replace(/[^0-9.\-]/g, ""));
+          if (!isNaN(n)) priceSum += n;
+          td.textContent = c === "" || c == null ? "" : n.toLocaleString();
         } else {
-          td.textContent = c;
+          td.textContent = formatDateShort(c);
         }
         tr.appendChild(td);
       });
       tbody.appendChild(tr);
     });
+    const footnote = document.getElementById("tsFootnote");
+    footnote.textContent = idxPrice >= 0 ? ("合計 ¥" + priceSum.toLocaleString()) : "";
   }
 
   function tsRenderScheduleForm() {
