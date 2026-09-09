@@ -481,7 +481,16 @@
 
   <!-- ============ 製作手配 ============ -->
   <div class="screen" id="screen-seisaku">
-    <button class="backBtn" onclick="nav('home')">← メニューに戻る</button>
+    <header class="ich2-topbar">
+      <div class="ich2-brand">生産管理システム</div>
+      <nav class="ich2-topnav">
+        <a href="#" onclick="nav('home');return false;">トップ</a>
+        <a href="#" onclick="nav('ichiran');return false;">一覧</a>
+        <a href="#" onclick="nav('tosou');return false;">塗装</a>
+        <a href="#" onclick="nav('shukka');return false;">出荷</a>
+      </nav>
+      <div class="ich2-today">次長 / 事務所PC</div>
+    </header>
     <h1>製作手配</h1>
 
     <div class="box">
@@ -559,13 +568,12 @@
   <div class="screen" id="screen-ichiran">
     <div class="ich2">
       <header class="ich2-topbar">
-        <button class="ich2-back" onclick="nav('home')">← メニューに戻る</button>
-        <div class="ich2-brand">製作手配一覧</div>
+        <div class="ich2-brand">生産管理システム</div>
         <nav class="ich2-topnav">
-          <a href="#" class="active">一覧</a>
-          <a href="#" onclick="return false;">完了案件</a>
-          <a href="#" onclick="return false;">図面</a>
-          <a href="#" onclick="return false;">マスタ</a>
+          <a href="#" onclick="nav('home');return false;">トップ</a>
+          <a href="#" class="active" onclick="return false;">一覧</a>
+          <a href="#" onclick="nav('tosou');return false;">塗装</a>
+          <a href="#" onclick="nav('shukka');return false;">出荷</a>
         </nav>
         <div class="ich2-today" id="ich2Today"></div>
       </header>
@@ -651,13 +659,12 @@
   <!-- ============ 塗装 ============ -->
   <div class="screen" id="screen-tosou">
     <header class="ich2-topbar">
-      <button class="ich2-back" onclick="nav('home')">← メニューに戻る</button>
       <div class="ich2-brand">生産管理システム</div>
       <nav class="ich2-topnav">
         <a href="#" onclick="nav('home');return false;">トップ</a>
         <a href="#" onclick="nav('ichiran');return false;">一覧</a>
-        <a href="#" onclick="nav('seisaku');return false;">製作手配</a>
         <a href="#" class="active" onclick="return false;">塗装</a>
+        <a href="#" onclick="nav('shukka');return false;">出荷</a>
       </nav>
       <div class="ich2-today">次長 / 事務所PC</div>
     </header>
@@ -690,7 +697,16 @@
 
   <!-- ============ 出荷 ============ -->
   <div class="screen" id="screen-shukka">
-    <button class="backBtn" onclick="nav('home')">← メニューに戻る</button>
+    <header class="ich2-topbar">
+      <div class="ich2-brand">生産管理システム</div>
+      <nav class="ich2-topnav">
+        <a href="#" onclick="nav('home');return false;">トップ</a>
+        <a href="#" onclick="nav('ichiran');return false;">一覧</a>
+        <a href="#" onclick="nav('tosou');return false;">塗装</a>
+        <a href="#" class="active" onclick="return false;">出荷</a>
+      </nav>
+      <div class="ich2-today">次長 / 事務所PC</div>
+    </header>
     <h1>出荷</h1>
     <div class="box">
       <h2>新規登録</h2>
@@ -713,7 +729,16 @@
 
   <!-- ============ 連絡 ============ -->
   <div class="screen" id="screen-renraku">
-    <button class="backBtn" onclick="nav('home')">← メニューに戻る</button>
+    <header class="ich2-topbar">
+      <div class="ich2-brand">生産管理システム</div>
+      <nav class="ich2-topnav">
+        <a href="#" onclick="nav('home');return false;">トップ</a>
+        <a href="#" onclick="nav('ichiran');return false;">一覧</a>
+        <a href="#" onclick="nav('tosou');return false;">塗装</a>
+        <a href="#" onclick="nav('shukka');return false;">出荷</a>
+      </nav>
+      <div class="ich2-today">次長 / 事務所PC</div>
+    </header>
     <h1>連絡</h1>
     <div class="box" id="rkPostForm">
       <div class="field"><label>お名前</label><input id="rk_toukousha"></div>
@@ -728,7 +753,16 @@
 
   <!-- ============ 設定 ============ -->
   <div class="screen" id="screen-setting">
-    <button class="backBtn" onclick="nav('home')">← メニューに戻る</button>
+    <header class="ich2-topbar">
+      <div class="ich2-brand">生産管理システム</div>
+      <nav class="ich2-topnav">
+        <a href="#" onclick="nav('home');return false;">トップ</a>
+        <a href="#" onclick="nav('ichiran');return false;">一覧</a>
+        <a href="#" onclick="nav('tosou');return false;">塗装</a>
+        <a href="#" onclick="nav('shukka');return false;">出荷</a>
+      </nav>
+      <div class="ich2-today">次長 / 事務所PC</div>
+    </header>
     <h1>設定</h1>
     <div class="box">
       <p style="font-size:13px;color:#888;margin:0;">準備中です。担当者マスタの編集や、部位・処理内容の選択肢の管理などを、今後ここに追加していく予定です。</p>
