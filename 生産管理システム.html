@@ -324,6 +324,18 @@
   .ich2-badge .dot { width: 4px; height: 4px; flex: none; }
   .ich2-footnote { padding: 6px 4px; font-size: 11px; color: var(--color-neutral-700); flex: none; }
   .ich2-empty { padding: 48px 20px; text-align: center; color: var(--color-neutral-600); font-size: 13px; }
+  .ich2-summary-btn { border: 0; background: none; font: inherit; cursor: pointer; display: block; width: 100%; text-align: left; padding: 7px 16px; }
+  .ich2-summary-btn:hover { background: rgba(32,30,29,0.05); }
+  .ich2-summary-btn.active { background: var(--color-accent-100); }
+  .ich2-summary-btn.active .value { color: var(--color-accent-700); }
+  .ich2-selbar {
+    display: flex; align-items: center; gap: 12px; padding: 8px 16px; margin-top: 6px;
+    background: var(--color-neutral-900); color: var(--color-neutral-100); font-size: 13px;
+  }
+  .ich2-selbar-primary { background: var(--color-accent); color: #fff; border: 0; padding: 7px 16px; font: inherit; font-weight: 700; cursor: pointer; }
+  .ich2-selbar-primary:hover { background: var(--color-accent-600); }
+  .ich2-selbar-clear { margin-left: auto; background: none; border: 1px solid var(--color-neutral-600); color: var(--color-neutral-100); padding: 7px 14px; font: inherit; cursor: pointer; }
+  .ich2-selbar-clear:hover { background: rgba(255,255,255,0.08); }
 
   /* ================================================================
    * ホームメニュー(Claude Code版デザインをそのまま移植)
@@ -653,6 +665,11 @@
         <div class="ich2-empty" id="ich2Empty" hidden>該当する案件がありません。検索条件を変えてください。</div>
       </div>
       <div class="ich2-footnote">製造番号・納期・現場名・品名は固定表示。製造番号をクリックすると図面が開きます。横スクロールで 寸法・塗装 → 進捗 → 担当・詳細 の順。</div>
+      <div class="ich2-selbar" id="ich2Selbar" hidden>
+        <span id="ich2SelCount"></span>
+        <button type="button" class="ich2-selbar-primary" onclick="ich2GoShukka()">出荷手配へ</button>
+        <button type="button" class="ich2-selbar-clear" onclick="ich2Selected.clear(); ich2Render();">選択を解除</button>
+      </div>
     </div>
   </div>
 
@@ -797,7 +814,8 @@
   // ================= 一覧(Claude Code版デザイン + 実データ接続) =================
   let ich2All = [];
   let ich2Header = [];
-  const ich2State = { query: "", filter: "all", sort: "due" };
+  const ich2State = { query: "", filter: "all", sort: "due", dept: "全数" };
+  const ich2Selected = new Set();
 
   function ich2Esc(s) {
     return String(s ?? "").replace(/[&<>"']/g, c => ({ "&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;" }[c]));
@@ -877,6 +895,7 @@
     const q = ich2State.query.trim().toLowerCase();
     let rows = ich2All.filter(r => {
       if (q && !((r[iSeizou]||"")+(r[iGenba]||"")+(r[iHinmei]||"")+(r[iTantou]||"")).toLowerCase().includes(q)) return false;
+      if (ich2State.dept !== "全数" && ich2Kubun(r[iSeisaku], r[iKu]) !== ich2State.dept) return false;
       if (ich2State.filter === "soon") {
         const v = r[iShukka]; if (!v) return false;
         const d = new Date(v); if (isNaN(d.getTime())) return false;
@@ -909,7 +928,13 @@
     });
     document.getElementById("ich2Summary").innerHTML = [
       ["全数", counts.total], ["第1工場", counts.dai1], ["SUS工場", counts.sus], ["コイル", counts.coil], ["他", counts.other]
-    ].map(([label,val]) => '<div class="cell"><div class="label">'+label+'</div><div class="value">'+val+'<span>件</span></div></div>').join("");
+    ].map(([label,val]) =>
+      '<button type="button" class="cell ich2-summary-btn' + (ich2State.dept === label ? ' active' : '') + '" data-dept="' + ich2Esc(label) + '">' +
+      '<div class="label">'+label+'</div><div class="value">'+val+'<span>件</span></div></button>'
+    ).join("");
+    document.querySelectorAll(".ich2-summary-btn").forEach(btn => {
+      btn.addEventListener("click", () => { ich2State.dept = btn.dataset.dept; ich2Render(); });
+    });
 
     document.getElementById("ich2Count").textContent = rows.length + " / " + ich2All.length + " 件";
     document.getElementById("ich2Empty").hidden = rows.length !== 0;
@@ -917,9 +942,11 @@
     document.getElementById("ich2Tbody").innerHTML = rows.map(r => {
       const cells = [r[iJuchu], r[iSeisakuDay], r[iKansei], r[iNaiso], r[iGaiso], r[iShukka]].map(ich2Cell);
       const zumen = r[iZumen] || "";
+      const no = r[iSeizou];
+      const checked = ich2Selected.has(no);
       return (
-        '<tr style="--rowbg:var(--color-bg);">' +
-        '<td class="ich2-sticky-col center" style="left:0;"><input type="checkbox" style="width:13px;height:13px;accent-color:var(--color-accent);"></td>' +
+        '<tr style="--rowbg:' + (checked ? "var(--color-accent-100)" : "var(--color-bg)") + ';">' +
+        '<td class="ich2-sticky-col center" style="left:0;"><input type="checkbox" class="ich2-row-check" data-no="'+ich2Esc(no)+'" '+(checked?"checked":"")+' style="width:13px;height:13px;accent-color:var(--color-accent);"></td>' +
         '<td class="ich2-sticky-col" style="left:28px;">'+(zumen ? '<a class="ich2-no-btn" href="'+ich2Esc(zumen)+'" target="_blank" rel="noopener" title="図面を開く">'+ich2Esc(r[iSeizou])+'</a>' : ich2Esc(r[iSeizou]))+'</td>' +
         '<td class="ich2-sticky-col ich2-tabular" style="left:100px;">'+ich2Esc(formatDateShort(r[iNouki]))+'</td>' +
         '<td class="ich2-sticky-col ich2-nowrap ich2-ellipsis" style="left:148px;">'+ich2Esc(r[iGenba])+'</td>' +
@@ -938,6 +965,45 @@
         '</tr>'
       );
     }).join("");
+
+    // チェックボックス(行・全選択)の同期
+    const selectAllEl = document.getElementById("ich2SelectAll");
+    const visibleNos = rows.map(r => r[iSeizou]);
+    selectAllEl.checked = visibleNos.length > 0 && visibleNos.every(no => ich2Selected.has(no));
+    selectAllEl.onchange = () => {
+      if (selectAllEl.checked) visibleNos.forEach(no => ich2Selected.add(no));
+      else visibleNos.forEach(no => ich2Selected.delete(no));
+      ich2Render();
+    };
+    document.querySelectorAll(".ich2-row-check").forEach(cb => {
+      cb.addEventListener("change", () => {
+        if (cb.checked) ich2Selected.add(cb.dataset.no); else ich2Selected.delete(cb.dataset.no);
+        ich2Render();
+      });
+    });
+
+    // 選択バー(選んだ製品をまとめて出荷手配へ)
+    const selbar = document.getElementById("ich2Selbar");
+    if (ich2Selected.size > 0) {
+      selbar.hidden = false;
+      document.getElementById("ich2SelCount").textContent = ich2Selected.size + " 件を選択中";
+    } else {
+      selbar.hidden = true;
+    }
+  }
+
+  function ich2GoShukka() {
+    const selectedRows = ich2All.filter(r => ich2Selected.has(r[ich2Header.indexOf("製造番号")]));
+    const iGenba = ich2Header.indexOf("現場名"), iHinmei = ich2Header.indexOf("品名");
+    const genbaList = [...new Set(selectedRows.map(r => r[iGenba]))].join("、");
+    const hinmeiList = selectedRows.map(r => r[iHinmei]).join("、");
+    nav("shukka");
+    setTimeout(() => {
+      const saki = document.getElementById("skk_saki");
+      const biko = document.getElementById("skk_biko");
+      if (saki) saki.value = genbaList;
+      if (biko) biko.value = "対象製品: " + hinmeiList;
+    }, 0);
   }
 
   // ================= 製作手配 =================
