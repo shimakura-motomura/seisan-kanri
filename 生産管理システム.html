@@ -97,13 +97,51 @@
   #skResultMsg.success, #tsAddResult.success, #skkAddResult.success { color: #0F6E56; }
   #skResultMsg.error, #tsAddResult.error, #skkAddResult.error { color: #b00020; }
 
-  /* 塗装 */
-  .tabbar { display: flex; flex-wrap: wrap; gap: 6px; margin-bottom: 16px; }
-  .tabbar button {
-    padding: 8px 14px; border-radius: 0px; border: 1px solid #ccc; background: #fff;
-    font-size: 13px; color: #666; font-family: inherit;
+  /* 塗装(Claude Code版デザインを .ts2- 名前空間で反映) */
+  .tabbar {
+    display: flex; gap: 2px; align-items: flex-end; overflow-x: auto;
+    border-bottom: 2px solid var(--color-divider); margin-bottom: 0; padding: 0;
   }
-  .tabbar button.active { background: var(--color-accent); color: #fff; border-color: var(--color-accent); }
+  .tabbar button {
+    appearance: none; border: 0; background: transparent; cursor: pointer;
+    padding: 6px 14px 8px; font-size: 14px; font-weight: 700; font-family: inherit;
+    color: var(--color-text); white-space: nowrap; border-bottom: 4px solid transparent;
+  }
+  .tabbar button:hover { background: rgba(32,30,29,0.06); }
+  .tabbar button.active { border-bottom-color: var(--color-accent); color: var(--color-accent-700); }
+
+  .ts2-toolbar { display: flex; align-items: center; gap: 10px; padding: 10px 0; flex-wrap: wrap; }
+  .ts2-search { width: 260px; font-family: inherit; font-size: 13px; padding: 8px 10px; border: 1px solid var(--color-divider); background: var(--color-neutral-100); color: var(--color-text); }
+  .ts2-count { font-size: 12px; color: var(--color-neutral-600); margin-left: auto; }
+
+  .ts2-list-scroll { overflow: auto; border: 1px solid var(--color-divider); background: #fff; max-height: 65vh; }
+  table.ts2-data { border-collapse: collapse; width: 100%; font-size: 12px; }
+  table.ts2-data th {
+    position: sticky; top: 0; background: var(--color-bg); z-index: 2;
+    text-align: left; font-size: 10px; padding: 5px 8px; border-bottom: 2px solid var(--color-divider);
+    white-space: nowrap;
+  }
+  table.ts2-data td { padding: 3px 8px; border-bottom: 1px solid var(--color-divider); white-space: nowrap; }
+  table.ts2-data tbody tr:hover td { background: rgba(32,30,29,0.04); }
+  table.ts2-data th.ts2-sticky, table.ts2-data td.ts2-sticky {
+    position: sticky; left: 0; z-index: 1; background: var(--color-bg); border-right: 2px solid var(--color-divider);
+  }
+  table.ts2-data th.ts2-sticky { z-index: 3; }
+  .ts2-no-link {
+    appearance: none; border: 0; background: transparent; padding: 0; cursor: pointer; font: inherit;
+    font-weight: 700; color: var(--color-accent-700); text-decoration: underline; text-underline-offset: 2px;
+  }
+  .ts2-no-link:hover { color: var(--color-accent); }
+
+  .ts2-add-toggle {
+    appearance: none; border: 0; background: transparent; cursor: pointer; padding: 0; margin-top: 18px;
+    display: flex; align-items: center; gap: 10px; color: var(--color-text); text-align: left; width: 100%;
+    border-top: 2px solid var(--color-divider); padding-top: 12px;
+  }
+  .ts2-add-toggle-sign { width: 22px; height: 22px; border: 2px solid var(--color-text); display: grid; place-items: center; font-size: 14px; font-weight: 800; flex: none; }
+  .ts2-add-toggle-label { font-weight: 800; font-size: 15px; }
+  .ts2-add-toggle-hint { font-size: 11px; color: var(--color-neutral-600); }
+
   .grid3 { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px 12px; margin-bottom: 10px; }
 
   table { width: 100%; border-collapse: collapse; font-size: 12px; }
@@ -583,11 +621,17 @@
     <button class="backBtn" onclick="nav('home')">← メニューに戻る</button>
     <h1>塗装</h1>
     <div class="tabbar" id="tsTabbar"></div>
-    <div class="box" id="tsFormBox"></div>
-    <div class="box">
-      <div class="listStatus" id="tsListStatus">読み込み中...</div>
-      <div class="tableWrap"><table id="tsListTable"><thead></thead><tbody></tbody></table></div>
+    <div class="ts2-toolbar">
+      <input type="text" id="tsSearch" class="ts2-search" placeholder="製造番号・現場名・品名で絞り込み">
+      <span class="ts2-count" id="tsListStatus">読み込み中...</span>
     </div>
+    <div class="ts2-list-scroll"><table class="ts2-data" id="tsListTable"><thead></thead><tbody></tbody></table></div>
+    <button type="button" class="ts2-add-toggle" id="tsAddToggle">
+      <span class="ts2-add-toggle-sign">＋</span>
+      <span class="ts2-add-toggle-label">手動で案件を追加</span>
+      <span class="ts2-add-toggle-hint">通常は製作手配から自動登録されます。イレギュラー時のみ使用。</span>
+    </button>
+    <div class="box" id="tsFormBox" style="display:none;"></div>
   </div>
 
   <!-- ============ 出荷 ============ -->
@@ -983,9 +1027,22 @@
   const TS_SCHEDULE_KEY = "メッキスケ";
   let tsBuiList = [];
   let tsProductMap = {};
+  let tsQuery = "";
 
   async function initTosou() {
     await tsLoadMasters();
+    document.getElementById("tsSearch").addEventListener("input", (e) => {
+      tsQuery = e.target.value.trim();
+      if (tsCurrentTab === TS_SCHEDULE_KEY) tsLoadScheduleList();
+      else tsLoadList(TOSOU_TABS.find(t => t.key === tsCurrentTab));
+    });
+    document.getElementById("tsAddToggle").addEventListener("click", () => {
+      const box = document.getElementById("tsFormBox");
+      const sign = document.querySelector("#tsAddToggle .ts2-add-toggle-sign");
+      const show = box.style.display === "none";
+      box.style.display = show ? "block" : "none";
+      sign.textContent = show ? "−" : "＋";
+    });
     tsRender();
   }
 
@@ -996,9 +1053,9 @@
       tsBuiList = buiRows.slice(1).map(r => r[0]).filter(Boolean);
       const prodRows = await prodRes.json();
       const header = prodRows[0];
-      const idxSeizou = header.indexOf("製造番号"), idxGenba = header.indexOf("現場名"), idxHinmei = header.indexOf("品名"), idxSunpou = header.indexOf("寸法");
+      const idxSeizou = header.indexOf("製造番号"), idxGenba = header.indexOf("現場名"), idxHinmei = header.indexOf("品名"), idxSunpou = header.indexOf("寸法"), idxZumen = header.indexOf("図");
       prodRows.slice(1).forEach(r => {
-        if (r[idxSeizou]) tsProductMap[r[idxSeizou]] = { genbaMei: r[idxGenba] || "", hinmei: r[idxHinmei] || "", sunpou: r[idxSunpou] || "" };
+        if (r[idxSeizou]) tsProductMap[r[idxSeizou]] = { genbaMei: r[idxGenba] || "", hinmei: r[idxHinmei] || "", sunpou: r[idxSunpou] || "", zumen: r[idxZumen] || "" };
       });
     } catch (e) { console.error("マスタ読み込み失敗", e); }
   }
@@ -1099,18 +1156,50 @@
       const res = await fetch(GAS_URL + "?type=tosou_" + encodeURIComponent(tab.key));
       const rows = await res.json();
       const header = rows[0];
-      const body = rows.slice(1).filter(r => r[5] && r[6]);
+      const idxSeizou = header.indexOf("製造番号");
+      const idxGenba = header.indexOf("現場名");
+      const idxHinmei = header.indexOf("品名");
+      let body = rows.slice(1).filter(r => r[5] && r[6]);
+      const q = tsQuery.toLowerCase();
+      if (q) body = body.filter(r => ((r[idxSeizou]||"")+(r[idxGenba]||"")+(r[idxHinmei]||"")).toLowerCase().includes(q));
       statusEl.textContent = body.length + "件";
-      const trh = document.createElement("tr");
-      header.forEach(h => { const th = document.createElement("th"); th.textContent = h; trh.appendChild(th); });
-      table.querySelector("thead").appendChild(trh);
-      const tbody = table.querySelector("tbody");
-      body.slice().reverse().forEach(r => {
-        const tr = document.createElement("tr");
-        r.forEach(c => { const td = document.createElement("td"); td.textContent = c; tr.appendChild(td); });
-        tbody.appendChild(tr);
-      });
+      tsRenderTable(table, header, body.slice().reverse(), idxSeizou);
     } catch (e) { statusEl.textContent = "読み込みに失敗しました: " + e.message; }
+  }
+
+  // 塗装系シート・メッキスケシート共通のテーブル描画(先頭列を固定表示・製造番号クリックで図面を開く)
+  function tsRenderTable(table, header, body, idxSeizou) {
+    const trh = document.createElement("tr");
+    header.forEach((h, i) => {
+      const th = document.createElement("th");
+      th.textContent = h;
+      if (i === idxSeizou) th.classList.add("ts2-sticky");
+      trh.appendChild(th);
+    });
+    table.querySelector("thead").appendChild(trh);
+    const tbody = table.querySelector("tbody");
+    body.forEach(r => {
+      const tr = document.createElement("tr");
+      r.forEach((c, i) => {
+        const td = document.createElement("td");
+        if (i === idxSeizou) {
+          td.classList.add("ts2-sticky");
+          const product = tsProductMap[c];
+          if (product && product.zumen) {
+            const a = document.createElement("a");
+            a.className = "ts2-no-link"; a.href = product.zumen; a.target = "_blank"; a.rel = "noopener";
+            a.textContent = c; a.title = "図面を開く";
+            td.appendChild(a);
+          } else {
+            td.textContent = c;
+          }
+        } else {
+          td.textContent = c;
+        }
+        tr.appendChild(td);
+      });
+      tbody.appendChild(tr);
+    });
   }
 
   function tsRenderScheduleForm() {
@@ -1163,17 +1252,12 @@
       const res = await fetch(GAS_URL + "?type=tosou_メッキスケ");
       const rows = await res.json();
       const header = rows[0];
-      const body = rows.slice(1).filter(r => r[0] && r[1]);
+      const idxGenba = header.indexOf("現場名");
+      let body = rows.slice(1).filter(r => r[0] && r[1]);
+      const q = tsQuery.toLowerCase();
+      if (q) body = body.filter(r => (r[idxGenba]||"").toLowerCase().includes(q));
       statusEl.textContent = body.length + "件";
-      const trh = document.createElement("tr");
-      header.forEach(h => { const th = document.createElement("th"); th.textContent = h; trh.appendChild(th); });
-      table.querySelector("thead").appendChild(trh);
-      const tbody = table.querySelector("tbody");
-      body.slice().reverse().forEach(r => {
-        const tr = document.createElement("tr");
-        r.forEach(c => { const td = document.createElement("td"); td.textContent = c; tr.appendChild(td); });
-        tbody.appendChild(tr);
-      });
+      tsRenderTable(table, header, body.slice().reverse(), -1);
     } catch (e) { statusEl.textContent = "読み込みに失敗しました: " + e.message; }
   }
 
