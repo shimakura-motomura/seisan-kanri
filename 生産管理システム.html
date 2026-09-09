@@ -97,51 +97,82 @@
   #skResultMsg.success, #tsAddResult.success, #skkAddResult.success { color: #0F6E56; }
   #skResultMsg.error, #tsAddResult.error, #skkAddResult.error { color: #b00020; }
 
-  /* 塗装(Claude Code版デザインを .ts2- 名前空間で反映) */
-  .tabbar {
-    display: flex; gap: 2px; align-items: flex-end; overflow-x: auto;
-    border-bottom: 2px solid var(--color-divider); margin-bottom: 0; padding: 0;
+  /* 塗装(Claude Codeエクスポートを .ts3- 名前空間でそのまま移植) */
+  .ts3-tabs {
+    padding: 0; border-bottom: 2px solid var(--color-divider);
+    display: flex; gap: 2px; align-items: flex-end; overflow-x: auto; margin-bottom: 10px;
   }
-  .tabbar button {
+  .ts3-tab-btn {
     appearance: none; border: 0; background: transparent; cursor: pointer;
-    padding: 6px 14px 8px; font-size: 14px; font-weight: 700; font-family: inherit;
-    color: var(--color-text); white-space: nowrap; border-bottom: 4px solid transparent;
+    padding: 6px 14px 0; font-size: 14px; font-weight: 700; letter-spacing: 0.02em;
+    color: var(--color-text); position: relative; white-space: nowrap; line-height: 1.3; font-family: inherit;
   }
-  .tabbar button:hover { background: rgba(32,30,29,0.06); }
-  .tabbar button.active { border-bottom-color: var(--color-accent); color: var(--color-accent-700); }
+  .ts3-tab-btn:hover { background: rgba(32,30,29,0.06); }
+  .ts3-tab-sub { display: block; font-size: 9px; font-weight: 400; color: rgba(32,30,29,0.5); letter-spacing: 0.04em; }
+  .ts3-tab-underline { display: block; height: 4px; margin-top: 6px; margin-bottom: -3px; }
+  .ts3-tab-btn.active .ts3-tab-underline { background: var(--color-accent); }
+  .ts3-tab-btn.active { color: var(--color-accent-700); }
 
-  .ts2-toolbar { display: flex; align-items: center; gap: 10px; padding: 10px 0; flex-wrap: wrap; }
-  .ts2-search { width: 260px; font-family: inherit; font-size: 13px; padding: 8px 10px; border: 1px solid var(--color-divider); background: var(--color-neutral-100); color: var(--color-text); }
-  .ts2-count { font-size: 12px; color: var(--color-neutral-600); margin-left: auto; }
-  .ts2-footnote { display: flex; justify-content: flex-end; padding: 6px 2px 0; font-size: 12px; font-weight: 700; color: var(--color-text); }
+  .ts3-page-head { display: flex; align-items: baseline; gap: 12px; flex-wrap: wrap; margin-bottom: 4px; }
+  .ts3-page-head .sub { font-size: 12px; color: rgba(32,30,29,0.6); }
 
-  .ts2-list-scroll { overflow: auto; border: 1px solid var(--color-divider); background: #fff; max-height: 65vh; }
-  table.ts2-data { border-collapse: collapse; width: 100%; font-size: 12px; }
-  table.ts2-data th {
+  .ts3-filter-bar { display: flex; gap: 10px; align-items: center; flex-wrap: wrap; padding: 8px 0; }
+  .ts3-filter-input {
+    width: 240px; min-height: 32px; font-size: 13px; padding: 6px 10px; font-family: inherit;
+    color: var(--color-text); background: var(--color-neutral-100); border: 1px solid var(--color-divider);
+  }
+  .ts3-filter-input:hover { border-color: rgba(32,30,29,0.45); }
+  .ts3-filter-input:focus-visible { border-color: var(--color-accent); outline-offset: 0; }
+  .ts3-seg { display: inline-flex; overflow: hidden; border: 1px solid var(--color-divider); }
+  .ts3-seg button { border: 0; border-left: 1px solid var(--color-divider); padding: 6px 12px; font-size: 13px; cursor: pointer; background: transparent; color: var(--color-text); font-family: inherit; }
+  .ts3-seg button:first-child { border-left: 0; }
+  .ts3-seg button.active { background: var(--color-accent); color: var(--color-bg); }
+  .ts3-count-label { font-size: 12px; color: rgba(32,30,29,0.6); }
+  .ts3-btn {
+    display: inline-flex; align-items: center; gap: 6px; cursor: pointer; font-weight: 800; font-family: inherit;
+    background: transparent; border: 1px solid var(--color-divider); color: var(--color-text);
+    font-size: 12px; padding: 6px 12px;
+  }
+  .ts3-btn:hover { background: rgba(32,30,29,0.07); }
+
+  .ts3-list-scroll { overflow: auto; border: 1px solid var(--color-divider); background: #fff; max-height: 65vh; }
+  table.ts3-data { border-collapse: collapse; width: 100%; table-layout: auto; font-size: 12px; }
+  table.ts3-data th {
     position: sticky; top: 0; background: var(--color-bg); z-index: 2;
-    text-align: left; font-size: 10px; padding: 5px 8px; border-bottom: 2px solid var(--color-divider);
-    white-space: nowrap;
+    text-align: left; font-size: 10px; letter-spacing: 0.02em; padding: 5px 8px;
+    border-bottom: 2px solid var(--color-divider); white-space: nowrap;
   }
-  table.ts2-data td { padding: 3px 8px; border-bottom: 1px solid var(--color-divider); white-space: nowrap; }
-  table.ts2-data tbody tr:hover td { background: rgba(32,30,29,0.04); }
-  table.ts2-data th.ts2-sticky, table.ts2-data td.ts2-sticky {
+  table.ts3-data td { padding: 3px 8px; line-height: 1.45; border-bottom: 1px solid var(--color-divider); white-space: nowrap; }
+  table.ts3-data tbody tr:hover td { background: rgba(32,30,29,0.04); }
+  table.ts3-data th.ts3-sticky, table.ts3-data td.ts3-sticky {
     position: sticky; left: 0; z-index: 1; background: var(--color-bg); border-right: 2px solid var(--color-divider);
   }
-  table.ts2-data th.ts2-sticky { z-index: 3; }
-  .ts2-no-link {
+  table.ts3-data th.ts3-sticky { z-index: 3; }
+  .ts3-no-link {
     appearance: none; border: 0; background: transparent; padding: 0; cursor: pointer; font: inherit;
     font-weight: 700; color: var(--color-accent-700); text-decoration: underline; text-underline-offset: 2px;
   }
-  .ts2-no-link:hover { color: var(--color-accent); }
+  .ts3-no-link:hover { color: var(--color-accent); }
+  .ts3-list-note { display: flex; justify-content: space-between; padding: 6px 2px 0; font-size: 11px; color: rgba(32,30,29,0.6); }
+  .ts3-list-note .sum { font-size: 12px; font-weight: 800; color: var(--color-text); }
 
-  .ts2-add-toggle {
-    appearance: none; border: 0; background: transparent; cursor: pointer; padding: 0; margin-top: 18px;
+  .ts3-add-toggle {
+    appearance: none; border: 0; background: transparent; cursor: pointer; padding: 0; margin-top: 20px;
     display: flex; align-items: center; gap: 10px; color: var(--color-text); text-align: left; width: 100%;
-    border-top: 2px solid var(--color-divider); padding-top: 12px;
+    border-top: 2px solid var(--color-divider); padding-top: 14px; font-family: inherit;
   }
-  .ts2-add-toggle-sign { width: 22px; height: 22px; border: 2px solid var(--color-text); display: grid; place-items: center; font-size: 14px; font-weight: 800; flex: none; }
-  .ts2-add-toggle-label { font-weight: 800; font-size: 15px; }
-  .ts2-add-toggle-hint { font-size: 11px; color: var(--color-neutral-600); }
+  .ts3-add-toggle-sign { width: 26px; height: 26px; border: 2px solid var(--color-text); display: grid; place-items: center; font-size: 16px; font-weight: 800; flex: none; }
+  .ts3-add-toggle-label { font-weight: 800; font-size: 17px; }
+  .ts3-add-toggle-hint { font-size: 12px; color: rgba(32,30,29,0.55); }
+  .ts3-add-panel { margin-top: 16px; border: 1px solid var(--color-divider); background: var(--color-neutral-100); padding: 20px; }
+  .ts3-add-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(180px, 1fr)); gap: 14px 16px; }
+  .ts3-field label { display: block; font-size: 12px; margin-bottom: 5px; color: rgba(32,30,29,0.7); }
+  .ts3-field .ts3-input {
+    width: 100%; min-height: 36px; padding: 6px 10px; font: inherit; font-size: 14px; font-family: inherit;
+    color: var(--color-text); background: var(--color-neutral-100); border: 1px solid var(--color-divider);
+  }
+  .ts3-field .ts3-input:hover { border-color: rgba(32,30,29,0.45); }
+  .ts3-field .ts3-input:focus-visible { border-color: var(--color-accent); outline-offset: 0; }
 
   .grid3 { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px 12px; margin-bottom: 10px; }
 
@@ -621,7 +652,7 @@
   <div class="screen" id="screen-tosou">
     <header class="ich2-topbar">
       <button class="ich2-back" onclick="nav('home')">← メニューに戻る</button>
-      <div class="ich2-brand">塗装</div>
+      <div class="ich2-brand">生産管理システム</div>
       <nav class="ich2-topnav">
         <a href="#" onclick="nav('home');return false;">トップ</a>
         <a href="#" onclick="nav('ichiran');return false;">一覧</a>
@@ -630,24 +661,31 @@
       </nav>
       <div class="ich2-today">次長 / 事務所PC</div>
     </header>
-    <div class="tabbar" id="tsTabbar"></div>
-    <div class="ts2-toolbar">
-      <input type="text" id="tsSearch" class="ts2-search" placeholder="製造番号・現場名・品名で絞り込み">
-      <div class="chipbar" id="tsStatusFilter">
-        <button type="button" class="chip active" data-status="all">すべて</button>
-        <button type="button" class="chip" data-status="open">未完</button>
-        <button type="button" class="chip" data-status="done">完了</button>
-      </div>
-      <span class="ts2-count" id="tsListStatus">読み込み中...</span>
+    <div class="ts3-page-head">
+      <h4 style="margin:12px 0 0;font-family:var(--font-heading);font-weight:800;font-size:20px;">塗装</h4>
+      <span class="sub">工程別 案件一覧 ／ 製作手配から自動登録</span>
     </div>
-    <div class="ts2-list-scroll"><table class="ts2-data" id="tsListTable"><thead></thead><tbody></tbody></table></div>
-    <div class="ts2-footnote" id="tsFootnote"></div>
-    <button type="button" class="ts2-add-toggle" id="tsAddToggle">
-      <span class="ts2-add-toggle-sign">＋</span>
-      <span class="ts2-add-toggle-label">手動で案件を追加</span>
-      <span class="ts2-add-toggle-hint">通常は製作手配から自動登録されます。イレギュラー時のみ使用。</span>
+    <div class="ts3-tabs" id="tsTabbar"></div>
+    <div class="ts3-filter-bar">
+      <input type="text" id="tsSearch" class="ts3-filter-input" placeholder="製造番号・現場名・品名で絞り込み">
+      <div class="ts3-seg" id="tsStatusFilter">
+        <button type="button" class="active" data-status="all">すべて</button>
+        <button type="button" data-status="open">未完</button>
+        <button type="button" data-status="done">完了</button>
+      </div>
+      <span class="ts3-count-label" id="tsListStatus">読み込み中...</span>
+    </div>
+    <div class="ts3-list-scroll"><table class="ts3-data" id="tsListTable"><thead></thead><tbody></tbody></table></div>
+    <div class="ts3-list-note">
+      <span>← → 横スクロールで全項目を表示 ／ 製番・納期は固定列</span>
+      <span class="sum" id="tsFootnote"></span>
+    </div>
+    <button type="button" class="ts3-add-toggle" id="tsAddToggle">
+      <span class="ts3-add-toggle-sign">＋</span>
+      <span class="ts3-add-toggle-label">手動で案件を追加</span>
+      <span class="ts3-add-toggle-hint">通常は製作手配から自動登録されます。イレギュラー時のみ使用。</span>
     </button>
-    <div class="box" id="tsFormBox" style="display:none;"></div>
+    <div class="ts3-add-panel" id="tsFormBox" style="display:none;"></div>
   </div>
 
   <!-- ============ 出荷 ============ -->
@@ -1052,9 +1090,9 @@
       if (tsCurrentTab === TS_SCHEDULE_KEY) tsLoadScheduleList();
       else tsLoadList(TOSOU_TABS.find(t => t.key === tsCurrentTab));
     });
-    document.querySelectorAll("#tsStatusFilter .chip").forEach(btn => {
+    document.querySelectorAll("#tsStatusFilter button").forEach(btn => {
       btn.addEventListener("click", () => {
-        document.querySelectorAll("#tsStatusFilter .chip").forEach(b => b.classList.remove("active"));
+        document.querySelectorAll("#tsStatusFilter button").forEach(b => b.classList.remove("active"));
         btn.classList.add("active");
         tsStatus = btn.dataset.status;
         if (tsCurrentTab !== TS_SCHEDULE_KEY) tsLoadList(TOSOU_TABS.find(t => t.key === tsCurrentTab));
@@ -1062,7 +1100,7 @@
     });
     document.getElementById("tsAddToggle").addEventListener("click", () => {
       const box = document.getElementById("tsFormBox");
-      const sign = document.querySelector("#tsAddToggle .ts2-add-toggle-sign");
+      const sign = document.querySelector("#tsAddToggle .ts3-add-toggle-sign");
       const show = box.style.display === "none";
       box.style.display = show ? "block" : "none";
       sign.textContent = show ? "−" : "＋";
@@ -1084,13 +1122,15 @@
     } catch (e) { console.error("マスタ読み込み失敗", e); }
   }
 
+  const TS_TAB_SUB = { "酸洗": "PICKLING", "研磨": "POLISH", "エポ": "EPOXY", "FRP": "FRP", "メッキ": "PLATING", "外装": "EXTERIOR", "メッキスケ": "SCHEDULE" };
+
   function tsRenderTabbar() {
     const bar = document.getElementById("tsTabbar");
     bar.innerHTML = "";
     [...TOSOU_TABS.map(t => t.key), TS_SCHEDULE_KEY].forEach(key => {
       const btn = document.createElement("button");
-      btn.textContent = key;
-      btn.className = key === tsCurrentTab ? "active" : "";
+      btn.className = "ts3-tab-btn" + (key === tsCurrentTab ? " active" : "");
+      btn.innerHTML = key + '<span class="ts3-tab-sub">' + (TS_TAB_SUB[key] || "") + '</span><span class="ts3-tab-underline"></span>';
       btn.addEventListener("click", () => { tsCurrentTab = key; tsRender(); });
       bar.appendChild(btn);
     });
@@ -1105,24 +1145,24 @@
   function tsRenderForm(tab) {
     const box = document.getElementById("tsFormBox");
     box.innerHTML = `
-      <h2>${tab.key} - 新規追加</h2>
-      <div class="grid3">
-        <div class="field"><label>製造番号(任意入力可)</label><input id="ts_seizou"></div>
-        <div class="field"><label>現場名</label><input id="ts_genba"></div>
-        <div class="field"><label>品名</label><input id="ts_hinmei"></div>
-        <div class="field"><label>寸法</label><input id="ts_sunpou"></div>
-        <div class="field"><label>納期</label><input id="ts_nouki"></div>
-        <div class="field"><label>部位</label><select id="ts_bui"><option value=""></option>${tsBuiList.map(b => `<option value="${b}">${b}</option>`).join("")}</select></div>
-        <div class="field"><label>内容</label><select id="ts_naiyou"><option value=""></option>${tab.naiyou.map(n => `<option value="${n}">${n}</option>`).join("")}</select></div>
-        <div class="field"><label>vol(${tab.unit})</label><input id="ts_vol" type="number" step="0.1"></div>
-        <div class="field"><label>材質</label><input id="ts_zairyou"></div>
-        <div class="field"><label>価格</label><input id="ts_kakaku" type="number"></div>
-        <div class="field"><label>業者</label><input id="ts_gyousha"></div>
-        <div class="field"><label>搬込予定</label><input id="ts_hankomi" placeholder="例: 10/1"></div>
-        <div class="field"><label>完成/納品日</label><input id="ts_kansei" placeholder="例: 10/10"></div>
-        <div class="field"><label>備考</label><input id="ts_biko"></div>
+      <h5 style="font-family:var(--font-heading);font-weight:800;margin:0 0 14px;">${tab.key} に手動追加</h5>
+      <div class="ts3-add-grid">
+        <div class="ts3-field"><label>製造番号(任意入力可)</label><input class="ts3-input" id="ts_seizou"></div>
+        <div class="ts3-field"><label>現場名</label><input class="ts3-input" id="ts_genba"></div>
+        <div class="ts3-field"><label>品名</label><input class="ts3-input" id="ts_hinmei"></div>
+        <div class="ts3-field"><label>寸法</label><input class="ts3-input" id="ts_sunpou"></div>
+        <div class="ts3-field"><label>納期</label><input class="ts3-input" id="ts_nouki"></div>
+        <div class="ts3-field"><label>部位</label><select class="ts3-input" id="ts_bui"><option value=""></option>${tsBuiList.map(b => `<option value="${b}">${b}</option>`).join("")}</select></div>
+        <div class="ts3-field"><label>内容</label><select class="ts3-input" id="ts_naiyou"><option value=""></option>${tab.naiyou.map(n => `<option value="${n}">${n}</option>`).join("")}</select></div>
+        <div class="ts3-field"><label>vol(${tab.unit})</label><input class="ts3-input" id="ts_vol" type="number" step="0.1"></div>
+        <div class="ts3-field"><label>材質</label><input class="ts3-input" id="ts_zairyou"></div>
+        <div class="ts3-field"><label>価格</label><input class="ts3-input" id="ts_kakaku" type="number"></div>
+        <div class="ts3-field"><label>業者</label><input class="ts3-input" id="ts_gyousha"></div>
+        <div class="ts3-field"><label>搬込予定</label><input class="ts3-input" id="ts_hankomi" placeholder="例: 10/1"></div>
+        <div class="ts3-field"><label>完成/納品日</label><input class="ts3-input" id="ts_kansei" placeholder="例: 10/10"></div>
+        <div class="ts3-field"><label>備考</label><input class="ts3-input" id="ts_biko"></div>
       </div>
-      <button id="tsAddBtn">追加する</button>
+      <button class="ts3-btn" style="margin-top:16px;padding:8px 20px;background:var(--color-accent);color:#fff;border-color:var(--color-accent);" id="tsAddBtn">追加する</button>
       <span id="tsAddResult"></span>
     `;
     document.getElementById("ts_seizou").addEventListener("blur", (e) => {
@@ -1203,7 +1243,7 @@
     header.forEach((h, i) => {
       const th = document.createElement("th");
       th.textContent = h;
-      if (i === idxSeizou) th.classList.add("ts2-sticky");
+      if (i === idxSeizou) th.classList.add("ts3-sticky");
       trh.appendChild(th);
     });
     table.querySelector("thead").appendChild(trh);
@@ -1214,11 +1254,11 @@
       r.forEach((c, i) => {
         const td = document.createElement("td");
         if (i === idxSeizou) {
-          td.classList.add("ts2-sticky");
+          td.classList.add("ts3-sticky");
           const product = tsProductMap[c];
           if (product && product.zumen) {
             const a = document.createElement("a");
-            a.className = "ts2-no-link"; a.href = product.zumen; a.target = "_blank"; a.rel = "noopener";
+            a.className = "ts3-no-link"; a.href = product.zumen; a.target = "_blank"; a.rel = "noopener";
             a.textContent = c; a.title = "図面を開く";
             td.appendChild(a);
           } else {
@@ -1242,15 +1282,15 @@
   function tsRenderScheduleForm() {
     const box = document.getElementById("tsFormBox");
     box.innerHTML = `
-      <h2>メッキスケ - 新規追加</h2>
-      <div class="grid3">
-        <div class="field"><label>日付</label><input id="ts_s_hiduke" placeholder="例: 2026/9/24"></div>
-        <div class="field"><label>区分</label><select id="ts_s_kubun"><option value="持込">持込</option><option value="引取">引取</option></select></div>
-        <div class="field"><label>現場名</label><input id="ts_s_genba"></div>
-        <div class="field"><label>基数</label><input id="ts_s_kisuu" type="number"></div>
-        <div class="field"><label>備考</label><input id="ts_s_biko"></div>
+      <h5 style="font-family:var(--font-heading);font-weight:800;margin:0 0 14px;">メッキスケ に手動追加</h5>
+      <div class="ts3-add-grid">
+        <div class="ts3-field"><label>日付</label><input class="ts3-input" id="ts_s_hiduke" placeholder="例: 2026/9/24"></div>
+        <div class="ts3-field"><label>区分</label><select class="ts3-input" id="ts_s_kubun"><option value="持込">持込</option><option value="引取">引取</option></select></div>
+        <div class="ts3-field"><label>現場名</label><input class="ts3-input" id="ts_s_genba"></div>
+        <div class="ts3-field"><label>基数</label><input class="ts3-input" id="ts_s_kisuu" type="number"></div>
+        <div class="ts3-field"><label>備考</label><input class="ts3-input" id="ts_s_biko"></div>
       </div>
-      <button id="tsAddBtn">追加する</button>
+      <button class="ts3-btn" style="margin-top:16px;padding:8px 20px;background:var(--color-accent);color:#fff;border-color:var(--color-accent);" id="tsAddBtn">追加する</button>
       <span id="tsAddResult"></span>
     `;
     document.getElementById("tsAddBtn").addEventListener("click", tsSubmitSchedule);
