@@ -1238,11 +1238,12 @@
     const hinmeiList = selectedRows.map(r => r[iHinmei]).join("、");
     nav("shukka");
     setTimeout(() => {
-      const saki = document.getElementById("skk_saki");
-      const biko = document.getElementById("skk_biko");
-      if (saki) saki.value = genbaList;
-      if (biko) biko.value = "対象製品: " + hinmeiList;
-    }, 0);
+      skkOpenModal(null);
+      const site = document.getElementById("skkf-site");
+      const note = document.getElementById("skkf-note");
+      if (site) site.value = genbaList;
+      if (note) note.value = "対象製品: " + hinmeiList;
+    }, 50);
   }
 
   // ================= 製作手配 =================
