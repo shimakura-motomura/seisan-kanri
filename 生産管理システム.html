@@ -1881,6 +1881,23 @@
 
   function skkYen(n) { return Number(n || 0).toLocaleString("ja-JP"); }
 
+  // スプレッドシートから来る日付(ISO形式のことがある)を「mm/dd」に整形
+  function skkFormatDate(v) {
+    if (!v) return "";
+    if (typeof v === "string" && /^\d{1,2}\/\d{1,2}$/.test(v)) return v; // 既に mm/dd ならそのまま
+    const d = new Date(v);
+    if (isNaN(d.getTime())) return String(v);
+    return (d.getMonth() + 1) + "/" + d.getDate();
+  }
+  // スプレッドシートの時刻(1899年始まりのISO形式のことがある)を「hh:mm」に整形
+  function skkFormatTime(v) {
+    if (!v) return "";
+    if (typeof v === "string" && /^\d{1,2}:\d{2}$/.test(v)) return v; // 既に hh:mm ならそのまま
+    const d = new Date(v);
+    if (isNaN(d.getTime())) return String(v);
+    return String(d.getHours()).padStart(2,"0") + ":" + String(d.getMinutes()).padStart(2,"0");
+  }
+
   function initShukka() {
     document.querySelectorAll('[data-skktab]').forEach(btn => {
       btn.addEventListener("click", () => { skkTab = btn.dataset.skktab; skkRenderAll(); });
@@ -1919,7 +1936,7 @@
         iHired = idx("傭車"), iPlate = idx("車番"), iPhone = idx("携帯"), iNote = idx("備考");
       skkAll = rows.slice(1).map((r, i) => ({
         rowIndex: i + 2,
-        loadDate: r[iLoadDate] || "", date: r[iDate] || "", time: r[iTime] || "", site: r[iSite] || "", item: r[iItem] || "",
+        loadDate: skkFormatDate(r[iLoadDate]), date: skkFormatDate(r[iDate]), time: skkFormatTime(r[iTime]), site: r[iSite] || "", item: r[iItem] || "",
         vclass: r[iVclass] || "", units: Number(r[iUnits]) || 0, company: r[iCompany] || "", amount: Number(r[iAmount]) || 0,
         driver: r[iDriver] || "", hired: r[iHired] || "", plate: r[iPlate] || "", phone: r[iPhone] || "", note: r[iNote] || ""
       })).filter(r => r.site);
