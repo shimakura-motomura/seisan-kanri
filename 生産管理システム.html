@@ -278,6 +278,15 @@
   .ich2 .input:hover { border-color: rgba(32, 30, 29, 0.55); }
   .ich2 .input:focus-visible { border-color: var(--color-accent); outline: none; }
 
+  .ich2-subtabs { display: flex; gap: 2px; padding: 8px 0 0; border-bottom: 2px solid var(--color-divider); flex: none; }
+  .ich2-subtabs button {
+    border: 0; background: transparent; cursor: pointer; font: inherit;
+    padding: 8px 18px; font-size: 13px; font-weight: 700; color: var(--color-neutral-600);
+    border-bottom: 3px solid transparent; margin-bottom: -2px;
+  }
+  .ich2-subtabs button.active { color: var(--color-accent); border-bottom-color: var(--color-accent); }
+  .ich2-subtabs button:hover:not(.active) { color: var(--color-text); }
+
   .ich2-summary { display: grid; grid-template-columns: repeat(5, 1fr); border: 2px solid var(--color-divider); border-bottom: 2px solid var(--color-divider); flex: none; }
   .ich2-summary .cell { padding: 7px 16px; }
   .ich2-summary .cell + .cell { border-left: 1px solid var(--color-divider); }
@@ -308,6 +317,8 @@
   .ich2-grp.progress { background: var(--color-accent-700); color: var(--color-bg); border-right: 2px solid var(--color-text); }
   .ich2-grp.pic { background: var(--color-neutral-800); color: var(--color-neutral-100); }
   .ich2-colh { position: sticky; top: 17px; z-index: 3; background: var(--color-bg); padding: 2px 3px; font-size: 10px; text-align: left; border-bottom: 2px solid var(--color-text); }
+  .ich2-colh.flat { top: 0; }
+  table.ich2-list-flat { table-layout: fixed; width: 100%; }
   .ich2-colh.sticky-id { z-index: 6; }
   .ich2-colh.center { text-align: center; }
   .ich2-colh.right { text-align: right; }
@@ -733,7 +744,14 @@
         </nav>
         <div class="ich2-today" id="ich2Today"></div>
       </header>
+      <div class="ich2-subtabs" id="ich2Subtabs">
+        <button data-ich2tab="make" class="active">製作品</button>
+        <button data-ich2tab="buy">買入品</button>
+      </div>
       <div class="ich2-summary" id="ich2Summary"></div>
+
+      <!-- ========== 製作品タブ ========== -->
+      <div id="ich2PaneMake">
       <div class="ich2-toolbar">
         <div class="ich2-search">
           <input class="input" id="ich2Query" placeholder="製造番号・現場名・品名・担当で検索">
@@ -809,8 +827,60 @@
         <div class="ich2-empty" id="ich2Empty" hidden>該当する案件がありません。検索条件を変えてください。</div>
       </div>
       <div class="ich2-footnote">製造番号・納期・現場名・品名は固定表示。製造番号をクリックすると図面が開きます。横スクロールで 寸法・塗装 → 進捗 → 担当・詳細 の順。</div>
+      </div>
+
+      <!-- ========== 買入品タブ ========== -->
+      <div id="ich2PaneBuy" hidden>
+      <div class="ich2-toolbar">
+        <div class="ich2-search">
+          <input class="input" id="ich2BuyQuery" placeholder="型式・現場名・備考・担当で検索">
+        </div>
+        <div class="ich2-filter-group" id="ich2BuyFilterGroup">
+          <button data-filter="all" class="active">全件</button>
+          <button data-filter="soon">入荷間近</button>
+          <button data-filter="waiting">出荷待ち</button>
+          <button data-filter="done">納品済み</button>
+        </div>
+        <label class="ich2-sort-label">
+          並び順
+          <select class="input" id="ich2BuySort">
+            <option value="in">工場入順</option>
+            <option value="out">出荷日順</option>
+            <option value="site">現場名順</option>
+          </select>
+        </label>
+        <div class="ich2-toolbar-right">
+          <div class="ich2-count" id="ich2BuyCount"></div>
+        </div>
+      </div>
+      <div id="ich2BuyScroller">
+        <table class="ich2-list ich2-list-flat">
+          <thead>
+            <tr>
+              <th class="ich2-colh flat center" style="width:28px;">
+                <input type="checkbox" id="ich2BuySelectAll" style="width:13px;height:13px;accent-color:var(--color-accent);cursor:pointer;display:block;margin:0 auto;">
+              </th>
+              <th class="ich2-colh flat" style="width:70px;">区分</th>
+              <th class="ich2-colh flat">型式</th>
+              <th class="ich2-colh flat right" style="width:56px;">数</th>
+              <th class="ich2-colh flat center" style="width:60px;">工場入</th>
+              <th class="ich2-colh flat" style="width:170px;">現場名</th>
+              <th class="ich2-colh flat center" style="width:60px;">出荷日</th>
+              <th class="ich2-colh flat center" style="width:60px;">納品</th>
+              <th class="ich2-colh flat" style="width:170px;">備考</th>
+              <th class="ich2-colh flat" style="width:56px;">担当</th>
+            </tr>
+          </thead>
+          <tbody id="ich2BuyTbody"></tbody>
+        </table>
+        <div class="ich2-empty" id="ich2BuyEmpty" hidden>該当する買入品がありません。検索条件を変えてください。</div>
+      </div>
+      <div class="ich2-footnote">外部から仕入れる部材(バルブ・ポンプ・電気品・配管材・計装品など)の入荷〜納品状況の一覧です。</div>
+      </div>
+
       <div class="ich2-selbar" id="ich2Selbar" hidden>
         <span id="ich2SelCount"></span>
+        <span id="ich2SelBreakdown" style="font-size:11px;color:var(--color-neutral-400);"></span>
         <button type="button" class="ich2-selbar-primary" onclick="ich2GoShukka()">出荷手配へ</button>
         <button type="button" class="ich2-selbar-clear" onclick="ich2Selected.clear(); ich2Render();">選択を解除</button>
       </div>
@@ -1056,6 +1126,10 @@
   let ich2Header = [];
   const ich2State = { query: "", filter: "all", sort: "due", dept: "全数" };
   const ich2Selected = new Set();
+  let ich2Tab = "make";
+  let ich2BuyAll = [];
+  let ich2BuyHeader = [];
+  const ich2BuyState = { query: "", filter: "all", sort: "in" };
 
   function ich2Esc(s) {
     return String(s ?? "").replace(/[&<>"']/g, c => ({ "&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;" }[c]));
@@ -1102,17 +1176,36 @@
       statusEl.textContent = "読み込みに失敗しました: " + e.message;
       return;
     }
+    try {
+      const buyRes = await fetch(GAS_URL + "?type=buy");
+      const buyRows = await buyRes.json();
+      ich2BuyHeader = buyRows[0];
+      const idxModel = ich2BuyHeader.indexOf("型式");
+      ich2BuyAll = buyRows.slice(1).filter(r => r[idxModel]);
+    } catch (e) {
+      console.error("買入品の読み込みに失敗しました", e);
+    }
 
-    document.getElementById("ich2Query").addEventListener("input", e => { ich2State.query = e.target.value; ich2Render(); });
+    document.querySelectorAll("#ich2Subtabs button").forEach(btn => {
+      btn.addEventListener("click", () => {
+        ich2Tab = btn.dataset.ich2tab;
+        document.querySelectorAll("#ich2Subtabs button").forEach(b => b.classList.toggle("active", b === btn));
+        document.getElementById("ich2PaneMake").hidden = ich2Tab !== "make";
+        document.getElementById("ich2PaneBuy").hidden = ich2Tab !== "buy";
+        ich2RenderAll();
+      });
+    });
+
+    document.getElementById("ich2Query").addEventListener("input", e => { ich2State.query = e.target.value; ich2RenderAll(); });
     document.querySelectorAll("#ich2FilterGroup button").forEach(btn => {
       btn.addEventListener("click", () => {
         document.querySelectorAll("#ich2FilterGroup button").forEach(b => b.classList.remove("active"));
         btn.classList.add("active");
         ich2State.filter = btn.dataset.filter;
-        ich2Render();
+        ich2RenderAll();
       });
     });
-    document.getElementById("ich2Sort").addEventListener("change", e => { ich2State.sort = e.target.value; ich2Render(); });
+    document.getElementById("ich2Sort").addEventListener("change", e => { ich2State.sort = e.target.value; ich2RenderAll(); });
     document.querySelectorAll(".ich2-jump-group button[data-jump]").forEach(btn => {
       btn.addEventListener("click", () => {
         const sc = document.getElementById("ich2Scroller");
@@ -1121,7 +1214,24 @@
       });
     });
 
+    document.getElementById("ich2BuyQuery").addEventListener("input", e => { ich2BuyState.query = e.target.value; ich2RenderAll(); });
+    document.querySelectorAll("#ich2BuyFilterGroup button").forEach(btn => {
+      btn.addEventListener("click", () => {
+        document.querySelectorAll("#ich2BuyFilterGroup button").forEach(b => b.classList.remove("active"));
+        btn.classList.add("active");
+        ich2BuyState.filter = btn.dataset.filter;
+        ich2RenderAll();
+      });
+    });
+    document.getElementById("ich2BuySort").addEventListener("change", e => { ich2BuyState.sort = e.target.value; ich2RenderAll(); });
+
+    ich2RenderAll();
+  }
+
+  function ich2RenderAll() {
     ich2Render();
+    ich2RenderBuy();
+    ich2UpdateSelbar();
   }
 
   function ich2Render() {
@@ -1173,7 +1283,7 @@
       '<div class="label">'+label+'</div><div class="value">'+val+'<span>件</span></div></button>'
     ).join("");
     document.querySelectorAll(".ich2-summary-btn").forEach(btn => {
-      btn.addEventListener("click", () => { ich2State.dept = btn.dataset.dept; ich2Render(); });
+      btn.addEventListener("click", () => { ich2State.dept = btn.dataset.dept; ich2RenderAll(); });
     });
 
     document.getElementById("ich2Count").textContent = rows.length + " / " + ich2All.length + " 件";
@@ -1183,10 +1293,11 @@
       const cells = [r[iJuchu], r[iSeisakuDay], r[iKansei], r[iNaiso], r[iGaiso], r[iShukka]].map(ich2Cell);
       const zumen = r[iZumen] || "";
       const no = r[iSeizou];
-      const checked = ich2Selected.has(no);
+      const key = "make:" + no;
+      const checked = ich2Selected.has(key);
       return (
         '<tr style="--rowbg:' + (checked ? "var(--color-accent-100)" : "var(--color-bg)") + ';">' +
-        '<td class="ich2-sticky-col center" style="left:0;"><input type="checkbox" class="ich2-row-check" data-no="'+ich2Esc(no)+'" '+(checked?"checked":"")+' style="width:13px;height:13px;accent-color:var(--color-accent);"></td>' +
+        '<td class="ich2-sticky-col center" style="left:0;"><input type="checkbox" class="ich2-row-check" data-key="'+ich2Esc(key)+'" '+(checked?"checked":"")+' style="width:13px;height:13px;accent-color:var(--color-accent);"></td>' +
         '<td class="ich2-sticky-col" style="left:28px;">'+(zumen ? '<button type="button" class="ich2-no-btn" onclick="openZumenPreview(\''+ich2Esc(zumen).replace(/'/g,"&#39;")+'\')" title="図面をプレビュー">'+ich2Esc(r[iSeizou])+'</button>' : ich2Esc(r[iSeizou]))+'</td>' +
         '<td class="ich2-sticky-col ich2-tabular" style="left:100px;">'+ich2Esc(formatDateShort(r[iNouki]))+'</td>' +
         '<td class="ich2-sticky-col ich2-nowrap ich2-ellipsis" style="left:148px;">'+ich2Esc(r[iGenba])+'</td>' +
@@ -1208,35 +1319,115 @@
 
     // チェックボックス(行・全選択)の同期
     const selectAllEl = document.getElementById("ich2SelectAll");
-    const visibleNos = rows.map(r => r[iSeizou]);
-    selectAllEl.checked = visibleNos.length > 0 && visibleNos.every(no => ich2Selected.has(no));
+    const visibleKeys = rows.map(r => "make:" + r[iSeizou]);
+    selectAllEl.checked = visibleKeys.length > 0 && visibleKeys.every(k => ich2Selected.has(k));
     selectAllEl.onchange = () => {
-      if (selectAllEl.checked) visibleNos.forEach(no => ich2Selected.add(no));
-      else visibleNos.forEach(no => ich2Selected.delete(no));
-      ich2Render();
+      if (selectAllEl.checked) visibleKeys.forEach(k => ich2Selected.add(k));
+      else visibleKeys.forEach(k => ich2Selected.delete(k));
+      ich2RenderAll();
     };
-    document.querySelectorAll(".ich2-row-check").forEach(cb => {
+    document.querySelectorAll("#ich2Tbody .ich2-row-check").forEach(cb => {
       cb.addEventListener("change", () => {
-        if (cb.checked) ich2Selected.add(cb.dataset.no); else ich2Selected.delete(cb.dataset.no);
-        ich2Render();
+        if (cb.checked) ich2Selected.add(cb.dataset.key); else ich2Selected.delete(cb.dataset.key);
+        ich2RenderAll();
       });
     });
+  }
 
-    // 選択バー(選んだ製品をまとめて出荷手配へ)
-    const selbar = document.getElementById("ich2Selbar");
-    if (ich2Selected.size > 0) {
-      selbar.hidden = false;
-      document.getElementById("ich2SelCount").textContent = ich2Selected.size + " 件を選択中";
+  function ich2RenderBuy() {
+    const H = ich2BuyHeader;
+    const idx = name => H.indexOf(name);
+    const iKubun = idx("区分"), iModel = idx("型式"), iQty = idx("数"), iIn = idx("工場入"), iSite = idx("現場名"),
+      iOut = idx("出荷日"), iDone = idx("納品"), iNote = idx("備考"), iPic = idx("担当");
+
+    const q = ich2BuyState.query.trim().toLowerCase();
+    let rows = ich2BuyAll.map((r, i) => ({ r, rowIndex: i + 2 })).filter(({ r }) => {
+      if (q && !((r[iModel]||"")+(r[iSite]||"")+(r[iNote]||"")+(r[iPic]||"")+(r[iKubun]||"")).toLowerCase().includes(q)) return false;
+      if (ich2BuyState.filter === "soon") {
+        const v = r[iIn]; if (!v) return false;
+        const d = new Date(v); if (isNaN(d.getTime())) return false;
+        const diff = Math.round((d.setHours(0,0,0,0) - new Date().setHours(0,0,0,0)) / 86400000);
+        return diff >= 0 && diff <= 7;
+      }
+      if (ich2BuyState.filter === "waiting") return r[iIn] && !r[iOut];
+      if (ich2BuyState.filter === "done") return !!r[iDone];
+      return true;
+    });
+
+    if (ich2BuyState.sort === "in") {
+      rows.sort((a,b) => (a.r[iIn] ? new Date(a.r[iIn]).getTime() : Infinity) - (b.r[iIn] ? new Date(b.r[iIn]).getTime() : Infinity));
+    } else if (ich2BuyState.sort === "out") {
+      rows.sort((a,b) => (a.r[iOut] ? new Date(a.r[iOut]).getTime() : Infinity) - (b.r[iOut] ? new Date(b.r[iOut]).getTime() : Infinity));
     } else {
-      selbar.hidden = true;
+      rows.sort((a,b) => (a.r[iSite]||"").localeCompare(b.r[iSite]||"", "ja"));
     }
+
+    document.getElementById("ich2BuyCount").textContent = rows.length + " / " + ich2BuyAll.length + " 件";
+    document.getElementById("ich2BuyEmpty").hidden = rows.length !== 0;
+
+    document.getElementById("ich2BuyTbody").innerHTML = rows.map(({ r, rowIndex }) => {
+      const key = "buy:" + rowIndex;
+      const checked = ich2Selected.has(key);
+      return (
+        '<tr style="--rowbg:' + (checked ? "var(--color-accent-100)" : "var(--color-bg)") + ';background:var(--rowbg);">' +
+        '<td class="center" style="background:var(--rowbg);"><input type="checkbox" class="ich2-buy-row-check" data-key="'+ich2Esc(key)+'" '+(checked?"checked":"")+' style="width:13px;height:13px;accent-color:var(--color-accent);"></td>' +
+        '<td class="ich2-nowrap"><span class="ich2-chip" style="background:var(--color-accent-100);color:var(--color-accent-800);border-color:var(--color-accent-300);">'+ich2Esc(r[iKubun])+'</span></td>' +
+        '<td class="ich2-nowrap ich2-ellipsis" title="'+ich2Esc(r[iModel])+'">'+ich2Esc(r[iModel])+'</td>' +
+        '<td class="right ich2-tabular">'+ich2Esc(r[iQty])+'</td>' +
+        '<td class="center">'+ich2Badge(ich2Cell(r[iIn]))+'</td>' +
+        '<td class="ich2-nowrap ich2-ellipsis">'+ich2Esc(r[iSite])+'</td>' +
+        '<td class="center">'+ich2Badge(ich2Cell(r[iOut]))+'</td>' +
+        '<td class="center">'+ich2Badge(ich2Cell(r[iDone]))+'</td>' +
+        '<td class="ich2-nowrap ich2-ellipsis ich2-muted" title="'+ich2Esc(r[iNote])+'">'+ich2Esc(r[iNote])+'</td>' +
+        '<td class="ich2-nowrap">'+ich2Esc(r[iPic])+'</td>' +
+        '</tr>'
+      );
+    }).join("");
+
+    const selectAllEl = document.getElementById("ich2BuySelectAll");
+    const visibleKeys = rows.map(({ rowIndex }) => "buy:" + rowIndex);
+    selectAllEl.checked = visibleKeys.length > 0 && visibleKeys.every(k => ich2Selected.has(k));
+    selectAllEl.onchange = () => {
+      if (selectAllEl.checked) visibleKeys.forEach(k => ich2Selected.add(k));
+      else visibleKeys.forEach(k => ich2Selected.delete(k));
+      ich2RenderAll();
+    };
+    document.querySelectorAll("#ich2BuyTbody .ich2-buy-row-check").forEach(cb => {
+      cb.addEventListener("change", () => {
+        if (cb.checked) ich2Selected.add(cb.dataset.key); else ich2Selected.delete(cb.dataset.key);
+        ich2RenderAll();
+      });
+    });
+  }
+
+  function ich2UpdateSelbar() {
+    const keys = [...ich2Selected];
+    const makeCount = keys.filter(k => k.startsWith("make:")).length;
+    const buyCount = keys.filter(k => k.startsWith("buy:")).length;
+    const total = makeCount + buyCount;
+    const selbar = document.getElementById("ich2Selbar");
+    selbar.hidden = total === 0;
+    document.getElementById("ich2SelCount").textContent = total + " 件を選択中";
+    document.getElementById("ich2SelBreakdown").textContent =
+      (makeCount && buyCount) ? "(製作品 " + makeCount + " / 買入品 " + buyCount + ")" : "";
   }
 
   function ich2GoShukka() {
-    const selectedRows = ich2All.filter(r => ich2Selected.has(r[ich2Header.indexOf("製造番号")]));
+    const selectedRows = ich2All.filter(r => ich2Selected.has("make:" + r[ich2Header.indexOf("製造番号")]));
     const iGenba = ich2Header.indexOf("現場名"), iHinmei = ich2Header.indexOf("品名");
-    const genbaList = [...new Set(selectedRows.map(r => r[iGenba]))].join("、");
-    const hinmeiList = selectedRows.map(r => r[iHinmei]).join("、");
+    const iBuySite = ich2BuyHeader.indexOf("現場名"), iBuyModel = ich2BuyHeader.indexOf("型式");
+    const buyKeys = [...ich2Selected].filter(k => k.startsWith("buy:")).map(k => Number(k.split(":")[1]));
+    const selectedBuyRows = ich2BuyAll.filter((r, i) => buyKeys.includes(i + 2));
+
+    const genbaList = [...new Set([
+      ...selectedRows.map(r => r[iGenba]),
+      ...selectedBuyRows.map(r => r[iBuySite])
+    ])].join("、");
+    const hinmeiList = [
+      ...selectedRows.map(r => r[iHinmei]),
+      ...selectedBuyRows.map(r => r[iBuyModel])
+    ].join("、");
+
     nav("shukka");
     setTimeout(() => {
       skkOpenModal(null);
