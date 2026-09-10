@@ -953,7 +953,7 @@
       <div class="modal">
         <div class="modal-head">
           <h2 class="modal-title" id="skkModalTitle">出荷を新規登録</h2>
-          <button class="btn btn-secondary" id="skkModalCloseBtn">閉じる</button>
+          <button class="btn btn-secondary" id="skkModalCloseBtn" onclick="skkCloseModal()">閉じる</button>
         </div>
         <div class="modal-body">
           <div class="field"><label>積込日</label><input class="input" id="skkf-loadDate" placeholder="例: 9/9"></div>
@@ -972,9 +972,9 @@
           <div class="field span-4"><label>備考</label><textarea class="input" id="skkf-note"></textarea></div>
         </div>
         <div class="modal-foot">
-          <button class="btn btn-ghost" id="skkModalDeleteBtn">削除</button>
+          <button class="btn btn-ghost" id="skkModalDeleteBtn" onclick="skkDelete()">削除</button>
           <div class="modal-foot-right">
-            <button class="btn btn-secondary" id="skkModalCancelBtn">キャンセル</button>
+            <button class="btn btn-secondary" id="skkModalCancelBtn" onclick="skkCloseModal()">キャンセル</button>
             <button class="btn btn-primary" id="skkModalSaveBtn">保存する</button>
           </div>
         </div>
@@ -1694,11 +1694,8 @@
     });
     document.getElementById("skkSearchInput").addEventListener("input", (e) => { skkQuery = e.target.value.trim(); skkRenderAll(); });
     document.getElementById("skkNewBtn").addEventListener("click", () => skkOpenModal(null));
-    document.getElementById("skkModalCloseBtn").addEventListener("click", skkCloseModal);
-    document.getElementById("skkModalCancelBtn").addEventListener("click", skkCloseModal);
     document.getElementById("skkModalBackdrop").addEventListener("click", (e) => { if (e.target.id === "skkModalBackdrop") skkCloseModal(); });
     document.getElementById("skkModalSaveBtn").addEventListener("click", skkSave);
-    document.getElementById("skkModalDeleteBtn").addEventListener("click", skkDelete);
     document.getElementById("skkPrintBtn").addEventListener("click", skkPrintSchedule);
     document.getElementById("skkSheetPrintBtn").addEventListener("click", skkPrintSchedule);
     document.getElementById("skkDetailTbody").addEventListener("click", (e) => {
@@ -1836,7 +1833,7 @@
     skkEditing = row || null;
     document.getElementById("skkModalTitle").textContent = row ? "出荷を編集" : "出荷を新規登録";
     SKK_FIELDS.forEach(k => { document.getElementById("skkf-" + k).value = row ? (row[k] ?? "") : ""; });
-    document.getElementById("skkModalDeleteBtn").style.display = row ? "" : "none";
+    document.getElementById("skkModalDeleteBtn").hidden = !row;
     document.getElementById("skkModalBackdrop").hidden = false;
   }
   function skkCloseModal() {
