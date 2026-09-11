@@ -322,6 +322,8 @@
   .ich2-colh.sticky-id { z-index: 6; }
   .ich2-colh.center { text-align: center; }
   .ich2-colh.right { text-align: right; }
+  td.center { text-align: center; }
+  td.right { text-align: right; }
   .ich2-list .grp-end { border-right: 2px solid var(--color-text); }
   table.ich2-list tbody td { padding: 1px 4px; border-bottom: 1px solid var(--color-divider); }
   .ich2-sticky-col { position: sticky; z-index: 2; background: var(--rowbg); }
@@ -332,7 +334,7 @@
   .ich2-no-btn { display: flex; align-items: center; gap: 4px; width: 100%; padding: 0; font: inherit; font-size: inherit; font-weight: 700; white-space: nowrap; text-align: left; cursor: pointer; background: transparent; border: 0; color: var(--color-text); text-decoration: underline; text-decoration-color: var(--color-accent); text-underline-offset: 2px; }
   .ich2-no-btn:hover { color: var(--color-accent-700); }
   .ich2-chip { display: inline-block; max-width: 100%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; padding: 0 3px; font-size: 10px; font-weight: 700; line-height: 1.5; border: 1px solid transparent; }
-  .ich2-badge { display: inline-flex; align-items: center; justify-content: center; gap: 3px; height: 16px; width: 34px; font-size: 10px; font-variant-numeric: tabular-nums; border: 1px solid transparent; }
+  .ich2-badge { display: inline-flex; align-items: center; justify-content: center; gap: 3px; height: 16px; min-width: 34px; width: auto; padding: 0 4px; font-size: 10px; font-variant-numeric: tabular-nums; border: 1px solid transparent; white-space: nowrap; }
   .ich2-badge .dot { width: 4px; height: 4px; flex: none; }
   .ich2-footnote { padding: 6px 4px; font-size: 11px; color: var(--color-neutral-700); flex: none; }
   .ich2-empty { padding: 48px 20px; text-align: center; color: var(--color-neutral-600); font-size: 13px; }
@@ -783,9 +785,9 @@
         <table class="ich2-list">
           <colgroup>
             <col style="width:28px"><col style="width:72px"><col style="width:48px"><col style="width:124px"><col style="width:96px">
-            <col style="width:96px"><col style="width:44px"><col style="width:32px"><col style="width:40px"><col style="width:170px">
-            <col style="width:38px"><col style="width:38px"><col style="width:38px"><col style="width:38px"><col style="width:38px"><col style="width:38px">
-            <col style="width:44px"><col style="width:74px"><col style="width:44px"><col style="width:64px"><col style="width:64px"><col style="width:120px">
+            <col style="width:130px"><col style="width:44px"><col style="width:32px"><col style="width:40px"><col style="width:260px">
+            <col style="width:38px"><col style="width:38px"><col style="width:38px"><col style="width:78px"><col style="width:78px"><col style="width:38px">
+            <col style="width:44px"><col style="width:74px"><col style="width:44px"><col style="width:64px"><col style="width:64px"><col style="width:70px">
           </colgroup>
           <thead>
             <tr>
@@ -1156,9 +1158,27 @@
   function ich2Kubun(seisaku, ku) {
     const v = String(seisaku || "");
     if ((ku||"").includes("コイル") || v.includes("コイル")) return "コイル";
-    if (v === "1" || v === "第一") return "第1工場";
-    if (v === "S") return "SUS工場";
+    if (v === "1" || v.includes("第一") || v.includes("第1")) return "第1工場";
+    if (v === "S" || v.includes("SUS")) return "SUS工場";
     return "他";
+  }
+
+  // 製作部署の表示ラベル(「第一」→「第1」に短縮。それ以外はそのまま表示)
+  function ich2SeisakuLabel(seisaku) {
+    const v = String(seisaku || "");
+    if (v === "第一") return "第1";
+    if (v === "1") return "第1";
+    return v;
+  }
+
+  // 製作部署ごとの色分け(SUS工場=黄、杉原=緑、コイル・第1工場=ピンク)
+  function ich2SeisakuColor(seisaku, ku) {
+    const v = String(seisaku || "");
+    if ((ku||"").includes("コイル") || v.includes("コイル")) return { bg: "var(--color-accent-100)", fg: "var(--color-accent-800)", bd: "var(--color-accent-300)" };
+    if (v === "1" || v.includes("第一") || v.includes("第1")) return { bg: "var(--color-accent-100)", fg: "var(--color-accent-800)", bd: "var(--color-accent-300)" };
+    if (v === "S" || v.includes("SUS")) return { bg: "#FAEEDA", fg: "#854F0B", bd: "#D98324" };
+    if (v.includes("杉原") || v === "杉") return { bg: "#dfeee4", fg: "#1e5c37", bd: "#2f7d4f" };
+    return { bg: "var(--color-neutral-200)", fg: "var(--color-neutral-700)", bd: "var(--color-neutral-400)" };
   }
 
   async function initIchiran() {
@@ -1307,7 +1327,7 @@
         '<td class="ich2-nowrap ich2-tabular">'+ich2Esc(r[iSunpou])+'</td>' +
         '<td class="ich2-nowrap ich2-tabular ich2-muted">'+ich2Esc(formatDateShort(r[iJuken]))+'</td>' +
         '<td class="center ich2-muted">'+ich2Esc(r[iKu])+'</td>' +
-        '<td class="ich2-nowrap"><span class="ich2-chip" style="background:var(--color-accent-100);color:var(--color-accent-800);border-color:var(--color-accent-300);">'+ich2Esc(r[iSeisaku])+'</span></td>' +
+        (() => { const sc = ich2SeisakuColor(r[iSeisaku], r[iKu]); return '<td class="ich2-nowrap"><span class="ich2-chip" style="background:'+sc.bg+';color:'+sc.fg+';border-color:'+sc.bd+';">'+ich2Esc(ich2SeisakuLabel(r[iSeisaku]))+'</span></td>'; })() +
         '<td class="ich2-nowrap ich2-ellipsis grp-end" title="'+ich2Esc(r[iTosou])+'">'+ich2Esc(r[iTosou])+'</td>' +
         cells.map(c => '<td class="center">'+ich2Badge(c)+'</td>').join("") +
         '<td class="ich2-nowrap">'+ich2Esc(r[iTantou])+'</td>' +
