@@ -788,7 +788,7 @@
           <colgroup>
             <col style="width:28px"><col style="width:72px"><col style="width:48px"><col style="width:124px"><col style="width:96px">
             <col style="width:130px"><col style="width:44px"><col style="width:32px"><col style="width:40px"><col style="width:260px">
-            <col style="width:38px"><col style="width:38px"><col style="width:38px"><col style="width:78px"><col style="width:78px"><col style="width:38px">
+            <col style="width:78px"><col style="width:78px"><col style="width:78px"><col style="width:78px"><col style="width:78px"><col style="width:78px">
             <col style="width:44px"><col style="width:74px"><col style="width:44px"><col style="width:64px"><col style="width:64px"><col style="width:70px">
           </colgroup>
           <thead>
@@ -1288,7 +1288,12 @@
         return da - db;
       });
     } else {
-      rows.sort((a,b) => (a[iSeizou]||"").localeCompare(b[iSeizou]||""));
+      // 製造番号順(先頭のアルファベットは製品種類を表す区分なので、末尾の数字部分だけで並び替える)
+      rows.sort((a,b) => {
+        const na = parseInt(String(a[iSeizou]||"").match(/(\d+)/)?.[1] || "0", 10);
+        const nb = parseInt(String(b[iSeizou]||"").match(/(\d+)/)?.[1] || "0", 10);
+        return na - nb;
+      });
     }
 
     // 区分別サマリー
