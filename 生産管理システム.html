@@ -336,7 +336,7 @@
   .ich2-chip { display: inline-block; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; padding: 0 3px; font-size: 10px; font-weight: 700; line-height: 1.5; border: 1px solid transparent; text-align: center; }
   .ich2-chip.ich2-chip-seisaku { width: 32px; }
   .ich2-badge { display: inline-flex; align-items: center; justify-content: center; gap: 3px; height: 16px; width: 34px; font-size: 10px; font-variant-numeric: tabular-nums; border: 1px solid transparent; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-  .ich2-badge.ich2-badge-wide { width: 70px; }
+  .ich2-badge.ich2-badge-wide { width: 58px; }
   .ich2-prog-cell { cursor: pointer; }
   .ich2-prog-cell:hover { background: rgba(236,48,19,0.08); }
   .ich2-badge .dot { width: 4px; height: 4px; flex: none; }
@@ -790,7 +790,7 @@
           <colgroup>
             <col style="width:28px"><col style="width:72px"><col style="width:48px"><col style="width:124px"><col style="width:96px">
             <col style="width:130px"><col style="width:44px"><col style="width:32px"><col style="width:40px"><col style="width:260px">
-            <col style="width:38px"><col style="width:38px"><col style="width:38px"><col style="width:78px"><col style="width:78px"><col style="width:38px">
+            <col style="width:38px"><col style="width:38px"><col style="width:38px"><col style="width:62px"><col style="width:62px"><col style="width:38px">
             <col style="width:44px"><col style="width:74px"><col style="width:44px"><col style="width:64px"><col style="width:64px"><col style="width:70px">
           </colgroup>
           <thead>
@@ -1156,7 +1156,7 @@
 
   function ich2Badge(c, wide) {
     return '<span class="ich2-badge'+(wide?' ich2-badge-wide':'')+'" style="background:'+c.bg+';color:'+c.fg+';border-color:'+c.bd+';font-weight:'+c.fw+';">' +
-      '<span class="dot" style="background:'+c.dot+';"></span>'+ich2Esc(c.text)+'</span>';
+      ich2Esc(c.text)+'</span>';
   }
 
   function ich2Kubun(seisaku, ku) {
