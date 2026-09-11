@@ -335,6 +335,8 @@
   .ich2-no-btn:hover { color: var(--color-accent-700); }
   .ich2-chip { display: inline-block; max-width: 100%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; padding: 0 3px; font-size: 10px; font-weight: 700; line-height: 1.5; border: 1px solid transparent; }
   .ich2-badge { display: inline-flex; align-items: center; justify-content: center; gap: 3px; height: 16px; min-width: 34px; width: auto; padding: 0 4px; font-size: 10px; font-variant-numeric: tabular-nums; border: 1px solid transparent; white-space: nowrap; }
+  .ich2-prog-cell { cursor: pointer; }
+  .ich2-prog-cell:hover { background: rgba(236,48,19,0.08); }
   .ich2-badge .dot { width: 4px; height: 4px; flex: none; }
   .ich2-footnote { padding: 6px 4px; font-size: 11px; color: var(--color-neutral-700); flex: none; }
   .ich2-empty { padding: 48px 20px; text-align: center; color: var(--color-neutral-600); font-size: 13px; }
@@ -1312,7 +1314,7 @@
     document.getElementById("ich2Empty").hidden = rows.length !== 0;
 
     document.getElementById("ich2Tbody").innerHTML = rows.map(r => {
-      const cells = [r[iJuchu], r[iSeisakuDay], r[iKansei], r[iNaiso], r[iGaiso], r[iShukka]].map(ich2Cell);
+      const progIdx = [iJuchu, iSeisakuDay, iKansei, iNaiso, iGaiso, iShukka];
       const zumen = r[iZumen] || "";
       const no = r[iSeizou];
       const key = "make:" + no;
@@ -1329,7 +1331,11 @@
         '<td class="center ich2-muted">'+ich2Esc(r[iKu])+'</td>' +
         (() => { const sc = ich2SeisakuColor(r[iSeisaku], r[iKu]); return '<td class="ich2-nowrap"><span class="ich2-chip" style="background:'+sc.bg+';color:'+sc.fg+';border-color:'+sc.bd+';">'+ich2Esc(ich2SeisakuLabel(r[iSeisaku]))+'</span></td>'; })() +
         '<td class="ich2-nowrap ich2-ellipsis grp-end" title="'+ich2Esc(r[iTosou])+'">'+ich2Esc(r[iTosou])+'</td>' +
-        cells.map(c => '<td class="center">'+ich2Badge(c)+'</td>').join("") +
+        progIdx.map(ci => {
+          const raw = r[ci] || "";
+          const colName = H[ci];
+          return '<td class="center ich2-prog-cell" data-seizou="'+ich2Esc(no)+'" data-col="'+ich2Esc(colName)+'" data-val="'+ich2Esc(raw)+'" title="クリックして編集">'+ich2Badge(ich2Cell(raw))+'</td>';
+        }).join("") +
         '<td class="ich2-nowrap">'+ich2Esc(r[iTantou])+'</td>' +
         '<td class="ich2-nowrap ich2-ellipsis ich2-tabular ich2-muted" title="'+ich2Esc(r[iMsunpou])+'">'+ich2Esc(r[iMsunpou])+'</td>' +
         '<td class="right ich2-tabular">'+ich2Esc(r[iShitsuryou])+'</td>' +
@@ -1339,6 +1345,11 @@
         '</tr>'
       );
     }).join("");
+
+    // 進捗バッジのクリックで、その場で日付を編集できるようにする
+    document.querySelectorAll("#ich2Tbody .ich2-prog-cell").forEach(td => {
+      td.addEventListener("click", () => ich2StartEditProgress(td));
+    });
 
     // チェックボックス(行・全選択)の同期
     const selectAllEl = document.getElementById("ich2SelectAll");
@@ -1421,6 +1432,53 @@
         ich2RenderAll();
       });
     });
+  }
+
+  // 進捗バッジをクリックした時、その場でテキスト入力に切り替える
+  function ich2StartEditProgress(td) {
+    if (td.querySelector("input")) return; // 編集中は二重に開かない
+    const seizouBangou = td.dataset.seizou;
+    const columnName = td.dataset.col;
+    const current = td.dataset.val || "";
+    const original = td.innerHTML;
+    td.innerHTML = '<input type="text" class="ich2-prog-input" value="'+current.replace(/"/g,"&quot;")+'" placeholder="例: 9/10" style="width:56px;font-size:10px;padding:1px 3px;border:1px solid var(--color-accent);text-align:center;font-family:inherit;">';
+    const input = td.querySelector("input");
+    input.focus();
+    input.select();
+    let done = false;
+    const finish = (save) => {
+      if (done) return;
+      done = true;
+      if (save) {
+        const newVal = input.value.trim();
+        if (newVal === current) { td.innerHTML = original; return; }
+        ich2SaveProgress(seizouBangou, columnName, newVal, td, original);
+      } else {
+        td.innerHTML = original;
+      }
+    };
+    input.addEventListener("keydown", (e) => {
+      if (e.key === "Enter") { e.preventDefault(); finish(true); }
+      else if (e.key === "Escape") { e.preventDefault(); finish(false); }
+    });
+    input.addEventListener("blur", () => finish(true));
+  }
+
+  async function ich2SaveProgress(seizouBangou, columnName, value, td, original) {
+    td.innerHTML = '<span style="font-size:9px;color:var(--color-neutral-600);">更新中</span>';
+    try {
+      const res = await fetch(GAS_URL, { method: "POST", body: JSON.stringify({ type: "updateProgress", seizouBangou, columnName, value }) });
+      const data = await res.json();
+      if (data.result !== "success") throw new Error(data.message || "更新に失敗しました");
+      const idxSeizou = ich2Header.indexOf("製造番号");
+      const idxCol = ich2Header.indexOf(columnName);
+      const row = ich2All.find(r => r[idxSeizou] === seizouBangou);
+      if (row && idxCol !== -1) row[idxCol] = value;
+      ich2RenderAll();
+    } catch (e) {
+      alert("更新に失敗しました: " + e.message);
+      td.innerHTML = original;
+    }
   }
 
   function ich2UpdateSelbar() {
