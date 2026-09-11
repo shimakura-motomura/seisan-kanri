@@ -333,7 +333,8 @@
   .ich2-muted { color: var(--color-neutral-700); }
   .ich2-no-btn { display: flex; align-items: center; gap: 4px; width: 100%; padding: 0; font: inherit; font-size: inherit; font-weight: 700; white-space: nowrap; text-align: left; cursor: pointer; background: transparent; border: 0; color: var(--color-text); text-decoration: underline; text-decoration-color: var(--color-accent); text-underline-offset: 2px; }
   .ich2-no-btn:hover { color: var(--color-accent-700); }
-  .ich2-chip { display: inline-block; max-width: 100%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; padding: 0 3px; font-size: 10px; font-weight: 700; line-height: 1.5; border: 1px solid transparent; }
+  .ich2-chip { display: inline-block; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; padding: 0 3px; font-size: 10px; font-weight: 700; line-height: 1.5; border: 1px solid transparent; text-align: center; }
+  .ich2-chip.ich2-chip-seisaku { width: 32px; }
   .ich2-badge { display: inline-flex; align-items: center; justify-content: center; gap: 3px; height: 16px; width: 34px; font-size: 10px; font-variant-numeric: tabular-nums; border: 1px solid transparent; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
   .ich2-badge.ich2-badge-wide { width: 70px; }
   .ich2-prog-cell { cursor: pointer; }
@@ -1335,7 +1336,7 @@
         '<td class="ich2-nowrap ich2-tabular">'+ich2Esc(r[iSunpou])+'</td>' +
         '<td class="ich2-nowrap ich2-tabular ich2-muted">'+ich2Esc(formatDateShort(r[iJuken]))+'</td>' +
         '<td class="center ich2-muted">'+ich2Esc(r[iKu])+'</td>' +
-        (() => { const sc = ich2SeisakuColor(r[iSeisaku], r[iKu]); return '<td class="ich2-nowrap"><span class="ich2-chip" style="background:'+sc.bg+';color:'+sc.fg+';border-color:'+sc.bd+';">'+ich2Esc(ich2SeisakuLabel(r[iSeisaku]))+'</span></td>'; })() +
+        (() => { const sc = ich2SeisakuColor(r[iSeisaku], r[iKu]); return '<td class="ich2-nowrap"><span class="ich2-chip ich2-chip-seisaku" style="background:'+sc.bg+';color:'+sc.fg+';border-color:'+sc.bd+';">'+ich2Esc(ich2SeisakuLabel(r[iSeisaku]))+'</span></td>'; })() +
         '<td class="ich2-nowrap ich2-ellipsis grp-end" title="'+ich2Esc(r[iTosou])+'">'+ich2Esc(r[iTosou])+'</td>' +
         progIdx.map(ci => {
           const raw = r[ci] || "";
