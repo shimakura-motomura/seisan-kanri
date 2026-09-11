@@ -710,6 +710,7 @@
         <div class="field"><label>質量</label><input id="f_shitsuryou"></div>
         <div class="field"><label>型番</label><input id="f_katabangou"></div>
       </div>
+      <div class="field"><label>売価(千円)</label><input id="f_baika" type="number"></div>
       <div class="field"><label>備考</label><input id="f_tokkiShiyou"></div>
       <div class="field"><label>図面リンク(自動で入ります)</label><input id="f_zumenLink" readonly></div>
 
@@ -784,14 +785,14 @@
             <col style="width:28px"><col style="width:72px"><col style="width:48px"><col style="width:124px"><col style="width:96px">
             <col style="width:96px"><col style="width:44px"><col style="width:32px"><col style="width:40px"><col style="width:170px">
             <col style="width:38px"><col style="width:38px"><col style="width:38px"><col style="width:38px"><col style="width:38px"><col style="width:38px">
-            <col style="width:44px"><col style="width:74px"><col style="width:44px"><col style="width:64px"><col style="width:120px">
+            <col style="width:44px"><col style="width:74px"><col style="width:44px"><col style="width:64px"><col style="width:64px"><col style="width:120px">
           </colgroup>
           <thead>
             <tr>
               <th class="ich2-grp identify" colspan="5">識別(固定表示)</th>
               <th class="ich2-grp dim" colspan="5">寸法・製作・塗装</th>
               <th class="ich2-grp progress" colspan="6">進捗</th>
-              <th class="ich2-grp pic" colspan="5">担当・詳細</th>
+              <th class="ich2-grp pic" colspan="6">担当・詳細</th>
             </tr>
             <tr>
               <th class="ich2-colh sticky-id" style="left:0;">
@@ -819,6 +820,7 @@
               <th class="ich2-colh">m寸法</th>
               <th class="ich2-colh right">質量</th>
               <th class="ich2-colh">型番</th>
+              <th class="ich2-colh right">売価</th>
               <th class="ich2-colh">備考</th>
             </tr>
           </thead>
@@ -1240,7 +1242,7 @@
     const iSeizou = idx("製造番号"), iNouki = idx("納期"), iGenba = idx("現場名"), iHinmei = idx("品名"),
       iSunpou = idx("寸法"), iJuken = idx("受・完"), iKu = idx("区"), iSeisaku = idx("製"), iTosou = idx("塗装仕様"),
       iJuchu = idx("受注日"), iSeisakuDay = idx("製作日"), iKansei = idx("完成日"), iNaiso = idx("内装日"), iGaiso = idx("外装日"), iShukka = idx("出荷日"),
-      iTantou = idx("担当者"), iMsunpou = idx("m寸法"), iShitsuryou = idx("質量"), iKatabangou = idx("型番"), iBiko = idx("備考"), iZumen = idx("図");
+      iTantou = idx("担当者"), iMsunpou = idx("m寸法"), iShitsuryou = idx("質量"), iKatabangou = idx("型番"), iBaika = idx("売価(千円)"), iBiko = idx("備考"), iZumen = idx("図");
 
     const q = ich2State.query.trim().toLowerCase();
     let rows = ich2All.filter(r => {
@@ -1312,6 +1314,7 @@
         '<td class="ich2-nowrap ich2-ellipsis ich2-tabular ich2-muted" title="'+ich2Esc(r[iMsunpou])+'">'+ich2Esc(r[iMsunpou])+'</td>' +
         '<td class="right ich2-tabular">'+ich2Esc(r[iShitsuryou])+'</td>' +
         '<td class="ich2-nowrap ich2-ellipsis ich2-tabular" title="'+ich2Esc(r[iKatabangou])+'">'+ich2Esc(r[iKatabangou])+'</td>' +
+        '<td class="right ich2-tabular">'+ich2Esc(r[iBaika])+'</td>' +
         '<td class="ich2-nowrap ich2-ellipsis" title="'+ich2Esc(r[iBiko])+'">'+ich2Esc(r[iBiko])+'</td>' +
         '</tr>'
       );
@@ -1577,6 +1580,7 @@
       mSunpou: document.getElementById("f_mSunpou").value.trim(),
       shitsuryou: document.getElementById("f_shitsuryou").value.trim(),
       katabangou: document.getElementById("f_katabangou").value.trim(),
+      baika: document.getElementById("f_baika").value.trim(),
       tokkiShiyou: document.getElementById("f_tokkiShiyou").value.trim(),
       zumenLink: document.getElementById("f_zumenLink").value.trim(),
     };
