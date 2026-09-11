@@ -75,6 +75,9 @@ input:focus-visible, textarea:focus-visible, button:focus-visible { outline: 2px
 .job-line1 .sep { color: var(--sep); }
 .job-line2 { font-size: 10px; font-weight: 500; color: var(--muted); line-height: 1.45; width: 100%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .job-line2 .sep { color: var(--sep-2); }
+.job-progress { display: flex; gap: 3px; margin-top: 4px; }
+.job-progress-seg { flex: 1 1 0; height: 4px; background: var(--divider-25); }
+.job-progress-seg.is-done { background: var(--accent); }
 .job-history { flex: 0 0 46px; border-left: 1px solid var(--divider-20); background: transparent; color: var(--muted-2); display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 1px; }
 .job-history:active { background: var(--ink); color: var(--bg); }
 .job-history-label { font-size: 10px; font-weight: 700; }
@@ -188,7 +191,9 @@ async function loadJobs() {
   const idx = name => header.indexOf(name);
   const iSeizou = idx("製造番号"), iGenba = idx("現場名"), iNouki = idx("納期"), iHinmei = idx("品名"),
     iSunpou = idx("寸法"), iKu = idx("区"), iSeisaku = idx("製"), iTosou = idx("塗装仕様"),
-    iZumen = idx("図"), iToroku = idx("登録日");
+    iZumen = idx("図"), iToroku = idx("登録日"),
+    iJuchu = idx("受注日"), iSeisakuDay = idx("製作日"), iKansei = idx("完成日"),
+    iNaiso = idx("内装日"), iGaiso = idx("外装日"), iShukka = idx("出荷日");
 
   return rows.slice(1)
     .filter(r => r[iSeizou] && r[iGenba])
@@ -203,6 +208,8 @@ async function loadJobs() {
         dims: r[iSunpou] || "",
         paint: r[iTosou] || "",
         zumen: zumen,
+        // 進捗バー用:受注日→製作日→完成日→内装日→外装日→出荷日の6段階。日付が入っていれば完了扱い
+        progress: [r[iJuchu], r[iSeisakuDay], r[iKansei], r[iNaiso], r[iGaiso], r[iShukka]].map(v => !!v),
         // 図面履歴機能は未実装のため、現状は「登録されている最新図面」のみを1件として表示する
         revs: zumen ? [{ rev: "Rev.1", date: r[iToroku] || "", note: "登録図面", url: zumen }] : []
       };
@@ -323,6 +330,9 @@ function jobBody(j) {
     </div>
     <div class="job-line1">納期 ${md(j.due)}<span class="sep"> │ </span>${escapeHtml(j.item)}<span class="sep"> │ </span>${escapeHtml(j.dims)}</div>
     <div class="job-line2">${escapeHtml(j.paint || "塗装仕様 未入力")}</div>
+    <div class="job-progress">
+      ${(j.progress || []).map(done => `<div class="job-progress-seg${done ? " is-done" : ""}"></div>`).join("")}
+    </div>
   `;
 }
 
