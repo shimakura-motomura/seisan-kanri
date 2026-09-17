@@ -1561,6 +1561,11 @@
     });
     fileInput.addEventListener("change", (e) => { if (e.target.files.length > 0) handleFile(e.target.files[0]); });
 
+    // 品名に「熱交換器」を含む、または塗装仕様に「内熱源」を含む場合、コイル使用を自動チェックする
+    // (手動で外すこともできる。あくまで入力の手間を減らすための自動判定)
+    document.getElementById("f_hinmei").addEventListener("input", autoCheckCoilUse);
+    document.getElementById("f_tosouShiyou").addEventListener("input", autoCheckCoilUse);
+
     const tabSel = document.getElementById("t_tab");
     tabSel.innerHTML = TOSOU_TABS.map(t => `<option value="${t.key}">${t.key}</option>`).join("");
     tabSel.addEventListener("change", updateNaiyouOptions);
@@ -1643,6 +1648,16 @@
     }
   }
 
+  // 品名に「熱交換器」を含む、または塗装仕様に「内熱源」を含む場合、コイル使用を自動チェックする
+  // (手動で外すこともできる。あくまで入力の手間を減らすための自動判定)
+  function autoCheckCoilUse() {
+    const hinmei = document.getElementById("f_hinmei").value;
+    const tosou = document.getElementById("f_tosouShiyou").value;
+    if (hinmei.includes("熱交換器") || tosou.includes("内熱源")) {
+      document.getElementById("f_coiluse").checked = true;
+    }
+  }
+
   function fillFormFromOcr(fields, pdfUrl) {
     document.getElementById("f_zumenLink").value = pdfUrl;
     const map = { seizouBangou: "f_seizouBangou", nouki: "f_nouki", genbaMei: "f_genbaMei", hinmei: "f_hinmei", sunpou: "f_sunpou" };
@@ -1654,6 +1669,7 @@
         el.closest(".field").classList.add("filled");
       }
     }
+    autoCheckCoilUse();
   }
 
   async function submitSeisaku() {
