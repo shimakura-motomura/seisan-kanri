@@ -793,7 +793,7 @@
         <table class="ich2-list">
           <colgroup>
             <col style="width:28px"><col style="width:72px"><col style="width:48px"><col style="width:124px"><col style="width:96px">
-            <col style="width:130px"><col style="width:44px"><col style="width:32px"><col style="width:64px"><col style="width:260px">
+            <col style="width:130px"><col style="width:44px"><col style="width:32px"><col style="width:40px"><col style="width:260px">
             <col style="width:38px"><col style="width:38px"><col style="width:38px"><col style="width:62px"><col style="width:62px"><col style="width:38px">
             <col style="width:44px"><col style="width:74px"><col style="width:44px"><col style="width:64px"><col style="width:64px"><col style="width:70px">
           </colgroup>
@@ -1163,15 +1163,23 @@
       ich2Esc(c.text)+'</span>';
   }
 
-  function ich2Kubun(seisaku, ku, coiluse) {
+  // 純粋な部署判定(第1/SUS/杉原/他)。コイル使用の有無には影響されない。
+  function ich2Kubun(seisaku, ku) {
     const v = String(seisaku || "");
     const k = String(ku || "");
-    // 全角「コイル」・半角「ｺｲﾙ」のどちらでも判定できるようにする。
-    // また部署に関わらず「コイル使用」チェックが入っている製品も、コイルとして数える。
-    if (v.includes("コイル") || v.includes("ｺｲﾙ") || k.includes("コイル") || k.includes("ｺｲﾙ") || !!coiluse) return "コイル";
+    if (v.includes("コイル") || v.includes("ｺｲﾙ") || k.includes("コイル") || k.includes("ｺｲﾙ")) return "コイル";
     if (v === "1" || v.includes("第一") || v.includes("第1")) return "第1工場";
     if (v === "S" || v.includes("SUS")) return "SUS工場";
     return "他";
+  }
+
+  // コイル関連かどうかの横断判定(部署がコイル/コイル使用チェック/品名に熱交換器/塗装仕様に熱源、のいずれか)
+  function ich2IsCoilRelated(seisaku, ku, coiluse, hinmei, tosou) {
+    if (ich2Kubun(seisaku, ku) === "コイル") return true;
+    if (!!coiluse) return true;
+    if (String(hinmei || "").includes("熱交換器")) return true;
+    if (String(tosou || "").includes("熱源")) return true;
+    return false;
   }
 
   // 製作部署の表示ラベル(「第一」→「第1」に短縮。それ以外はそのまま表示)
@@ -1278,7 +1286,13 @@
     const q = ich2State.query.trim().toLowerCase();
     let rows = ich2All.filter(r => {
       if (q && !((r[iSeizou]||"")+(r[iGenba]||"")+(r[iHinmei]||"")+(r[iTantou]||"")).toLowerCase().includes(q)) return false;
-      if (ich2State.dept !== "全数" && ich2Kubun(r[iSeisaku], r[iKu], r[iCoiluse]) !== ich2State.dept) return false;
+      if (ich2State.dept !== "全数") {
+        if (ich2State.dept === "コイル") {
+          if (!ich2IsCoilRelated(r[iSeisaku], r[iKu], r[iCoiluse], r[iHinmei], r[iTosou])) return false;
+        } else if (ich2Kubun(r[iSeisaku], r[iKu]) !== ich2State.dept) {
+          return false;
+        }
+      }
       if (ich2State.filter === "soon") {
         const v = r[iShukka]; if (!v) return false;
         const d = new Date(v); if (isNaN(d.getTime())) return false;
@@ -1305,14 +1319,14 @@
       });
     }
 
-    // 区分別サマリー
+    // 区分別サマリー(コイルは部署をまたぐ横断集計。第1・SUS・他は純粋な部署のみで集計)
     const counts = { total: ich2All.length, dai1: 0, sus: 0, coil: 0, other: 0 };
     ich2All.forEach(r => {
-      const k = ich2Kubun(r[iSeisaku], r[iKu], r[iCoiluse]);
+      const k = ich2Kubun(r[iSeisaku], r[iKu]);
       if (k === "第1工場") counts.dai1++;
       else if (k === "SUS工場") counts.sus++;
-      else if (k === "コイル") counts.coil++;
-      else counts.other++;
+      else if (k !== "コイル") counts.other++;
+      if (ich2IsCoilRelated(r[iSeisaku], r[iKu], r[iCoiluse], r[iHinmei], r[iTosou])) counts.coil++;
     });
     document.getElementById("ich2Summary").innerHTML = [
       ["全数", counts.total], ["第1工場", counts.dai1], ["SUS工場", counts.sus], ["コイル", counts.coil], ["他", counts.other]
@@ -1345,8 +1359,7 @@
         '<td class="center ich2-muted">'+ich2Esc(r[iKu])+'</td>' +
         (() => {
           const sc = ich2SeisakuColor(r[iSeisaku], r[iKu]);
-          const coilMark = r[iCoiluse] ? '<span class="ich2-chip" style="margin-left:2px;padding:0 2px;width:16px;background:var(--color-accent-100);color:var(--color-accent-800);border-color:var(--color-accent-300);" title="コイル使用">コ</span>' : '';
-          return '<td class="ich2-nowrap"><span class="ich2-chip ich2-chip-seisaku" style="background:'+sc.bg+';color:'+sc.fg+';border-color:'+sc.bd+';">'+ich2Esc(ich2SeisakuLabel(r[iSeisaku]))+'</span>'+coilMark+'</td>';
+          return '<td class="ich2-nowrap"><span class="ich2-chip ich2-chip-seisaku" style="background:'+sc.bg+';color:'+sc.fg+';border-color:'+sc.bd+';">'+ich2Esc(ich2SeisakuLabel(r[iSeisaku]))+'</span></td>';
         })() +
         '<td class="ich2-nowrap ich2-ellipsis grp-end" title="'+ich2Esc(r[iTosou])+'">'+ich2Esc(r[iTosou])+'</td>' +
         progIdx.map(ci => {
