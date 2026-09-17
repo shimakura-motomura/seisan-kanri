@@ -793,7 +793,7 @@
         <table class="ich2-list">
           <colgroup>
             <col style="width:28px"><col style="width:72px"><col style="width:48px"><col style="width:124px"><col style="width:96px">
-            <col style="width:130px"><col style="width:44px"><col style="width:32px"><col style="width:40px"><col style="width:260px">
+            <col style="width:130px"><col style="width:44px"><col style="width:32px"><col style="width:64px"><col style="width:260px">
             <col style="width:38px"><col style="width:38px"><col style="width:38px"><col style="width:62px"><col style="width:62px"><col style="width:38px">
             <col style="width:44px"><col style="width:74px"><col style="width:44px"><col style="width:64px"><col style="width:64px"><col style="width:70px">
           </colgroup>
@@ -1345,7 +1345,7 @@
         '<td class="center ich2-muted">'+ich2Esc(r[iKu])+'</td>' +
         (() => {
           const sc = ich2SeisakuColor(r[iSeisaku], r[iKu]);
-          const coilMark = r[iCoiluse] ? '<span class="ich2-chip" style="margin-left:2px;background:var(--color-accent-100);color:var(--color-accent-800);border-color:var(--color-accent-300);" title="コイル使用">コ</span>' : '';
+          const coilMark = r[iCoiluse] ? '<span class="ich2-chip" style="margin-left:2px;padding:0 2px;width:16px;background:var(--color-accent-100);color:var(--color-accent-800);border-color:var(--color-accent-300);" title="コイル使用">コ</span>' : '';
           return '<td class="ich2-nowrap"><span class="ich2-chip ich2-chip-seisaku" style="background:'+sc.bg+';color:'+sc.fg+';border-color:'+sc.bd+';">'+ich2Esc(ich2SeisakuLabel(r[iSeisaku]))+'</span>'+coilMark+'</td>';
         })() +
         '<td class="ich2-nowrap ich2-ellipsis grp-end" title="'+ich2Esc(r[iTosou])+'">'+ich2Esc(r[iTosou])+'</td>' +
