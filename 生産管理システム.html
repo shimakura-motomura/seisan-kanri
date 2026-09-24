@@ -335,8 +335,8 @@
   .ich2-no-btn:hover { color: var(--color-accent-700); }
   .ich2-chip { display: inline-block; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; padding: 0 3px; font-size: 10px; font-weight: 700; line-height: 1.5; border: 1px solid transparent; text-align: center; }
   .ich2-chip.ich2-chip-seisaku { width: 32px; }
-  .ich2-badge { display: inline-flex; align-items: center; justify-content: center; gap: 3px; height: 16px; width: 34px; font-size: 10px; font-variant-numeric: tabular-nums; border: 1px solid transparent; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-  .ich2-badge.ich2-badge-wide { width: 58px; }
+  .ich2-badge { display: inline-flex; align-items: center; justify-content: center; gap: 3px; height: 16px; width: 30px; font-size: 10px; font-variant-numeric: tabular-nums; border: 1px solid transparent; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .ich2-badge.ich2-badge-wide { width: 50px; }
   .ich2-prog-cell { cursor: pointer; }
   .ich2-prog-cell:hover { background: rgba(236,48,19,0.08); }
   .ich2-badge .dot { width: 4px; height: 4px; flex: none; }
@@ -784,15 +784,14 @@
           <button data-filter="soon">納期間近</button>
           <button data-filter="waiting">未着手</button>
         </div>
-        <label style="display:flex;align-items:center;gap:6px;font-size:12px;color:var(--color-neutral-700);white-space:nowrap;">
-          <input type="checkbox" id="ich2ShowShipped" style="width:13px;height:13px;accent-color:var(--color-accent);">
-          出荷済みも表示
-        </label>
+        <div class="ich2-filter-group" id="ich2ShippedGroup">
+          <button type="button" id="ich2ShowShipped" data-active="false">出荷済みも表示</button>
+        </div>
         <label class="ich2-sort-label">
           並び順
           <select class="input" id="ich2Sort">
             <option value="due">納期順</option>
-            <option value="no">製造番号順</option>
+            <option value="no" selected>製造番号順</option>
           </select>
         </label>
         <div class="ich2-jump-group">
@@ -808,10 +807,10 @@
       <div id="ich2Scroller">
         <table class="ich2-list">
           <colgroup>
-            <col style="width:28px"><col style="width:72px"><col style="width:48px"><col style="width:124px"><col style="width:96px">
-            <col style="width:130px"><col style="width:44px"><col style="width:32px"><col style="width:40px"><col style="width:260px">
-            <col style="width:38px"><col style="width:38px"><col style="width:38px"><col style="width:62px"><col style="width:62px"><col style="width:38px">
-            <col style="width:44px"><col style="width:74px"><col style="width:44px"><col style="width:64px"><col style="width:64px"><col style="width:70px">
+            <col style="width:28px"><col style="width:68px"><col style="width:44px"><col style="width:112px"><col style="width:90px">
+            <col style="width:130px"><col style="width:40px"><col style="width:28px"><col style="width:40px"><col style="width:368px">
+            <col style="width:34px"><col style="width:34px"><col style="width:34px"><col style="width:54px"><col style="width:54px"><col style="width:34px">
+            <col style="width:40px"><col style="width:64px"><col style="width:38px"><col style="width:58px"><col style="width:58px"><col style="width:60px">
           </colgroup>
           <thead>
             <tr>
@@ -1152,7 +1151,7 @@
   // ================= 一覧(Claude Code版デザイン + 実データ接続) =================
   let ich2All = [];
   let ich2Header = [];
-  const ich2State = { query: "", filter: "all", sort: "due", dept: "全数", showShipped: false };
+  const ich2State = { query: "", filter: "all", sort: "no", dept: "全数", showShipped: false };
   const ich2Selected = new Set();
   let ich2Tab = "make";
   let ich2BuyAll = [];
@@ -1273,7 +1272,11 @@
       });
     });
     document.getElementById("ich2Sort").addEventListener("change", e => { ich2State.sort = e.target.value; ich2RenderAll(); });
-    document.getElementById("ich2ShowShipped").addEventListener("change", e => { ich2State.showShipped = e.target.checked; ich2RenderAll(); });
+    document.getElementById("ich2ShowShipped").addEventListener("click", (e) => {
+      ich2State.showShipped = !ich2State.showShipped;
+      e.target.classList.toggle("active", ich2State.showShipped);
+      ich2RenderAll();
+    });
     document.querySelectorAll(".ich2-jump-group button[data-jump]").forEach(btn => {
       btn.addEventListener("click", () => {
         const sc = document.getElementById("ich2Scroller");
