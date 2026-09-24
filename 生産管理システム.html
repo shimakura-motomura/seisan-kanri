@@ -772,6 +772,10 @@
           <button data-filter="soon">納期間近</button>
           <button data-filter="waiting">未着手</button>
         </div>
+        <label style="display:flex;align-items:center;gap:6px;font-size:12px;color:var(--color-neutral-700);white-space:nowrap;">
+          <input type="checkbox" id="ich2ShowShipped" style="width:13px;height:13px;accent-color:var(--color-accent);">
+          出荷済みも表示
+        </label>
         <label class="ich2-sort-label">
           並び順
           <select class="input" id="ich2Sort">
@@ -1136,7 +1140,7 @@
   // ================= 一覧(Claude Code版デザイン + 実データ接続) =================
   let ich2All = [];
   let ich2Header = [];
-  const ich2State = { query: "", filter: "all", sort: "due", dept: "全数" };
+  const ich2State = { query: "", filter: "all", sort: "due", dept: "全数", showShipped: false };
   const ich2Selected = new Set();
   let ich2Tab = "make";
   let ich2BuyAll = [];
@@ -1171,6 +1175,15 @@
     if (v === "1" || v.includes("第一") || v.includes("第1")) return "第1工場";
     if (v === "S" || v.includes("SUS")) return "SUS工場";
     return "他";
+  }
+
+  // 出荷済みかどうかの判定:出荷日が入っていて、かつ今日以前(今日を含む)の日付であれば出荷済み
+  function ich2IsShipped(shukkaVal) {
+    const s = (shukkaVal || "").toString().trim();
+    if (!s) return false;
+    const d = new Date(s);
+    if (isNaN(d.getTime())) return false;
+    return d.setHours(0,0,0,0) <= new Date().setHours(0,0,0,0);
   }
 
   // コイル関連かどうかの横断判定(部署がコイル/コイル使用チェック/品名に熱交換器/塗装仕様に熱源、のいずれか)
@@ -1247,6 +1260,7 @@
       });
     });
     document.getElementById("ich2Sort").addEventListener("change", e => { ich2State.sort = e.target.value; ich2RenderAll(); });
+    document.getElementById("ich2ShowShipped").addEventListener("change", e => { ich2State.showShipped = e.target.checked; ich2RenderAll(); });
     document.querySelectorAll(".ich2-jump-group button[data-jump]").forEach(btn => {
       btn.addEventListener("click", () => {
         const sc = document.getElementById("ich2Scroller");
@@ -1285,6 +1299,7 @@
 
     const q = ich2State.query.trim().toLowerCase();
     let rows = ich2All.filter(r => {
+      if (!ich2State.showShipped && ich2IsShipped(r[iShukka])) return false;
       if (q && !((r[iSeizou]||"")+(r[iGenba]||"")+(r[iHinmei]||"")+(r[iTantou]||"")).toLowerCase().includes(q)) return false;
       if (ich2State.dept !== "全数") {
         if (ich2State.dept === "コイル") {
@@ -1319,9 +1334,10 @@
       });
     }
 
-    // 区分別サマリー(コイルは部署をまたぐ横断集計。第1・SUS・他は純粋な部署のみで集計)
-    const counts = { total: ich2All.length, dai1: 0, sus: 0, coil: 0, other: 0 };
-    ich2All.forEach(r => {
+    // 区分別サマリー(コイルは部署をまたぐ横断集計。第1・SUS・他は純粋な部署のみで集計。出荷済み表示チェックに連動)
+    const summaryBase = ich2State.showShipped ? ich2All : ich2All.filter(r => !ich2IsShipped(r[iShukka]));
+    const counts = { total: summaryBase.length, dai1: 0, sus: 0, coil: 0, other: 0 };
+    summaryBase.forEach(r => {
       const k = ich2Kubun(r[iSeisaku], r[iKu]);
       if (k === "第1工場") counts.dai1++;
       else if (k === "SUS工場") counts.sus++;
