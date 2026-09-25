@@ -1402,7 +1402,7 @@
         '<tr style="--rowbg:' + (checked ? "var(--color-accent-100)" : "var(--color-bg)") + ';">' +
         '<td class="ich2-sticky-col center" style="left:0;"><input type="checkbox" class="ich2-row-check" data-key="'+ich2Esc(key)+'" '+(checked?"checked":"")+' style="width:13px;height:13px;accent-color:var(--color-accent);"></td>' +
         '<td class="ich2-sticky-col" style="left:28px;">'+(zumen ? '<button type="button" class="ich2-no-btn" onclick="openZumenPreview(\''+ich2Esc(zumen).replace(/'/g,"&#39;")+'\')" title="図面をプレビュー">'+ich2Esc(r[iSeizou])+'</button>' : ich2Esc(r[iSeizou]))+'</td>' +
-        '<td class="ich2-sticky-col ich2-tabular ich2-nouki-cell" style="left:100px;" data-seizou="'+ich2Esc(no)+'" data-val="'+ich2Esc(r[iNouki]||"")+'" title="'+ich2Esc(formatDateOnly(r[iNouki]))+'">'+ich2Esc(formatDateShort(r[iNouki]))+'</td>' +
+        '<td class="ich2-sticky-col ich2-tabular ich2-nouki-cell" style="left:100px;" data-seizou="'+ich2Esc(no)+'" data-val="'+ich2Esc(ich2EditableDateValue(r[iNouki]))+'" title="'+ich2Esc(formatDateOnly(r[iNouki]))+'">'+ich2Esc(formatDateShort(r[iNouki]))+'</td>' +
         '<td class="ich2-sticky-col ich2-nowrap ich2-ellipsis" style="left:148px;">'+ich2Esc(r[iGenba])+'</td>' +
         '<td class="ich2-sticky-col ich2-muted ich2-nowrap ich2-ellipsis grp-end" style="left:272px;">'+ich2Esc(r[iHinmei])+'</td>' +
         '<td class="ich2-nowrap ich2-tabular">'+ich2Esc(r[iSunpou])+'</td>' +
@@ -1417,7 +1417,7 @@
           const raw = r[ci] || "";
           const colName = H[ci];
           const wide = (ci === iNaiso || ci === iGaiso);
-          return '<td class="center ich2-prog-cell" data-seizou="'+ich2Esc(no)+'" data-col="'+ich2Esc(colName)+'" data-val="'+ich2Esc(raw)+'" title="クリックして編集">'+ich2Badge(ich2Cell(raw), wide)+'</td>';
+          return '<td class="center ich2-prog-cell" data-seizou="'+ich2Esc(no)+'" data-col="'+ich2Esc(colName)+'" data-val="'+ich2Esc(ich2EditableDateValue(raw))+'" title="クリックして編集">'+ich2Badge(ich2Cell(raw), wide)+'</td>';
         }).join("") +
         '<td class="ich2-nowrap">'+ich2Esc(r[iTantou])+'</td>' +
         '<td class="ich2-nowrap ich2-ellipsis ich2-tabular ich2-muted" title="'+ich2Esc(r[iMsunpou])+'">'+ich2Esc(r[iMsunpou])+'</td>' +
@@ -1547,7 +1547,7 @@
     const original = td.innerHTML;
     td.innerHTML =
       '<span style="display:inline-flex;gap:2px;align-items:center;">' +
-      '<input type="text" class="ich2-prog-input" value="'+current.replace(/"/g,"&quot;")+'" placeholder="例: 9/10" style="width:52px;font-size:10px;padding:1px 3px;border:1px solid var(--color-accent);text-align:center;font-family:inherit;">' +
+      '<input type="text" class="ich2-prog-input" value="'+current.replace(/"/g,"&quot;")+'" placeholder="例: 9/10" style="width:70px;font-size:10px;padding:1px 3px;border:1px solid var(--color-accent);text-align:center;font-family:inherit;">' +
       '<button type="button" class="ich2-prog-na-btn" title="対象外にする" style="font-size:9px;padding:1px 3px;border:1px solid var(--color-neutral-400);background:var(--color-neutral-200);color:var(--color-neutral-700);cursor:pointer;">対象外</button>' +
       '</span>';
     const input = td.querySelector("input");
@@ -1584,7 +1584,7 @@
     const seizouBangou = td.dataset.seizou;
     const current = td.dataset.val || "";
     const original = td.innerHTML;
-    td.innerHTML = '<input type="text" class="ich2-prog-input" value="'+current.replace(/"/g,"&quot;")+'" placeholder="例: 2026/10/15" style="width:66px;font-size:10px;padding:1px 3px;border:1px solid var(--color-accent);text-align:center;font-family:inherit;">';
+    td.innerHTML = '<input type="text" class="ich2-prog-input" value="'+current.replace(/"/g,"&quot;")+'" placeholder="例: 2026/10/15" style="width:74px;font-size:10px;padding:1px 3px;border:1px solid var(--color-accent);text-align:center;font-family:inherit;">';
     const input = td.querySelector("input");
     input.focus();
     input.select();
@@ -2375,6 +2375,12 @@
     const full = formatDateOnly(v);
     const m = full.match(/^\d{4}\/(\d{1,2}\/\d{1,2})$/);
     return m ? m[1] : full;
+  }
+  // クリック編集を開いた時、入力欄に入れる値。生のISO文字列などではなく「yyyy/m/d」の分かりやすい形式にする(***や空欄はそのまま)
+  function ich2EditableDateValue(raw) {
+    const s = (raw || "").toString().trim();
+    if (!s || s === "***") return s;
+    return formatDateOnly(s);
   }
   function initRenraku() {
     document.getElementById("rkPostBtn").addEventListener("click", async () => {
