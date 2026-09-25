@@ -1182,7 +1182,7 @@
   function ich2Cell(raw) {
     const s = (raw || "").toString().trim();
     if (!s) return { text: "—", bg: "var(--color-neutral-200)", fg: "var(--color-neutral-500)", bd: "var(--color-neutral-300)", dot: "var(--color-neutral-400)", fw: "400" };
-    if (s === "***") return { text: "対象外", bg: "var(--color-neutral-200)", fg: "var(--color-neutral-600)", bd: "var(--color-neutral-400)", dot: "var(--color-neutral-500)", fw: "400" };
+    if (s === "***") return { text: "対象外", bg: "#dfeee4", fg: "#1e5c37", bd: "#2f7d4f", dot: "#2f7d4f", fw: "400" };
     const d = new Date(s);
     const isPast = !isNaN(d.getTime()) && d.setHours(0,0,0,0) <= new Date().setHours(0,0,0,0);
     return isPast

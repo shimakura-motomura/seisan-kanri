@@ -78,7 +78,7 @@ input:focus-visible, textarea:focus-visible, button:focus-visible { outline: 2px
 .job-progress { display: flex; gap: 2px; margin-top: 4px; }
 .job-progress-seg { flex: 1 1 0; height: 2px; background: var(--divider-25); }
 .job-progress-seg.is-done { background: #2f7d4f; }
-.job-progress-seg.is-na { background: #d98324; }
+.job-progress-seg.is-na { background: #2f7d4f; }
 .job-history { flex: 0 0 46px; border-left: 1px solid var(--divider-20); background: transparent; color: var(--muted-2); display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 1px; }
 .job-history:active { background: var(--ink); color: var(--bg); }
 .job-history-label { font-size: 10px; font-weight: 700; }
@@ -183,7 +183,7 @@ function kubunToDept(seisaku, ku) {
   if (v.includes("杉")) return "杉原";
   return "他";
 }
-const DEPTS = ["第1工場", "SUS工場", "コイル", "杉原", "他"];
+const DEPTS = ["第1工場", "SUS工場", "コイル", "杉原", "第3工場", "他"];
 
 // 「製造」タブの読み込みだけ、Google Sheets APIを直接呼び出す(GASのWebアプリを経由しない分、速く安定する)。
 // 書き込み・連絡(伝言板)は今まで通りGAS経由。
@@ -199,10 +199,19 @@ async function loadJobs() {
   const header = rows[0];
   const idx = name => header.indexOf(name);
   const iSeizou = idx("製造番号"), iGenba = idx("現場名"), iNouki = idx("納期"), iHinmei = idx("品名"),
-    iSunpou = idx("寸法"), iKu = idx("区"), iSeisaku = idx("製"), iTosou = idx("塗装仕様"),
+    iSunpou = idx("寸法"), iJuken = idx("受・完"), iKu = idx("区"), iSeisaku = idx("製"), iTosou = idx("塗装仕様"),
     iZumen = idx("図"), iToroku = idx("登録日"),
     iJuchu = idx("受注日"), iSeisakuDay = idx("製作日"), iKansei = idx("完成日"),
     iNaiso = idx("内装日"), iGaiso = idx("外装日"), iShukka = idx("出荷日");
+
+  // 完成日が入っていて、かつ今日以前(今日を含む)であれば「第3工場(検査・塗装・出荷)対象」とみなす
+  function isDatePassed(v) {
+    const s = (v || "").toString().trim();
+    if (!s || s === "***") return false;
+    const d = new Date(s);
+    if (isNaN(d.getTime())) return false;
+    return d.setHours(0,0,0,0) <= new Date().setHours(0,0,0,0);
+  }
 
   return rows.slice(1)
     .filter(r => r[iSeizou] && r[iGenba])
@@ -212,7 +221,9 @@ async function loadJobs() {
         no: r[iSeizou],
         site: r[iGenba],
         due: r[iNouki] || "",
+        juken: r[iJuken] || "",
         dept: kubunToDept(r[iSeisaku], r[iKu]),
+        isDai3: isDatePassed(r[iKansei]),
         item: r[iHinmei] || "",
         dims: r[iSunpou] || "",
         paint: r[iTosou] || "",
@@ -255,7 +266,7 @@ function formatWhen(v) {
 function visibleJobs() {
   const q = state.query.trim();
   let jobs = state.jobs
-    .filter(j => state.dept === "すべて" || j.dept === state.dept)
+    .filter(j => state.dept === "すべて" || (state.dept === "第3工場" ? j.isDai3 : j.dept === state.dept))
     .filter(j => !q || j.no.includes(q) || j.site.includes(q));
   jobs = jobs.slice().sort((a, b) => {
     if (state.sort === "due") {
@@ -310,7 +321,7 @@ function renderJobsToolbar() {
     </div>
     <div class="dept-row">
       ${deptOptions.map(d => {
-        const n = d === "すべて" ? state.jobs.length : state.jobs.filter(j => j.dept === d).length;
+        const n = d === "すべて" ? state.jobs.length : d === "第3工場" ? state.jobs.filter(j => j.isDai3).length : state.jobs.filter(j => j.dept === d).length;
         return `<button class="dept-btn${state.dept === d ? " is-active" : ""}" data-action="dept" data-dept="${escapeHtml(d)}"><span>${escapeHtml(d)}</span><span class="dept-btn-n">${n}</span></button>`;
       }).join("")}
     </div>
@@ -346,7 +357,7 @@ function jobBody(j) {
       <span class="job-site">${escapeHtml(j.site)}</span>
       <span class="job-no">${escapeHtml(j.no)}</span>
     </div>
-    <div class="job-line1">納期 ${md(j.due)}<span class="sep"> │ </span>${escapeHtml(j.item)}<span class="sep"> │ </span>${escapeHtml(j.dims)}</div>
+    <div class="job-line1">納期 ${md(j.due)}<span class="sep"> │ </span>受・完 ${md(j.juken)}<span class="sep"> │ </span>${escapeHtml(j.item)}<span class="sep"> │ </span>${escapeHtml(j.dims)}</div>
     <div class="job-line2">${escapeHtml(j.paint || "塗装仕様 未入力")}</div>
     <div class="job-progress">
       ${(j.progress || []).map(st => `<div class="job-progress-seg${st === "done" ? " is-done" : st === "na" ? " is-na" : ""}"></div>`).join("")}
