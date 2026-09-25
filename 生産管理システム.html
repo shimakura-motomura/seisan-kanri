@@ -287,7 +287,7 @@
   .ich2-subtabs button.active { color: var(--color-accent); border-bottom-color: var(--color-accent); }
   .ich2-subtabs button:hover:not(.active) { color: var(--color-text); }
 
-  .ich2-summary { display: grid; grid-template-columns: repeat(5, 1fr); border: 2px solid var(--color-divider); border-bottom: 2px solid var(--color-divider); flex: none; }
+  .ich2-summary { display: grid; grid-template-columns: repeat(6, 1fr); border: 2px solid var(--color-divider); border-bottom: 2px solid var(--color-divider); flex: none; }
   .ich2-summary .cell { padding: 7px 16px; }
   .ich2-summary .cell + .cell { border-left: 1px solid var(--color-divider); }
   .ich2-summary .label { font-size: 10px; letter-spacing: 0.1em; color: var(--color-neutral-600); }
@@ -794,12 +794,6 @@
             <option value="no" selected>製造番号順</option>
           </select>
         </label>
-        <div class="ich2-jump-group">
-          列へ移動
-          <button data-jump="ich2-col-a">寸法・塗装</button>
-          <button data-jump="ich2-col-b">進捗</button>
-          <button data-jump="ich2-col-c">担当・詳細</button>
-        </div>
         <div class="ich2-toolbar-right">
           <div class="ich2-count" id="ich2Count"></div>
         </div>
@@ -1189,13 +1183,23 @@
     return "他";
   }
 
-  // 出荷済みかどうかの判定:出荷日が入っていて、かつ今日以前(今日を含む)の日付であれば出荷済み
-  function ich2IsShipped(shukkaVal) {
-    const s = (shukkaVal || "").toString().trim();
-    if (!s) return false;
+  // 日付が入っていて、かつ今日以前(今日を含む)であればtrue(「済み」判定の共通処理)
+  function ich2DatePassed(val) {
+    const s = (val || "").toString().trim();
+    if (!s || s === "***") return false;
     const d = new Date(s);
     if (isNaN(d.getTime())) return false;
     return d.setHours(0,0,0,0) <= new Date().setHours(0,0,0,0);
+  }
+
+  // 出荷済みかどうかの判定:出荷日が入っていて、かつ今日以前(今日を含む)の日付であれば出荷済み
+  function ich2IsShipped(shukkaVal) {
+    return ich2DatePassed(shukkaVal);
+  }
+
+  // 第3工場(検査・塗装・出荷)対象かどうかの判定:部署を問わず、完成日が入っていれば対象
+  function ich2IsDai3(kanseiVal) {
+    return ich2DatePassed(kanseiVal);
   }
 
   // コイル関連かどうかの横断判定(部署がコイル/コイル使用チェック/品名に熱交換器/塗装仕様に熱源、のいずれか)
@@ -1282,13 +1286,6 @@
       e.target.classList.toggle("active", ich2State.showShipped);
       ich2RenderAll();
     });
-    document.querySelectorAll(".ich2-jump-group button[data-jump]").forEach(btn => {
-      btn.addEventListener("click", () => {
-        const sc = document.getElementById("ich2Scroller");
-        const el = document.getElementById(btn.dataset.jump);
-        if (el) sc.scrollTo({ left: Math.max(0, el.offsetLeft - 390), behavior: "smooth" });
-      });
-    });
 
     document.getElementById("ich2BuyQuery").addEventListener("input", e => { ich2BuyState.query = e.target.value; ich2RenderAll(); });
     document.querySelectorAll("#ich2BuyFilterGroup button").forEach(btn => {
@@ -1325,6 +1322,8 @@
       if (ich2State.dept !== "全数") {
         if (ich2State.dept === "コイル") {
           if (!ich2IsCoilRelated(r[iSeisaku], r[iKu], r[iCoiluse], r[iHinmei], r[iTosou])) return false;
+        } else if (ich2State.dept === "第3工場") {
+          if (!ich2IsDai3(r[iKansei])) return false;
         } else if (ich2Kubun(r[iSeisaku], r[iKu]) !== ich2State.dept) {
           return false;
         }
@@ -1355,18 +1354,19 @@
       });
     }
 
-    // 区分別サマリー(コイルは部署をまたぐ横断集計。第1・SUS・他は純粋な部署のみで集計。出荷済み表示チェックに連動)
+    // 区分別サマリー(コイル・第3工場は部署をまたぐ横断集計。第1・SUS・他は純粋な部署のみで集計。出荷済み表示チェックに連動)
     const summaryBase = ich2State.showShipped ? ich2All : ich2All.filter(r => !ich2IsShipped(r[iShukka]));
-    const counts = { total: summaryBase.length, dai1: 0, sus: 0, coil: 0, other: 0 };
+    const counts = { total: summaryBase.length, dai1: 0, sus: 0, coil: 0, dai3: 0, other: 0 };
     summaryBase.forEach(r => {
       const k = ich2Kubun(r[iSeisaku], r[iKu]);
       if (k === "第1工場") counts.dai1++;
       else if (k === "SUS工場") counts.sus++;
       else if (k !== "コイル") counts.other++;
       if (ich2IsCoilRelated(r[iSeisaku], r[iKu], r[iCoiluse], r[iHinmei], r[iTosou])) counts.coil++;
+      if (ich2IsDai3(r[iKansei])) counts.dai3++;
     });
     document.getElementById("ich2Summary").innerHTML = [
-      ["全数", counts.total], ["第1工場", counts.dai1], ["SUS工場", counts.sus], ["コイル", counts.coil], ["他", counts.other]
+      ["全数", counts.total], ["第1工場", counts.dai1], ["SUS工場", counts.sus], ["コイル", counts.coil], ["第3工場", counts.dai3], ["他", counts.other]
     ].map(([label,val]) =>
       '<button type="button" class="cell ich2-summary-btn' + (ich2State.dept === label ? ' active' : '') + '" data-dept="' + ich2Esc(label) + '">' +
       '<div class="label">'+label+'</div><div class="value">'+val+'<span>件</span></div></button>'
