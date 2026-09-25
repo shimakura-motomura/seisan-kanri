@@ -78,6 +78,7 @@ input:focus-visible, textarea:focus-visible, button:focus-visible { outline: 2px
 .job-progress { display: flex; gap: 2px; margin-top: 4px; }
 .job-progress-seg { flex: 1 1 0; height: 2px; background: var(--divider-25); }
 .job-progress-seg.is-done { background: #2f7d4f; }
+.job-progress-seg.is-na { background: #d98324; }
 .job-history { flex: 0 0 46px; border-left: 1px solid var(--divider-20); background: transparent; color: var(--muted-2); display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 1px; }
 .job-history:active { background: var(--ink); color: var(--bg); }
 .job-history-label { font-size: 10px; font-weight: 700; }
@@ -144,7 +145,7 @@ const GAS_URL = "https://script.google.com/macros/s/AKfycbxsFKa97XhdXtugAVSXMp0V
 const state = {
   tab: "製造",
   query: "",
-  sort: "due",
+  sort: "no",
   dept: "すべて",
   sheet: null,
   name: "",
@@ -208,8 +209,14 @@ async function loadJobs() {
         dims: r[iSunpou] || "",
         paint: r[iTosou] || "",
         zumen: zumen,
-        // 進捗バー用:受注日→製作日→完成日→内装日→外装日→出荷日の6段階。日付が入っていれば完了扱い
-        progress: [r[iJuchu], r[iSeisakuDay], r[iKansei], r[iNaiso], r[iGaiso], r[iShukka]].map(v => !!v),
+        // 進捗バー用:受注日→製作日→完成日→内装日→外装日→出荷日の6段階。
+        // 日付が入っていれば完了、「***」なら対象外(その工程が無い)、空欄なら未着手
+        progress: [r[iJuchu], r[iSeisakuDay], r[iKansei], r[iNaiso], r[iGaiso], r[iShukka]].map(v => {
+          const s = (v || "").toString().trim();
+          if (s === "***") return "na";
+          if (s) return "done";
+          return "pending";
+        }),
         // 図面履歴機能は未実装のため、現状は「登録されている最新図面」のみを1件として表示する
         revs: zumen ? [{ rev: "Rev.1", date: r[iToroku] || "", note: "登録図面", url: zumen }] : []
       };
@@ -248,7 +255,10 @@ function visibleJobs() {
       const db = b.due ? new Date(b.due).getTime() : Infinity;
       return da - db;
     }
-    return a.no.localeCompare(b.no);
+    // 製造番号順(先頭のアルファベットは製品種類の区分なので、末尾の数字部分だけで比較する)
+    const na = parseInt((a.no || "").match(/(\d+)/)?.[1] || "0", 10);
+    const nb = parseInt((b.no || "").match(/(\d+)/)?.[1] || "0", 10);
+    return na - nb;
   });
   return jobs;
 }
@@ -331,7 +341,7 @@ function jobBody(j) {
     <div class="job-line1">納期 ${md(j.due)}<span class="sep"> │ </span>${escapeHtml(j.item)}<span class="sep"> │ </span>${escapeHtml(j.dims)}</div>
     <div class="job-line2">${escapeHtml(j.paint || "塗装仕様 未入力")}</div>
     <div class="job-progress">
-      ${(j.progress || []).map(done => `<div class="job-progress-seg${done ? " is-done" : ""}"></div>`).join("")}
+      ${(j.progress || []).map(st => `<div class="job-progress-seg${st === "done" ? " is-done" : st === "na" ? " is-na" : ""}"></div>`).join("")}
     </div>
   `;
 }
