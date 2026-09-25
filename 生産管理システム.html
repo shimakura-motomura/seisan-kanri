@@ -1126,6 +1126,21 @@
 
 <script>
   const GAS_URL = "https://script.google.com/macros/s/AKfycbxsFKa97XhdXtugAVSXMp0Vz64-fR-XrcmkF2U_W_A_Dl9PvCds6KfdtHhjXX7GxjYA6Q/exec";
+  // 一覧画面の「読み込み」専用:Google Sheets APIを直接呼び出す(GASのWebアプリを経由しない分、速く安定する)。
+  // 書き込み(登録・進捗更新など)は今まで通りGAS経由。
+  const SHEETS_API_KEY = "AIzaSyDrmFie6Mie-8k64rEQT87nHflxZ8Dk94w";
+  const SPREADSHEET_ID = "1CWDU2dsX_Sk3uLFnoZ5bJ4LxumypNLPJ9UfzLlU1_Z4";
+  async function ich2FetchViaSheetsApi() {
+    const ranges = ["製作手配一覧", "買入品"].map(r => "ranges=" + encodeURIComponent(r)).join("&");
+    const url = "https://sheets.googleapis.com/v4/spreadsheets/" + SPREADSHEET_ID + "/values:batchGet?" + ranges + "&key=" + SHEETS_API_KEY;
+    const res = await fetch(url);
+    if (!res.ok) {
+      const body = await res.text().catch(() => "");
+      throw new Error("Sheets APIエラー: HTTP " + res.status + (body ? " " + body.slice(0, 200) : ""));
+    }
+    const data = await res.json();
+    return data.valueRanges; // [{values:[[...]]}, {values:[[...]]}]
+  }
 
   // ================= ナビゲーション =================
   const initialized = { seisaku: false, tosou: false, shukka: false, renraku: false, ichiran: false };
@@ -1237,6 +1252,23 @@
     return { bg: "var(--color-neutral-200)", fg: "var(--color-neutral-700)", bd: "var(--color-neutral-400)" };
   }
 
+  // 通信失敗時に自動で数回リトライする(GAS側の一時的な不調を吸収するため)。
+  // 最大2回まで再試行(合計3回)、失敗のたびに少し待ち時間を伸ばす。それでもダメなら諦めてエラーを投げる。
+  async function ich2FetchJson(url, retries = 2) {
+    let lastErr;
+    for (let attempt = 0; attempt <= retries; attempt++) {
+      try {
+        const res = await fetch(url);
+        if (!res.ok) throw new Error("HTTP " + res.status);
+        return await res.json();
+      } catch (e) {
+        lastErr = e;
+        if (attempt < retries) await new Promise(r => setTimeout(r, 1500 * (attempt + 1)));
+      }
+    }
+    throw lastErr;
+  }
+
   async function initIchiran() {
     const WEEKDAY = ["日","月","火","水","木","金","土"];
     const t = new Date();
@@ -1244,29 +1276,21 @@
       t.getFullYear() + "/" + String(t.getMonth()+1).padStart(2,"0") + "/" + String(t.getDate()).padStart(2,"0") +
       "(" + WEEKDAY[t.getDay()] + ") 現在";
     const statusEl = document.getElementById("ich2Count");
-    // 製作品・買入品の2つのデータ取得を並行して行う(順番待ちせず同時に走らせることで、待ち時間を短縮する)
-    const [productsResult, buyResult] = await Promise.allSettled([
-      fetch(GAS_URL + "?type=products").then(res => res.json()),
-      fetch(GAS_URL + "?type=buy").then(res => res.json())
-    ]);
-
-    if (productsResult.status === "fulfilled") {
-      const rows = productsResult.value;
-      ich2Header = rows[0];
+    statusEl.textContent = "読み込み中...";
+    try {
+      const valueRanges = await ich2FetchViaSheetsApi();
+      const rows = (valueRanges[0] && valueRanges[0].values) || [];
+      ich2Header = rows[0] || [];
       const idxGenba = ich2Header.indexOf("現場名");
       ich2All = rows.slice(1).filter(r => r[0] && r[idxGenba]);
-    } else {
-      statusEl.textContent = "読み込みに失敗しました: " + productsResult.reason.message;
-      return;
-    }
 
-    if (buyResult.status === "fulfilled") {
-      const buyRows = buyResult.value;
-      ich2BuyHeader = buyRows[0];
+      const buyRows = (valueRanges[1] && valueRanges[1].values) || [];
+      ich2BuyHeader = buyRows[0] || [];
       const idxModel = ich2BuyHeader.indexOf("型式");
       ich2BuyAll = buyRows.slice(1).filter(r => r[idxModel]);
-    } else {
-      console.error("買入品の読み込みに失敗しました", buyResult.reason);
+    } catch (e) {
+      statusEl.textContent = "読み込みに失敗しました: " + e.message;
+      return;
     }
 
     document.querySelectorAll("#ich2Subtabs button").forEach(btn => {
@@ -1704,7 +1728,7 @@
     tabSel.addEventListener("change", updateNaiyouOptions);
     updateNaiyouOptions();
 
-    fetch(GAS_URL + "?type=bui").then(r => r.json()).then(rows => {
+    ich2FetchJson(GAS_URL + "?type=bui").then(rows => {
       const buiList = rows.slice(1).map(r => r[0]).filter(Boolean);
       document.getElementById("t_bui").innerHTML = buiList.map(b => `<option value="${b}">${b}</option>`).join("");
     }).catch(e => console.error("部位マスタ読み込み失敗", e));
@@ -1899,10 +1923,8 @@
 
   async function tsLoadMasters() {
     try {
-      const [buiRes, prodRes] = await Promise.all([fetch(GAS_URL + "?type=bui"), fetch(GAS_URL + "?type=products")]);
-      const buiRows = await buiRes.json();
+      const [buiRows, prodRows] = await Promise.all([ich2FetchJson(GAS_URL + "?type=bui"), ich2FetchJson(GAS_URL + "?type=products")]);
       tsBuiList = buiRows.slice(1).map(r => r[0]).filter(Boolean);
-      const prodRows = await prodRes.json();
       const header = prodRows[0];
       const idxSeizou = header.indexOf("製造番号"), idxGenba = header.indexOf("現場名"), idxHinmei = header.indexOf("品名"), idxSunpou = header.indexOf("寸法"), idxZumen = header.indexOf("図");
       prodRows.slice(1).forEach(r => {
@@ -2008,8 +2030,7 @@
     statusEl.textContent = "読み込み中...";
     table.querySelector("thead").innerHTML = ""; table.querySelector("tbody").innerHTML = "";
     try {
-      const res = await fetch(GAS_URL + "?type=tosou_" + encodeURIComponent(tab.key));
-      const rows = await res.json();
+      const rows = await ich2FetchJson(GAS_URL + "?type=tosou_" + encodeURIComponent(tab.key));
       const header = rows[0];
       const idxSeizou = header.indexOf("製造番号");
       const idxGenba = header.indexOf("現場名");
@@ -2117,8 +2138,7 @@
     statusEl.textContent = "読み込み中...";
     table.querySelector("thead").innerHTML = ""; table.querySelector("tbody").innerHTML = "";
     try {
-      const res = await fetch(GAS_URL + "?type=tosou_メッキスケ");
-      const rows = await res.json();
+      const rows = await ich2FetchJson(GAS_URL + "?type=tosou_メッキスケ");
       const header = rows[0];
       const idxGenba = header.indexOf("現場名");
       let body = rows.slice(1).filter(r => r[0] && r[1] && r[idxGenba] !== header[idxGenba]);
@@ -2184,8 +2204,7 @@
     const statusEl = document.getElementById("skkCountLabel");
     statusEl.textContent = "読み込み中...";
     try {
-      const res = await fetch(GAS_URL + "?type=shukka");
-      const rows = await res.json();
+      const rows = await ich2FetchJson(GAS_URL + "?type=shukka");
       const header = rows[0];
       const idx = name => header.indexOf(name);
       const iLoadDate = idx("積込日"), iDate = idx("搬入日"), iTime = idx("時間"), iSite = idx("現場名"), iItem = idx("品名"),
