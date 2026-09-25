@@ -185,9 +185,17 @@ function kubunToDept(seisaku, ku) {
 }
 const DEPTS = ["第1工場", "SUS工場", "コイル", "杉原", "他"];
 
+// 「製造」タブの読み込みだけ、Google Sheets APIを直接呼び出す(GASのWebアプリを経由しない分、速く安定する)。
+// 書き込み・連絡(伝言板)は今まで通りGAS経由。
+const SHEETS_API_KEY = "AIzaSyDrmFie6Mie-8k64rEQT87nHflxZ8Dk94w";
+const SPREADSHEET_ID = "1CWDU2dsX_Sk3uLFnoZ5bJ4LxumypNLPJ9UfzLlU1_Z4";
+
 async function loadJobs() {
-  const res = await fetch(GAS_URL + "?type=products");
-  const rows = await res.json();
+  const url = "https://sheets.googleapis.com/v4/spreadsheets/" + SPREADSHEET_ID + "/values/" + encodeURIComponent("製作手配一覧") + "?key=" + SHEETS_API_KEY;
+  const res = await fetch(url);
+  if (!res.ok) throw new Error("Sheets APIエラー: HTTP " + res.status);
+  const data = await res.json();
+  const rows = data.values || [];
   const header = rows[0];
   const idx = name => header.indexOf(name);
   const iSeizou = idx("製造番号"), iGenba = idx("現場名"), iNouki = idx("納期"), iHinmei = idx("品名"),
