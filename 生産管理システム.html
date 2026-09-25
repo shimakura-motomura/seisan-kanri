@@ -1547,8 +1547,8 @@
     const original = td.innerHTML;
     td.innerHTML =
       '<span style="display:inline-flex;gap:2px;align-items:center;">' +
-      '<input type="text" class="ich2-prog-input" value="'+current.replace(/"/g,"&quot;")+'" placeholder="例: 9/10" style="width:70px;font-size:10px;padding:1px 3px;border:1px solid var(--color-accent);text-align:center;font-family:inherit;">' +
-      '<button type="button" class="ich2-prog-na-btn" title="対象外にする" style="font-size:9px;padding:1px 3px;border:1px solid var(--color-neutral-400);background:var(--color-neutral-200);color:var(--color-neutral-700);cursor:pointer;">対象外</button>' +
+      '<input type="text" class="ich2-prog-input" value="'+current.replace(/"/g,"&quot;")+'" placeholder="例: 9/10" style="width:80px;font-size:14px;padding:5px 6px;border:2px solid var(--color-accent);text-align:center;font-family:inherit;box-sizing:border-box;">' +
+      '<button type="button" class="ich2-prog-na-btn" title="対象外にする" style="font-size:12px;padding:5px 6px;border:1px solid var(--color-neutral-400);background:var(--color-neutral-200);color:var(--color-neutral-700);cursor:pointer;white-space:nowrap;">対象外</button>' +
       '</span>';
     const input = td.querySelector("input");
     input.focus();
@@ -1584,7 +1584,7 @@
     const seizouBangou = td.dataset.seizou;
     const current = td.dataset.val || "";
     const original = td.innerHTML;
-    td.innerHTML = '<input type="text" class="ich2-prog-input" value="'+current.replace(/"/g,"&quot;")+'" placeholder="例: 2026/10/15" style="width:74px;font-size:10px;padding:1px 3px;border:1px solid var(--color-accent);text-align:center;font-family:inherit;">';
+    td.innerHTML = '<input type="text" class="ich2-prog-input" value="'+current.replace(/"/g,"&quot;")+'" placeholder="例: 2026/10/15" style="width:90px;font-size:14px;padding:5px 6px;border:2px solid var(--color-accent);text-align:center;font-family:inherit;box-sizing:border-box;">';
     const input = td.querySelector("input");
     input.focus();
     input.select();
