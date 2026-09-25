@@ -1521,6 +1521,23 @@
     });
   }
 
+  // 年を省略した日付入力(例:「12/25」)に、適切な年を自動で補う。
+  // JavaScript標準の解釈に任せると2001年など意味不明な年になってしまうため、保存前に必ずここを通す。
+  // 「今年」を基準に、結果が半年以上前になってしまう場合は「来年」とみなす。それ以外の形式(既に年入り・期間表記・***など)はそのまま返す。
+  function ich2NormalizeDateInput(raw) {
+    const s = (raw || "").trim();
+    if (!s || s === "***") return s;
+    const m = s.match(/^(\d{1,2})[\/\-](\d{1,2})$/);
+    if (!m) return s;
+    const month = parseInt(m[1], 10), day = parseInt(m[2], 10);
+    const today = new Date();
+    let year = today.getFullYear();
+    const candidate = new Date(year, month - 1, day);
+    const diffDays = (candidate.getTime() - today.setHours(0,0,0,0)) / 86400000;
+    if (diffDays < -183) year += 1;
+    return year + "/" + month + "/" + day;
+  }
+
   // 進捗バッジをクリックした時、その場でテキスト入力に切り替える
   function ich2StartEditProgress(td) {
     if (td.querySelector("input")) return; // 編集中は二重に開かない
@@ -1541,7 +1558,8 @@
       if (done) return;
       done = true;
       if (save) {
-        const newVal = valueOverride !== undefined ? valueOverride : input.value.trim();
+        const rawVal = valueOverride !== undefined ? valueOverride : input.value.trim();
+        const newVal = rawVal === "***" ? rawVal : ich2NormalizeDateInput(rawVal);
         if (newVal === current) { td.innerHTML = original; return; }
         ich2SaveProgress(seizouBangou, columnName, newVal, td, original);
       } else {
@@ -1575,7 +1593,7 @@
       if (done) return;
       done = true;
       if (save) {
-        const newVal = input.value.trim();
+        const newVal = ich2NormalizeDateInput(input.value.trim());
         if (newVal === current) { td.innerHTML = original; return; }
         ich2SaveProgress(seizouBangou, "納期", newVal, td, original);
       } else {
