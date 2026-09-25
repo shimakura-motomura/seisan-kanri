@@ -1232,24 +1232,29 @@
       t.getFullYear() + "/" + String(t.getMonth()+1).padStart(2,"0") + "/" + String(t.getDate()).padStart(2,"0") +
       "(" + WEEKDAY[t.getDay()] + ") 現在";
     const statusEl = document.getElementById("ich2Count");
-    try {
-      const res = await fetch(GAS_URL + "?type=products");
-      const rows = await res.json();
+    // 製作品・買入品の2つのデータ取得を並行して行う(順番待ちせず同時に走らせることで、待ち時間を短縮する)
+    const [productsResult, buyResult] = await Promise.allSettled([
+      fetch(GAS_URL + "?type=products").then(res => res.json()),
+      fetch(GAS_URL + "?type=buy").then(res => res.json())
+    ]);
+
+    if (productsResult.status === "fulfilled") {
+      const rows = productsResult.value;
       ich2Header = rows[0];
       const idxGenba = ich2Header.indexOf("現場名");
       ich2All = rows.slice(1).filter(r => r[0] && r[idxGenba]);
-    } catch (e) {
-      statusEl.textContent = "読み込みに失敗しました: " + e.message;
+    } else {
+      statusEl.textContent = "読み込みに失敗しました: " + productsResult.reason.message;
       return;
     }
-    try {
-      const buyRes = await fetch(GAS_URL + "?type=buy");
-      const buyRows = await buyRes.json();
+
+    if (buyResult.status === "fulfilled") {
+      const buyRows = buyResult.value;
       ich2BuyHeader = buyRows[0];
       const idxModel = ich2BuyHeader.indexOf("型式");
       ich2BuyAll = buyRows.slice(1).filter(r => r[idxModel]);
-    } catch (e) {
-      console.error("買入品の読み込みに失敗しました", e);
+    } else {
+      console.error("買入品の読み込みに失敗しました", buyResult.reason);
     }
 
     document.querySelectorAll("#ich2Subtabs button").forEach(btn => {
