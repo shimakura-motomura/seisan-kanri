@@ -79,10 +79,8 @@ input:focus-visible, textarea:focus-visible, button:focus-visible { outline: 2px
 .job-progress-seg { flex: 1 1 0; height: 2px; background: var(--divider-25); }
 .job-progress-seg.is-done { background: #2f7d4f; }
 .job-progress-seg.is-na { background: #2f7d4f; }
-.job-history { flex: 0 0 46px; border-left: 1px solid var(--divider-20); background: transparent; color: var(--muted-2); display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 1px; }
-.job-history:active { background: var(--ink); color: var(--bg); }
-.job-history-label { font-size: 10px; font-weight: 700; }
-.job-history-count { font-size: 13px; font-weight: 900; }
+.job-dept { flex: 0 0 46px; border-left: 1px solid var(--divider-20); background: transparent; display: flex; align-items: center; justify-content: center; }
+.job-dept-label { font-size: 12px; font-weight: 900; color: var(--muted-2); }
 
 .empty { padding: 40px 16px; }
 .empty-title { font-size: 15px; font-weight: 700; }
@@ -177,13 +175,14 @@ function md(v) {
 // 製作区分(スプレッドシートの「製」列)を、画面表示用の部署名に変換
 function kubunToDept(seisaku, ku) {
   const v = String(seisaku || "");
-  if ((ku || "").includes("コイル") || v.includes("コイル")) return "コイル";
-  if (v === "1" || v === "第一") return "第1工場";
-  if (v === "S") return "SUS工場";
-  if (v.includes("杉")) return "杉原";
+  const k = String(ku || "");
+  if (v.includes("コイル") || v.includes("ｺｲﾙ") || k.includes("コイル") || k.includes("ｺｲﾙ")) return "コイル";
+  if (v === "1" || v.includes("第一") || v.includes("第1")) return "第1工場";
+  if (v === "S" || v.includes("SUS")) return "SUS工場";
   return "他";
 }
-const DEPTS = ["第1工場", "SUS工場", "コイル", "杉原", "第3工場", "他"];
+const DEPTS = ["第3工場", "第1工場", "SUS工場", "コイル", "他"];
+const DEPT_LABELS = { "すべて": "全", "第3工場": "第3", "第1工場": "第1", "SUS工場": "SUS", "コイル": "コイル", "他": "他" };
 
 // 「製造」タブの読み込みだけ、Google Sheets APIを直接呼び出す(GASのWebアプリを経由しない分、速く安定する)。
 // 書き込み・連絡(伝言板)は今まで通りGAS経由。
@@ -322,7 +321,7 @@ function renderJobsToolbar() {
     <div class="dept-row">
       ${deptOptions.map(d => {
         const n = d === "すべて" ? state.jobs.length : d === "第3工場" ? state.jobs.filter(j => j.isDai3).length : state.jobs.filter(j => j.dept === d).length;
-        return `<button class="dept-btn${state.dept === d ? " is-active" : ""}" data-action="dept" data-dept="${escapeHtml(d)}"><span>${escapeHtml(d)}</span><span class="dept-btn-n">${n}</span></button>`;
+        return `<button class="dept-btn${state.dept === d ? " is-active" : ""}" data-action="dept" data-dept="${escapeHtml(d)}"><span>${escapeHtml(DEPT_LABELS[d] || d)}</span><span class="dept-btn-n">${n}</span></button>`;
       }).join("")}
     </div>
   `;
@@ -341,10 +340,9 @@ function renderJobsTab() {
           ${j.zumen
             ? `<a class="job-main" href="${escapeHtml(j.zumen)}" target="_blank" rel="noopener">${jobBody(j)}</a>`
             : `<div class="job-main">${jobBody(j)}</div>`}
-          <button class="job-history" data-action="job-history" data-no="${escapeHtml(j.no)}">
-            <span class="job-history-label">履歴</span>
-            <span class="job-history-count">${j.revs.length}</span>
-          </button>
+          <div class="job-dept">
+            <span class="job-dept-label">${escapeHtml(DEPT_LABELS[j.dept] || j.dept)}</span>
+          </div>
         </div>
       `).join("")}
     </div>
