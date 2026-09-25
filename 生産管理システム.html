@@ -325,7 +325,7 @@
   td.center { text-align: center; }
   td.right { text-align: right; }
   .ich2-list .grp-end { border-right: 2px solid var(--color-text); }
-  table.ich2-list tbody td { padding: 1px 4px; border-bottom: 1px solid var(--color-divider); }
+  table.ich2-list tbody td { padding: 1px 3px; border-bottom: 1px solid var(--color-divider); }
   .ich2-sticky-col { position: sticky; z-index: 2; background: var(--rowbg); }
   .ich2-nowrap { white-space: nowrap; }
   .ich2-ellipsis { overflow: hidden; text-overflow: ellipsis; }
@@ -335,8 +335,8 @@
   .ich2-no-btn:hover { color: var(--color-accent-700); }
   .ich2-chip { display: inline-block; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; padding: 0 3px; font-size: 10px; font-weight: 700; line-height: 1.5; border: 1px solid transparent; text-align: center; }
   .ich2-chip.ich2-chip-seisaku { width: 32px; }
-  .ich2-badge { display: inline-flex; align-items: center; justify-content: center; gap: 3px; height: 16px; width: 36px; font-size: 10px; font-variant-numeric: tabular-nums; border: 1px solid transparent; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-  .ich2-badge.ich2-badge-wide { width: 62px; }
+  .ich2-badge { display: inline-flex; align-items: center; justify-content: center; gap: 3px; height: 16px; width: 32px; font-size: 10px; font-variant-numeric: tabular-nums; border: 1px solid transparent; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .ich2-badge.ich2-badge-wide { width: 56px; }
   .ich2-prog-cell { cursor: pointer; }
   .ich2-nouki-cell { cursor: pointer; }
   .ich2-prog-cell:hover { background: rgba(236,48,19,0.08); }
@@ -808,10 +808,10 @@
       <div id="ich2Scroller">
         <table class="ich2-list">
           <colgroup>
-            <col style="width:28px"><col style="width:68px"><col style="width:44px"><col style="width:112px"><col style="width:90px">
-            <col style="width:130px"><col style="width:40px"><col style="width:28px"><col style="width:40px"><col style="width:313px">
-            <col style="width:41px"><col style="width:41px"><col style="width:41px"><col style="width:67px"><col style="width:67px"><col style="width:41px">
-            <col style="width:40px"><col style="width:64px"><col style="width:38px"><col style="width:58px"><col style="width:58px"><col style="width:60px">
+            <col style="width:28px"><col style="width:62px"><col style="width:40px"><col style="width:104px"><col style="width:84px">
+            <col style="width:122px"><col style="width:36px"><col style="width:26px"><col style="width:34px"><col style="width:423px">
+            <col style="width:36px"><col style="width:36px"><col style="width:36px"><col style="width:60px"><col style="width:60px"><col style="width:36px">
+            <col style="width:36px"><col style="width:58px"><col style="width:34px"><col style="width:52px"><col style="width:52px"><col style="width:54px">
           </colgroup>
           <thead>
             <tr>
@@ -1545,8 +1545,10 @@
     const columnName = td.dataset.col;
     const current = td.dataset.val || "";
     const original = td.innerHTML;
+    td.style.position = "relative";
+    td.style.zIndex = "50";
     td.innerHTML =
-      '<span style="display:inline-flex;gap:2px;align-items:center;">' +
+      '<span style="position:absolute;top:50%;left:0;transform:translateY(-50%);display:inline-flex;gap:2px;align-items:center;background:var(--color-bg);padding:2px;box-shadow:0 2px 8px rgba(32,30,29,0.25);z-index:50;">' +
       '<input type="text" class="ich2-prog-input" value="'+current.replace(/"/g,"&quot;")+'" placeholder="例: 9/10" style="width:80px;font-size:14px;padding:5px 6px;border:2px solid var(--color-accent);text-align:center;font-family:inherit;box-sizing:border-box;">' +
       '<button type="button" class="ich2-prog-na-btn" title="対象外にする" style="font-size:12px;padding:5px 6px;border:1px solid var(--color-neutral-400);background:var(--color-neutral-200);color:var(--color-neutral-700);cursor:pointer;white-space:nowrap;">対象外</button>' +
       '</span>';
@@ -1554,16 +1556,18 @@
     input.focus();
     input.select();
     let done = false;
+    const resetTdStyle = () => { td.style.position = ""; td.style.zIndex = ""; };
     const finish = (save, valueOverride) => {
       if (done) return;
       done = true;
       if (save) {
         const rawVal = valueOverride !== undefined ? valueOverride : input.value.trim();
         const newVal = rawVal === "***" ? rawVal : ich2NormalizeDateInput(rawVal);
-        if (newVal === current) { td.innerHTML = original; return; }
-        ich2SaveProgress(seizouBangou, columnName, newVal, td, original);
+        if (newVal === current) { td.innerHTML = original; resetTdStyle(); return; }
+        ich2SaveProgress(seizouBangou, columnName, newVal, td, original); // 成功時は再描画で自動的にリセットされる
       } else {
         td.innerHTML = original;
+        resetTdStyle();
       }
     };
     td.querySelector(".ich2-prog-na-btn").addEventListener("click", (e) => { e.stopPropagation(); finish(true, "***"); });
@@ -1584,7 +1588,9 @@
     const seizouBangou = td.dataset.seizou;
     const current = td.dataset.val || "";
     const original = td.innerHTML;
-    td.innerHTML = '<input type="text" class="ich2-prog-input" value="'+current.replace(/"/g,"&quot;")+'" placeholder="例: 2026/10/15" style="width:90px;font-size:14px;padding:5px 6px;border:2px solid var(--color-accent);text-align:center;font-family:inherit;box-sizing:border-box;">';
+    td.style.position = "relative";
+    td.style.zIndex = "50";
+    td.innerHTML = '<input type="text" class="ich2-prog-input" value="'+current.replace(/"/g,"&quot;")+'" placeholder="例: 2026/10/15" style="position:absolute;top:50%;left:0;transform:translateY(-50%);width:90px;font-size:14px;padding:5px 6px;border:2px solid var(--color-accent);text-align:center;font-family:inherit;box-sizing:border-box;background:var(--color-bg);box-shadow:0 2px 8px rgba(32,30,29,0.25);">';
     const input = td.querySelector("input");
     input.focus();
     input.select();
@@ -1594,10 +1600,12 @@
       done = true;
       if (save) {
         const newVal = ich2NormalizeDateInput(input.value.trim());
-        if (newVal === current) { td.innerHTML = original; return; }
-        ich2SaveProgress(seizouBangou, "納期", newVal, td, original);
+        if (newVal === current) { td.innerHTML = original; td.style.position = ""; td.style.zIndex = ""; return; }
+        ich2SaveProgress(seizouBangou, "納期", newVal, td, original); // 成功時は再描画で自動的にリセットされる
       } else {
         td.innerHTML = original;
+        td.style.position = "";
+        td.style.zIndex = "";
       }
     };
     input.addEventListener("keydown", (e) => {
