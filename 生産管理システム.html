@@ -1297,6 +1297,34 @@
     return ich2DatePassed(kanseiVal);
   }
 
+  // 一覧の酸洗〜他の列は幅が狭いため、セルには「該当する部位」を1〜2文字だけ表示する。
+  // (例:「内熱源：BP」→「内」、「架T：メッキ」→「架」)。元の文章はセルのtitle属性(マウスオーバー)で見られる。
+  const ICH2_TOSOU_PREFIX_MAP = [
+    ["プロ内", "内"], ["プロ外", "外"],
+    ["内熱源", "内"], ["外熱源", "外"],
+    ["内被熱", "内"], ["外被熱", "外"],
+    ["内管", "内"], ["外管", "外"],
+    ["内脚", "内"], ["外脚", "外"],
+    ["架T", "架"], ["架ﾃ", "架"]
+  ];
+  function ich2TosouShortOne(frag) {
+    const f = String(frag || "").trim();
+    if (!f) return "";
+    for (const [prefix, label] of ICH2_TOSOU_PREFIX_MAP) {
+      if (f.startsWith(prefix)) return label;
+    }
+    const m = f.match(/^(内|外|脚|架|管|本)/);
+    if (m) return m[1];
+    const colonIdx = f.search(/[：:]/);
+    const head = colonIdx !== -1 ? f.slice(0, colonIdx) : f;
+    return head.slice(0, 2) || f.slice(0, 2);
+  }
+  function ich2TosouShort(val) {
+    const s = String(val || "").trim();
+    if (!s) return "";
+    return s.split("/").map(ich2TosouShortOne).filter(Boolean).join("/");
+  }
+
   // コイル関連かどうかの横断判定(部署がコイル/コイル使用チェック/品名に熱交換器/塗装仕様に熱源、のいずれか)
   function ich2IsCoilRelated(seisaku, ku, coiluse, hinmei, tosou) {
     if (ich2Kubun(seisaku, ku) === "コイル") return true;
@@ -1514,13 +1542,13 @@
           const sc = ich2SeisakuColor(r[iSeisaku], r[iKu]);
           return '<td class="ich2-nowrap"><span class="ich2-chip ich2-chip-seisaku" style="background:'+sc.bg+';color:'+sc.fg+';border-color:'+sc.bd+';">'+ich2Esc(ich2SeisakuLabel(r[iSeisaku]))+'</span></td>';
         })() +
-        '<td class="center ich2-nowrap ich2-ellipsis" title="'+ich2Esc(r[iTosouSanArai])+'">'+ich2Esc(r[iTosouSanArai])+'</td>' +
-        '<td class="center ich2-nowrap ich2-ellipsis" title="'+ich2Esc(r[iTosouKenma])+'">'+ich2Esc(r[iTosouKenma])+'</td>' +
-        '<td class="center ich2-nowrap ich2-ellipsis" title="'+ich2Esc(r[iTosouEpo])+'">'+ich2Esc(r[iTosouEpo])+'</td>' +
-        '<td class="center ich2-nowrap ich2-ellipsis" title="'+ich2Esc(r[iTosouFrp])+'">'+ich2Esc(r[iTosouFrp])+'</td>' +
-        '<td class="center ich2-nowrap ich2-ellipsis" title="'+ich2Esc(r[iTosouMekki])+'">'+ich2Esc(r[iTosouMekki])+'</td>' +
-        '<td class="center ich2-nowrap ich2-ellipsis" title="'+ich2Esc(r[iTosouGaisou])+'">'+ich2Esc(r[iTosouGaisou])+'</td>' +
-        '<td class="center ich2-nowrap ich2-ellipsis grp-end" title="'+ich2Esc(r[iTosouSonota])+'">'+ich2Esc(r[iTosouSonota])+'</td>' +
+        '<td class="center ich2-nowrap ich2-ellipsis" title="'+ich2Esc(r[iTosouSanArai])+'">'+ich2Esc(ich2TosouShort(r[iTosouSanArai]))+'</td>' +
+        '<td class="center ich2-nowrap ich2-ellipsis" title="'+ich2Esc(r[iTosouKenma])+'">'+ich2Esc(ich2TosouShort(r[iTosouKenma]))+'</td>' +
+        '<td class="center ich2-nowrap ich2-ellipsis" title="'+ich2Esc(r[iTosouEpo])+'">'+ich2Esc(ich2TosouShort(r[iTosouEpo]))+'</td>' +
+        '<td class="center ich2-nowrap ich2-ellipsis" title="'+ich2Esc(r[iTosouFrp])+'">'+ich2Esc(ich2TosouShort(r[iTosouFrp]))+'</td>' +
+        '<td class="center ich2-nowrap ich2-ellipsis" title="'+ich2Esc(r[iTosouMekki])+'">'+ich2Esc(ich2TosouShort(r[iTosouMekki]))+'</td>' +
+        '<td class="center ich2-nowrap ich2-ellipsis" title="'+ich2Esc(r[iTosouGaisou])+'">'+ich2Esc(ich2TosouShort(r[iTosouGaisou]))+'</td>' +
+        '<td class="center ich2-nowrap ich2-ellipsis grp-end" title="'+ich2Esc(r[iTosouSonota])+'">'+ich2Esc(ich2TosouShort(r[iTosouSonota]))+'</td>' +
         progIdx.map(ci => {
           const raw = r[ci] || "";
           const colName = H[ci];
