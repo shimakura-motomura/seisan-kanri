@@ -338,8 +338,6 @@
   .ich2-badge { display: inline-flex; align-items: center; justify-content: center; gap: 3px; height: 16px; width: 36px; font-size: 10px; font-variant-numeric: tabular-nums; border: 1px solid transparent; box-sizing: border-box; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
   .ich2-badge.ich2-badge-wide { width: 65px; }
   .ich2-prog-cell { cursor: pointer; padding-left: 0px !important; padding-right: 0px !important; }
-  .ich2-nouki-cell { cursor: pointer; }
-  .ich2-text-cell { cursor: pointer; }
   .ich2-prog-cell:hover { background: rgba(236,48,19,0.08); }
   .ich2-badge .dot { width: 4px; height: 4px; flex: none; }
   .ich2-footnote { padding: 6px 4px; font-size: 11px; color: var(--color-neutral-700); flex: none; }
@@ -880,14 +878,14 @@
               <th class="ich2-colh">型番</th>
               <th class="ich2-colh right">売価</th>
               <th class="ich2-colh">備考</th>
-              <th class="ich2-colh center">編集</th>
+              <th class="ich2-colh center">編</th>
             </tr>
           </thead>
           <tbody id="ich2Tbody"></tbody>
         </table>
         <div class="ich2-empty" id="ich2Empty" hidden>該当する案件がありません。検索条件を変えてください。</div>
       </div>
-      <div class="ich2-footnote">製造番号・納期・現場名・品名は固定表示。製造番号をクリックすると図面が開きます。横スクロールで 寸法・塗装 → 進捗 → 担当・詳細 → 編集 の順。</div>
+      <div class="ich2-footnote">製造番号・納期・現場名・品名は固定表示。製造番号をクリックすると図面が開きます。進捗(受・製・完・内・外・出)はクリックでその場編集、それ以外の項目は行右端の「✏」から編集画面で編集します。横スクロールで 寸法・塗装 → 進捗 → 担当・詳細 → 編 の順。</div>
       </div>
 
       <!-- ========== 買入品タブ ========== -->
@@ -1476,30 +1474,30 @@
         '<tr style="--rowbg:' + (checked ? "var(--color-accent-100)" : "var(--color-bg)") + ';">' +
         '<td class="ich2-sticky-col center" style="left:0;"><input type="checkbox" class="ich2-row-check" data-key="'+ich2Esc(key)+'" '+(checked?"checked":"")+' style="width:13px;height:13px;accent-color:var(--color-accent);"></td>' +
         '<td class="ich2-sticky-col" style="left:28px;">'+(zumen ? '<button type="button" class="ich2-no-btn" onclick="openZumenPreview(\''+ich2Esc(zumen).replace(/'/g,"&#39;")+'\')" title="図面をプレビュー">'+ich2Esc(r[iSeizou])+'</button>' : ich2Esc(r[iSeizou]))+'</td>' +
-        '<td class="ich2-sticky-col ich2-tabular ich2-nouki-cell" style="left:100px;" data-seizou="'+ich2Esc(no)+'" data-val="'+ich2Esc(ich2EditableDateValue(r[iNouki]))+'" title="'+ich2Esc(formatDateOnly(r[iNouki]))+'">'+ich2Esc(formatDateShort(r[iNouki]))+'</td>' +
+        '<td class="ich2-sticky-col ich2-tabular" style="left:100px;" title="'+ich2Esc(formatDateOnly(r[iNouki]))+'">'+ich2Esc(formatDateShort(r[iNouki]))+'</td>' +
         '<td class="ich2-sticky-col ich2-nowrap ich2-ellipsis" style="left:148px;">'+ich2Esc(r[iGenba])+'</td>' +
         '<td class="ich2-sticky-col ich2-muted ich2-nowrap ich2-ellipsis grp-end" style="left:272px;">'+ich2Esc(r[iHinmei])+'</td>' +
         '<td class="ich2-nowrap ich2-tabular">'+ich2Esc(r[iSunpou])+'</td>' +
         '<td class="ich2-nowrap ich2-tabular ich2-muted" title="'+ich2Esc(formatDateOnly(r[iJuken]))+'">'+ich2Esc(formatDateShort(r[iJuken]))+'</td>' +
-        '<td class="center ich2-muted ich2-text-cell" data-seizou="'+ich2Esc(no)+'" data-col="'+ich2Esc(H[iKu])+'" data-val="'+ich2Esc(r[iKu])+'" title="クリックして編集">'+ich2Esc(r[iKu])+'</td>' +
+        '<td class="center ich2-muted">'+ich2Esc(r[iKu])+'</td>' +
         (() => {
           const sc = ich2SeisakuColor(r[iSeisaku], r[iKu]);
-          return '<td class="ich2-nowrap ich2-text-cell" data-seizou="'+ich2Esc(no)+'" data-col="'+ich2Esc(H[iSeisaku])+'" data-val="'+ich2Esc(r[iSeisaku])+'" title="クリックして編集"><span class="ich2-chip ich2-chip-seisaku" style="background:'+sc.bg+';color:'+sc.fg+';border-color:'+sc.bd+';">'+ich2Esc(ich2SeisakuLabel(r[iSeisaku]))+'</span></td>';
+          return '<td class="ich2-nowrap"><span class="ich2-chip ich2-chip-seisaku" style="background:'+sc.bg+';color:'+sc.fg+';border-color:'+sc.bd+';">'+ich2Esc(ich2SeisakuLabel(r[iSeisaku]))+'</span></td>';
         })() +
-        '<td class="ich2-nowrap ich2-ellipsis grp-end ich2-text-cell" data-seizou="'+ich2Esc(no)+'" data-col="'+ich2Esc(H[iTosou])+'" data-val="'+ich2Esc(r[iTosou])+'" title="'+ich2Esc(r[iTosou])+'">'+ich2Esc(r[iTosou])+'</td>' +
+        '<td class="ich2-nowrap ich2-ellipsis grp-end" title="'+ich2Esc(r[iTosou])+'">'+ich2Esc(r[iTosou])+'</td>' +
         progIdx.map(ci => {
           const raw = r[ci] || "";
           const colName = H[ci];
           const wide = (ci === iNaiso || ci === iGaiso);
           return '<td class="center ich2-prog-cell" data-seizou="'+ich2Esc(no)+'" data-col="'+ich2Esc(colName)+'" data-val="'+ich2Esc(ich2EditableDateValue(raw))+'" title="クリックして編集">'+ich2Badge(ich2Cell(raw), wide)+'</td>';
         }).join("") +
-        '<td class="ich2-nowrap ich2-text-cell" data-seizou="'+ich2Esc(no)+'" data-col="'+ich2Esc(H[iTantou])+'" data-val="'+ich2Esc(r[iTantou])+'" title="クリックして編集">'+ich2Esc(r[iTantou])+'</td>' +
-        '<td class="ich2-nowrap ich2-ellipsis ich2-tabular ich2-muted ich2-text-cell" data-seizou="'+ich2Esc(no)+'" data-col="'+ich2Esc(H[iMsunpou])+'" data-val="'+ich2Esc(r[iMsunpou])+'" title="'+ich2Esc(r[iMsunpou])+'(クリックして編集)">'+ich2Esc(r[iMsunpou])+'</td>' +
-        '<td class="right ich2-tabular ich2-text-cell" data-seizou="'+ich2Esc(no)+'" data-col="'+ich2Esc(H[iShitsuryou])+'" data-val="'+ich2Esc(r[iShitsuryou])+'" title="クリックして編集">'+ich2Esc(r[iShitsuryou])+'</td>' +
-        '<td class="ich2-nowrap ich2-ellipsis ich2-tabular ich2-text-cell" data-seizou="'+ich2Esc(no)+'" data-col="'+ich2Esc(H[iKatabangou])+'" data-val="'+ich2Esc(r[iKatabangou])+'" title="'+ich2Esc(r[iKatabangou])+'(クリックして編集)">'+ich2Esc(r[iKatabangou])+'</td>' +
-        '<td class="right ich2-tabular ich2-text-cell" data-seizou="'+ich2Esc(no)+'" data-col="'+ich2Esc(H[iBaika])+'" data-val="'+ich2Esc(r[iBaika])+'" title="クリックして編集">'+ich2Esc(r[iBaika])+'</td>' +
-        '<td class="ich2-nowrap ich2-ellipsis ich2-text-cell" data-seizou="'+ich2Esc(no)+'" data-col="'+ich2Esc(H[iBiko])+'" data-val="'+ich2Esc(r[iBiko])+'" title="'+ich2Esc(r[iBiko])+'(クリックして自由記入)">'+ich2Esc(r[iBiko])+'</td>' +
-        '<td class="center"><button type="button" class="ich2-edit-btn" data-seizou="'+ich2Esc(no)+'" title="この製品の編集画面を開く">編集</button></td>' +
+        '<td class="ich2-nowrap">'+ich2Esc(r[iTantou])+'</td>' +
+        '<td class="ich2-nowrap ich2-ellipsis ich2-tabular ich2-muted" title="'+ich2Esc(r[iMsunpou])+'">'+ich2Esc(r[iMsunpou])+'</td>' +
+        '<td class="right ich2-tabular">'+ich2Esc(r[iShitsuryou])+'</td>' +
+        '<td class="ich2-nowrap ich2-ellipsis ich2-tabular" title="'+ich2Esc(r[iKatabangou])+'">'+ich2Esc(r[iKatabangou])+'</td>' +
+        '<td class="right ich2-tabular">'+ich2Esc(r[iBaika])+'</td>' +
+        '<td class="ich2-nowrap ich2-ellipsis" title="'+ich2Esc(r[iBiko])+'">'+ich2Esc(r[iBiko])+'</td>' +
+        '<td class="center"><button type="button" class="ich2-edit-btn" data-seizou="'+ich2Esc(no)+'" title="この製品の編集画面を開く">✏</button></td>' +
         '</tr>'
       );
     }).join("");
@@ -1509,17 +1507,11 @@
       btn.addEventListener("click", (e) => { e.stopPropagation(); ich2OpenEditModal(btn.dataset.seizou); });
     });
 
-    // 進捗バッジのクリックで、その場で日付を編集できるようにする
+    // 進捗(受・製・完・内・外・出)バッジのクリックだけ、その場で日付を編集できるようにする。
+    // それ以外の項目(納期・区・製・塗装仕様・担当者・m寸法・質量・型番・売価・備考)は、
+    // 行内ポップアップを廃止し、「✏」ボタンから開く一括編集画面(ich2OpenEditModal)で編集する。
     document.querySelectorAll("#ich2Tbody .ich2-prog-cell").forEach(td => {
       td.addEventListener("click", () => ich2StartEditProgress(td));
-    });
-    // 納期セルのクリックでも、その場で編集できるようにする(進捗のような色付き表示はせず、見た目はそのまま)
-    document.querySelectorAll("#ich2Tbody .ich2-nouki-cell").forEach(td => {
-      td.addEventListener("click", () => ich2StartEditNouki(td));
-    });
-    // 区・製・塗装仕様・担当者・m寸法・質量・型番・売価・備考もクリックでその場編集
-    document.querySelectorAll("#ich2Tbody .ich2-text-cell").forEach(td => {
-      td.addEventListener("click", () => ich2StartEditText(td));
     });
 
     // チェックボックス(行・全選択)の同期
@@ -1665,73 +1657,6 @@
       if (e.relatedTarget && e.relatedTarget.classList.contains("ich2-prog-na-btn")) return;
       finish(true);
     });
-  }
-
-  // 納期セルのクリック編集(進捗と違って対象外ボタンは無く、見た目もシンプルなまま)
-  // 区・製・塗装仕様・担当者・m寸法・質量・型番・売価・備考、共通のクリック編集(自由記入テキスト)
-  function ich2StartEditText(td) {
-    if (td.querySelector("input")) return;
-    const seizouBangou = td.dataset.seizou;
-    const columnName = td.dataset.col;
-    const current = td.dataset.val || "";
-    const original = td.innerHTML;
-    td.style.position = "relative";
-    td.style.zIndex = "50";
-    td.innerHTML = '<input type="text" class="ich2-prog-input" value="'+current.replace(/"/g,"&quot;")+'" style="position:absolute;top:50%;left:0;transform:translateY(-50%);min-width:90px;max-width:220px;font-size:14px;padding:5px 6px;border:2px solid var(--color-accent);text-align:left;font-family:inherit;box-sizing:border-box;background:var(--color-bg);box-shadow:0 2px 8px rgba(32,30,29,0.25);">';
-    const input = td.querySelector("input");
-    input.focus();
-    input.select();
-    let done = false;
-    const finish = (save) => {
-      if (done) return;
-      done = true;
-      if (save) {
-        const newVal = input.value.trim();
-        if (newVal === current) { td.innerHTML = original; td.style.position = ""; td.style.zIndex = ""; return; }
-        ich2SaveProgress(seizouBangou, columnName, newVal, td, original); // 成功時は再描画で自動的にリセットされる
-      } else {
-        td.innerHTML = original;
-        td.style.position = "";
-        td.style.zIndex = "";
-      }
-    };
-    input.addEventListener("keydown", (e) => {
-      if (e.key === "Enter") { e.preventDefault(); finish(true); }
-      else if (e.key === "Escape") { e.preventDefault(); finish(false); }
-    });
-    input.addEventListener("blur", () => finish(true));
-  }
-
-  function ich2StartEditNouki(td) {
-    if (td.querySelector("input")) return;
-    const seizouBangou = td.dataset.seizou;
-    const current = td.dataset.val || "";
-    const original = td.innerHTML;
-    td.style.position = "relative";
-    td.style.zIndex = "50";
-    td.innerHTML = '<input type="text" class="ich2-prog-input" value="'+current.replace(/"/g,"&quot;")+'" placeholder="例: 2026/10/15" style="position:absolute;top:50%;left:0;transform:translateY(-50%);width:90px;font-size:14px;padding:5px 6px;border:2px solid var(--color-accent);text-align:center;font-family:inherit;box-sizing:border-box;background:var(--color-bg);box-shadow:0 2px 8px rgba(32,30,29,0.25);">';
-    const input = td.querySelector("input");
-    input.focus();
-    input.select();
-    let done = false;
-    const finish = (save) => {
-      if (done) return;
-      done = true;
-      if (save) {
-        const newVal = ich2NormalizeDateInput(input.value.trim());
-        if (newVal === current) { td.innerHTML = original; td.style.position = ""; td.style.zIndex = ""; return; }
-        ich2SaveProgress(seizouBangou, "納期", newVal, td, original); // 成功時は再描画で自動的にリセットされる
-      } else {
-        td.innerHTML = original;
-        td.style.position = "";
-        td.style.zIndex = "";
-      }
-    };
-    input.addEventListener("keydown", (e) => {
-      if (e.key === "Enter") { e.preventDefault(); finish(true); }
-      else if (e.key === "Escape") { e.preventDefault(); finish(false); }
-    });
-    input.addEventListener("blur", () => finish(true));
   }
 
   async function ich2SaveProgress(seizouBangou, columnName, value, td, original) {
