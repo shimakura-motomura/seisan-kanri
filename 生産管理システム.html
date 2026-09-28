@@ -360,29 +360,30 @@
   /* 下部バーを常時固定表示にしたため、隠れないよう画面下に余白を確保 */
   #screen-ichiran { padding-bottom: 46px; }
 
-  /* 製造番号ごとの一括編集モーダル */
-  .ich2-edit-overlay { position: fixed; inset: 0; background: rgba(32,30,29,0.55); z-index: 500; display: flex; align-items: center; justify-content: center; padding: 24px; }
+  /* 製造番号ごとの一括編集モーダル(スクロール不要で全項目が収まるよう、詰めたレイアウト) */
+  .ich2-edit-overlay { position: fixed; inset: 0; background: rgba(32,30,29,0.55); z-index: 500; display: flex; align-items: center; justify-content: center; padding: 16px; }
   .ich2-edit-overlay[hidden] { display: none; }
-  .ich2-edit-panel { background: var(--color-bg); width: min(720px, 100%); max-height: 90vh; display: flex; flex-direction: column; box-shadow: 0 8px 30px rgba(0,0,0,0.35); }
-  .ich2-edit-head { display: flex; align-items: baseline; gap: 10px; padding: 16px 20px; border-bottom: 2px solid var(--color-divider); flex: none; }
-  .ich2-edit-head h3 { margin: 0; font-size: 16px; }
-  .ich2-edit-head .sub { font-size: 12px; color: var(--color-neutral-500); }
-  .ich2-edit-body { padding: 16px 20px; overflow-y: auto; flex: 1 1 auto; }
-  .ich2-edit-section { font-size: 12px; font-weight: 700; color: var(--color-neutral-500); margin: 16px 0 8px; }
+  .ich2-edit-panel { background: var(--color-bg); width: min(920px, 100%); max-height: 95vh; display: flex; flex-direction: column; box-shadow: 0 8px 30px rgba(0,0,0,0.35); font-size: 12px; }
+  .ich2-edit-head { display: flex; align-items: baseline; gap: 10px; padding: 10px 16px; border-bottom: 2px solid var(--color-divider); flex: none; }
+  .ich2-edit-head h3 { margin: 0; font-size: 14px; }
+  .ich2-edit-head .sub { font-size: 11px; color: var(--color-neutral-500); }
+  .ich2-edit-body { padding: 10px 16px; overflow-y: auto; flex: 1 1 auto; }
+  .ich2-edit-section { font-size: 10px; font-weight: 700; color: var(--color-neutral-500); margin: 10px 0 5px; }
   .ich2-edit-section:first-child { margin-top: 0; }
-  .ich2-edit-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 10px 16px; }
-  .ich2-edit-grid.wide { grid-template-columns: 1fr; }
-  .ich2-edit-field label { display: block; font-size: 12px; color: var(--color-neutral-600); margin-bottom: 3px; }
-  .ich2-edit-field input[type="text"] { width: 100%; box-sizing: border-box; padding: 7px 8px; font: inherit; border: 1px solid var(--color-neutral-400); }
-  .ich2-edit-field input[type="text"]:focus { border-color: var(--color-accent); outline: none; }
-  .ich2-edit-prog { display: flex; align-items: center; gap: 6px; }
+  .ich2-edit-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 6px 10px; }
+  .ich2-edit-grid.wide { grid-template-columns: 1fr 1fr; }
+  .ich2-edit-field label { display: block; font-size: 10px; color: var(--color-neutral-600); margin-bottom: 1px; }
+  .ich2-edit-field input[type="text"], .ich2-edit-field textarea { width: 100%; box-sizing: border-box; padding: 4px 6px; font: inherit; font-size: 12px; border: 1px solid var(--color-neutral-400); }
+  .ich2-edit-field input[type="text"]:focus, .ich2-edit-field textarea:focus { border-color: var(--color-accent); outline: none; }
+  .ich2-edit-field textarea { resize: vertical; min-height: 34px; font-family: inherit; }
+  .ich2-edit-prog { display: flex; align-items: center; gap: 4px; }
   .ich2-edit-prog input[type="text"] { flex: 1 1 auto; }
-  .ich2-edit-prog label.na { display: flex; align-items: center; gap: 3px; font-size: 11px; color: var(--color-neutral-500); white-space: nowrap; }
-  .ich2-edit-foot { display: flex; align-items: center; gap: 10px; padding: 14px 20px; border-top: 2px solid var(--color-divider); flex: none; }
-  .ich2-edit-save { background: var(--color-accent); color: #fff; border: 0; padding: 9px 20px; font: inherit; font-weight: 700; cursor: pointer; }
+  .ich2-edit-prog label.na { display: flex; align-items: center; gap: 2px; font-size: 10px; color: var(--color-neutral-500); white-space: nowrap; }
+  .ich2-edit-foot { display: flex; align-items: center; gap: 10px; padding: 10px 16px; border-top: 2px solid var(--color-divider); flex: none; }
+  .ich2-edit-save { background: var(--color-accent); color: #fff; border: 0; padding: 7px 18px; font: inherit; font-size: 13px; font-weight: 700; cursor: pointer; }
   .ich2-edit-save:hover { background: var(--color-accent-600); }
   .ich2-edit-save:disabled { opacity: 0.6; cursor: default; }
-  .ich2-edit-cancel { margin-left: auto; background: none; border: 1px solid var(--color-neutral-400); padding: 9px 16px; font: inherit; cursor: pointer; }
+  .ich2-edit-cancel { margin-left: auto; background: none; border: 1px solid var(--color-neutral-400); padding: 7px 14px; font: inherit; font-size: 13px; cursor: pointer; }
   .ich2-edit-status { font-size: 12px; color: var(--color-neutral-500); }
 
   /* ================================================================
@@ -1670,12 +1671,15 @@
   }
 
   // ============ 製造番号ごとの一括編集モーダル ============
-  // 基本項目(自由記入のテキスト欄)。[列見出し, 表示ラベル]
+  // 基本項目(自由記入のテキスト欄・グリッド表示)。[列見出し, 表示ラベル]
   const ICH2_EDIT_TEXT_FIELDS = [
-    ["現場名","現場名"], ["品名","品名"], ["寸法","寸法"],
-    ["区","区"], ["製","製作区分"], ["塗装仕様","塗装仕様"],
-    ["担当者","担当者"], ["m寸法","m寸法"], ["質量","質量"],
-    ["型番","型番"], ["売価(千円)","売価(千円)"], ["備考","備考"]
+    ["現場名","現場名"], ["品名","品名"], ["寸法","寸法"], ["区","区"],
+    ["製","製作区分"], ["担当者","担当者"], ["m寸法","m寸法"], ["質量","質量"],
+    ["型番","型番"], ["売価(千円)","売価(千円)"]
+  ];
+  // 記入量が多い項目は横一列(全幅)のテキストエリアで表示。[列見出し, 表示ラベル]
+  const ICH2_EDIT_WIDE_FIELDS = [
+    ["塗装仕様","塗装仕様"], ["備考","備考"]
   ];
   // 進捗の日付項目(対象外「***」チェック付き)。[列見出し, 表示ラベル]
   const ICH2_EDIT_DATE_FIELDS = [
@@ -1700,6 +1704,14 @@
         '<input type="text" id="'+id+'" data-col="'+ich2Esc(col)+'" value="'+ich2Esc(val)+'"></div>';
     }).join("");
 
+    const wideRows = ICH2_EDIT_WIDE_FIELDS.map(([col, label]) => {
+      const idx = ich2Header.indexOf(col);
+      const val = idx !== -1 ? (row[idx] || "") : "";
+      const id = ich2EditFieldId(col);
+      return '<div class="ich2-edit-field"><label for="'+id+'">'+ich2Esc(label)+'</label>' +
+        '<textarea id="'+id+'" data-col="'+ich2Esc(col)+'" rows="2">'+ich2Esc(val)+'</textarea></div>';
+    }).join("");
+
     const dateRows = ICH2_EDIT_DATE_FIELDS.map(([col, label]) => {
       const idx = ich2Header.indexOf(col);
       const raw = idx !== -1 ? (row[idx] || "") : "";
@@ -1717,6 +1729,7 @@
 
     document.getElementById("ich2EditBody").innerHTML =
       '<div class="ich2-edit-section">基本情報</div><div class="ich2-edit-grid">' + textRows + '</div>' +
+      '<div class="ich2-edit-grid wide" style="margin-top:6px;">' + wideRows + '</div>' +
       '<div class="ich2-edit-section">納期・進捗</div><div class="ich2-edit-grid">' + dateRows + '</div>';
 
     document.getElementById("ich2EditStatus").textContent = "";
@@ -1740,6 +1753,14 @@
     // 変更があった列だけを集める(元の値と比較)
     const changes = [];
     ICH2_EDIT_TEXT_FIELDS.forEach(([col]) => {
+      const idx = ich2Header.indexOf(col);
+      if (idx === -1) return;
+      const input = document.getElementById(ich2EditFieldId(col));
+      const newVal = input.value.trim();
+      const oldVal = (row[idx] || "").toString();
+      if (newVal !== oldVal) changes.push({ col, value: newVal });
+    });
+    ICH2_EDIT_WIDE_FIELDS.forEach(([col]) => {
       const idx = ich2Header.indexOf(col);
       if (idx === -1) return;
       const input = document.getElementById(ich2EditFieldId(col));
