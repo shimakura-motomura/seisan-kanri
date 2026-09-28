@@ -349,13 +349,44 @@
   .ich2-summary-btn.active { background: var(--color-accent-100); }
   .ich2-summary-btn.active .value { color: var(--color-accent-700); }
   .ich2-selbar {
-    display: flex; align-items: center; gap: 12px; padding: 8px 16px; margin-top: 6px;
+    display: flex; align-items: center; gap: 12px; padding: 10px 16px;
     background: var(--color-neutral-900); color: var(--color-neutral-100); font-size: 13px;
+    position: fixed; left: 0; right: 0; bottom: 0; z-index: 200;
+    box-shadow: 0 -2px 10px rgba(0,0,0,0.25);
   }
   .ich2-selbar-primary { background: var(--color-accent); color: #fff; border: 0; padding: 7px 16px; font: inherit; font-weight: 700; cursor: pointer; }
   .ich2-selbar-primary:hover { background: var(--color-accent-600); }
   .ich2-selbar-clear { margin-left: auto; background: none; border: 1px solid var(--color-neutral-600); color: var(--color-neutral-100); padding: 7px 14px; font: inherit; cursor: pointer; }
   .ich2-selbar-clear:hover { background: rgba(255,255,255,0.08); }
+
+  /* 行の「編集」ボタン(製造番号ごとの一括編集画面を開く) */
+  .ich2-edit-btn { background: var(--color-bg); border: 1px solid var(--color-neutral-400); color: var(--color-text); padding: 4px 10px; font: inherit; font-size: 12px; font-weight: 700; cursor: pointer; border-radius: 3px; }
+  .ich2-edit-btn:hover { background: var(--color-accent-100); border-color: var(--color-accent); color: var(--color-accent-700); }
+
+  /* 製造番号ごとの一括編集モーダル */
+  .ich2-edit-overlay { position: fixed; inset: 0; background: rgba(32,30,29,0.55); z-index: 500; display: flex; align-items: center; justify-content: center; padding: 24px; }
+  .ich2-edit-overlay[hidden] { display: none; }
+  .ich2-edit-panel { background: var(--color-bg); width: min(720px, 100%); max-height: 90vh; display: flex; flex-direction: column; box-shadow: 0 8px 30px rgba(0,0,0,0.35); }
+  .ich2-edit-head { display: flex; align-items: baseline; gap: 10px; padding: 16px 20px; border-bottom: 2px solid var(--color-divider); flex: none; }
+  .ich2-edit-head h3 { margin: 0; font-size: 16px; }
+  .ich2-edit-head .sub { font-size: 12px; color: var(--color-neutral-500); }
+  .ich2-edit-body { padding: 16px 20px; overflow-y: auto; flex: 1 1 auto; }
+  .ich2-edit-section { font-size: 12px; font-weight: 700; color: var(--color-neutral-500); margin: 16px 0 8px; }
+  .ich2-edit-section:first-child { margin-top: 0; }
+  .ich2-edit-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 10px 16px; }
+  .ich2-edit-grid.wide { grid-template-columns: 1fr; }
+  .ich2-edit-field label { display: block; font-size: 12px; color: var(--color-neutral-600); margin-bottom: 3px; }
+  .ich2-edit-field input[type="text"] { width: 100%; box-sizing: border-box; padding: 7px 8px; font: inherit; border: 1px solid var(--color-neutral-400); }
+  .ich2-edit-field input[type="text"]:focus { border-color: var(--color-accent); outline: none; }
+  .ich2-edit-prog { display: flex; align-items: center; gap: 6px; }
+  .ich2-edit-prog input[type="text"] { flex: 1 1 auto; }
+  .ich2-edit-prog label.na { display: flex; align-items: center; gap: 3px; font-size: 11px; color: var(--color-neutral-500); white-space: nowrap; }
+  .ich2-edit-foot { display: flex; align-items: center; gap: 10px; padding: 14px 20px; border-top: 2px solid var(--color-divider); flex: none; }
+  .ich2-edit-save { background: var(--color-accent); color: #fff; border: 0; padding: 9px 20px; font: inherit; font-weight: 700; cursor: pointer; }
+  .ich2-edit-save:hover { background: var(--color-accent-600); }
+  .ich2-edit-save:disabled { opacity: 0.6; cursor: default; }
+  .ich2-edit-cancel { margin-left: auto; background: none; border: 1px solid var(--color-neutral-400); padding: 9px 16px; font: inherit; cursor: pointer; }
+  .ich2-edit-status { font-size: 12px; color: var(--color-neutral-500); }
 
   /* ================================================================
    * ホームメニュー(Claude Code版デザインをそのまま移植)
@@ -812,14 +843,14 @@
             <col style="width:28px"><col style="width:62px"><col style="width:40px"><col style="width:104px"><col style="width:84px">
             <col style="width:122px"><col style="width:36px"><col style="width:26px"><col style="width:40px"><col style="width:359px">
             <col style="width:36px"><col style="width:36px"><col style="width:36px"><col style="width:65px"><col style="width:65px"><col style="width:36px">
-            <col style="width:36px"><col style="width:82px"><col style="width:34px"><col style="width:52px"><col style="width:52px"><col style="width:84px">
+            <col style="width:36px"><col style="width:82px"><col style="width:34px"><col style="width:52px"><col style="width:52px"><col style="width:84px"><col style="width:44px">
           </colgroup>
           <thead>
             <tr>
               <th class="ich2-grp identify" colspan="5">識別(固定表示)</th>
               <th class="ich2-grp dim" colspan="5">寸法・製作・塗装</th>
               <th class="ich2-grp progress" colspan="6">進捗</th>
-              <th class="ich2-grp pic" colspan="6">担当・詳細</th>
+              <th class="ich2-grp pic" colspan="7">担当・詳細</th>
             </tr>
             <tr>
               <th class="ich2-colh sticky-id" style="left:0;">
@@ -849,13 +880,14 @@
               <th class="ich2-colh">型番</th>
               <th class="ich2-colh right">売価</th>
               <th class="ich2-colh">備考</th>
+              <th class="ich2-colh center">編集</th>
             </tr>
           </thead>
           <tbody id="ich2Tbody"></tbody>
         </table>
         <div class="ich2-empty" id="ich2Empty" hidden>該当する案件がありません。検索条件を変えてください。</div>
       </div>
-      <div class="ich2-footnote">製造番号・納期・現場名・品名は固定表示。製造番号をクリックすると図面が開きます。横スクロールで 寸法・塗装 → 進捗 → 担当・詳細 の順。</div>
+      <div class="ich2-footnote">製造番号・納期・現場名・品名は固定表示。製造番号をクリックすると図面が開きます。横スクロールで 寸法・塗装 → 進捗 → 担当・詳細 → 編集 の順。</div>
       </div>
 
       <!-- ========== 買入品タブ ========== -->
@@ -912,6 +944,22 @@
         <span id="ich2SelBreakdown" style="font-size:11px;color:var(--color-neutral-400);"></span>
         <button type="button" class="ich2-selbar-primary" onclick="ich2GoShukka()">出荷手配へ</button>
         <button type="button" class="ich2-selbar-clear" onclick="ich2Selected.clear(); ich2Render();">選択を解除</button>
+      </div>
+
+      <!-- 製造番号ごとの一括編集モーダル -->
+      <div class="ich2-edit-overlay" id="ich2EditOverlay" hidden>
+        <div class="ich2-edit-panel">
+          <div class="ich2-edit-head">
+            <h3>製作手配の編集</h3>
+            <span class="sub" id="ich2EditNoLabel"></span>
+          </div>
+          <div class="ich2-edit-body" id="ich2EditBody"></div>
+          <div class="ich2-edit-foot">
+            <button type="button" class="ich2-edit-save" id="ich2EditSaveBtn">保存</button>
+            <span class="ich2-edit-status" id="ich2EditStatus"></span>
+            <button type="button" class="ich2-edit-cancel" id="ich2EditCancelBtn">キャンセル</button>
+          </div>
+        </div>
       </div>
     </div>
   </div>
@@ -1451,9 +1499,15 @@
         '<td class="ich2-nowrap ich2-ellipsis ich2-tabular ich2-text-cell" data-seizou="'+ich2Esc(no)+'" data-col="'+ich2Esc(H[iKatabangou])+'" data-val="'+ich2Esc(r[iKatabangou])+'" title="'+ich2Esc(r[iKatabangou])+'(クリックして編集)">'+ich2Esc(r[iKatabangou])+'</td>' +
         '<td class="right ich2-tabular ich2-text-cell" data-seizou="'+ich2Esc(no)+'" data-col="'+ich2Esc(H[iBaika])+'" data-val="'+ich2Esc(r[iBaika])+'" title="クリックして編集">'+ich2Esc(r[iBaika])+'</td>' +
         '<td class="ich2-nowrap ich2-ellipsis ich2-text-cell" data-seizou="'+ich2Esc(no)+'" data-col="'+ich2Esc(H[iBiko])+'" data-val="'+ich2Esc(r[iBiko])+'" title="'+ich2Esc(r[iBiko])+'(クリックして自由記入)">'+ich2Esc(r[iBiko])+'</td>' +
+        '<td class="center"><button type="button" class="ich2-edit-btn" data-seizou="'+ich2Esc(no)+'" title="この製品の編集画面を開く">編集</button></td>' +
         '</tr>'
       );
     }).join("");
+
+    // 「編集」ボタンで、その製造番号の内容をまとめて編集する画面を開く
+    document.querySelectorAll("#ich2Tbody .ich2-edit-btn").forEach(btn => {
+      btn.addEventListener("click", (e) => { e.stopPropagation(); ich2OpenEditModal(btn.dataset.seizou); });
+    });
 
     // 進捗バッジのクリックで、その場で日付を編集できるようにする
     document.querySelectorAll("#ich2Tbody .ich2-prog-cell").forEach(td => {
@@ -1577,9 +1631,10 @@
     const original = td.innerHTML;
     td.style.position = "relative";
     td.style.zIndex = "50";
+    const isWideProgCol = (columnName === "内装日" || columnName === "外装日");
     td.innerHTML =
       '<span style="position:absolute;top:50%;left:0;transform:translateY(-50%);display:inline-flex;gap:2px;align-items:center;background:var(--color-bg);padding:2px;box-shadow:0 2px 8px rgba(32,30,29,0.25);z-index:50;">' +
-      '<input type="text" class="ich2-prog-input" value="'+current.replace(/"/g,"&quot;")+'" placeholder="例: 9/10" style="width:80px;font-size:14px;padding:5px 6px;border:2px solid var(--color-accent);text-align:center;font-family:inherit;box-sizing:border-box;">' +
+      '<input type="text" class="ich2-prog-input" value="'+current.replace(/"/g,"&quot;")+'" placeholder="例: 9/10" style="width:'+(isWideProgCol?160:80)+'px;font-size:14px;padding:5px 6px;border:2px solid var(--color-accent);text-align:center;font-family:inherit;box-sizing:border-box;">' +
       '<button type="button" class="ich2-prog-na-btn" title="対象外にする" style="font-size:12px;padding:5px 6px;border:1px solid var(--color-neutral-400);background:var(--color-neutral-200);color:var(--color-neutral-700);cursor:pointer;white-space:nowrap;">対象外</button>' +
       '</span>';
     const input = td.querySelector("input");
@@ -1695,6 +1750,138 @@
       td.innerHTML = original;
     }
   }
+
+  // ============ 製造番号ごとの一括編集モーダル ============
+  // 基本項目(自由記入のテキスト欄)。[列見出し, 表示ラベル]
+  const ICH2_EDIT_TEXT_FIELDS = [
+    ["現場名","現場名"], ["品名","品名"], ["寸法","寸法"],
+    ["区","区"], ["製","製作区分"], ["塗装仕様","塗装仕様"],
+    ["担当者","担当者"], ["m寸法","m寸法"], ["質量","質量"],
+    ["型番","型番"], ["売価(千円)","売価(千円)"], ["備考","備考"]
+  ];
+  // 進捗の日付項目(対象外「***」チェック付き)。[列見出し, 表示ラベル]
+  const ICH2_EDIT_DATE_FIELDS = [
+    ["納期","納期"], ["受注日","受注日"], ["製作日","製作日"], ["完成日","完成日"],
+    ["内装日","内装日"], ["外装日","外装日"], ["出荷日","出荷日"]
+  ];
+
+  function ich2EditFieldId(colName) { return "ich2ef_" + colName.replace(/[^a-zA-Z0-9぀-ヿ一-鿿]/g, "_"); }
+
+  function ich2OpenEditModal(seizouBangou) {
+    const idxSeizou = ich2Header.indexOf("製造番号");
+    const row = ich2All.find(r => r[idxSeizou] === seizouBangou);
+    if (!row) { alert("対象の製造番号が見つかりませんでした:" + seizouBangou); return; }
+
+    document.getElementById("ich2EditNoLabel").textContent = "製造番号: " + seizouBangou;
+
+    const textRows = ICH2_EDIT_TEXT_FIELDS.map(([col, label]) => {
+      const idx = ich2Header.indexOf(col);
+      const val = idx !== -1 ? (row[idx] || "") : "";
+      const id = ich2EditFieldId(col);
+      return '<div class="ich2-edit-field"><label for="'+id+'">'+ich2Esc(label)+'</label>' +
+        '<input type="text" id="'+id+'" data-col="'+ich2Esc(col)+'" value="'+ich2Esc(val)+'"></div>';
+    }).join("");
+
+    const dateRows = ICH2_EDIT_DATE_FIELDS.map(([col, label]) => {
+      const idx = ich2Header.indexOf(col);
+      const raw = idx !== -1 ? (row[idx] || "") : "";
+      const isNa = raw.toString().trim() === "***";
+      const val = isNa ? "" : ich2EditableDateValue(raw);
+      const id = ich2EditFieldId(col);
+      const naId = id + "_na";
+      const hasNa = col !== "納期"; // 納期には「対象外」は無い
+      return '<div class="ich2-edit-field"><label for="'+id+'">'+ich2Esc(label)+'</label>' +
+        '<div class="ich2-edit-prog">' +
+        '<input type="text" id="'+id+'" data-col="'+ich2Esc(col)+'" placeholder="例: 9/10" value="'+ich2Esc(val)+'" '+(isNa?"disabled":"")+'>' +
+        (hasNa ? '<label class="na"><input type="checkbox" id="'+naId+'" '+(isNa?"checked":"")+' onchange="document.getElementById(\''+id+'\').disabled=this.checked;">対象外</label>' : '') +
+        '</div></div>';
+    }).join("");
+
+    document.getElementById("ich2EditBody").innerHTML =
+      '<div class="ich2-edit-section">基本情報</div><div class="ich2-edit-grid">' + textRows + '</div>' +
+      '<div class="ich2-edit-section">納期・進捗</div><div class="ich2-edit-grid">' + dateRows + '</div>';
+
+    document.getElementById("ich2EditStatus").textContent = "";
+    document.getElementById("ich2EditSaveBtn").disabled = false;
+    document.getElementById("ich2EditOverlay").dataset.seizou = seizouBangou;
+    document.getElementById("ich2EditOverlay").hidden = false;
+  }
+
+  function ich2CloseEditModal() {
+    document.getElementById("ich2EditOverlay").hidden = true;
+    document.getElementById("ich2EditBody").innerHTML = "";
+  }
+
+  async function ich2SaveEditModal() {
+    const overlay = document.getElementById("ich2EditOverlay");
+    const seizouBangou = overlay.dataset.seizou;
+    const idxSeizou = ich2Header.indexOf("製造番号");
+    const row = ich2All.find(r => r[idxSeizou] === seizouBangou);
+    if (!row) { ich2CloseEditModal(); return; }
+
+    // 変更があった列だけを集める(元の値と比較)
+    const changes = [];
+    ICH2_EDIT_TEXT_FIELDS.forEach(([col]) => {
+      const idx = ich2Header.indexOf(col);
+      if (idx === -1) return;
+      const input = document.getElementById(ich2EditFieldId(col));
+      const newVal = input.value.trim();
+      const oldVal = (row[idx] || "").toString();
+      if (newVal !== oldVal) changes.push({ col, value: newVal });
+    });
+    ICH2_EDIT_DATE_FIELDS.forEach(([col]) => {
+      const idx = ich2Header.indexOf(col);
+      if (idx === -1) return;
+      const id = ich2EditFieldId(col);
+      const input = document.getElementById(id);
+      const naEl = document.getElementById(id + "_na");
+      const oldVal = (row[idx] || "").toString();
+      let newVal;
+      if (naEl && naEl.checked) {
+        newVal = "***";
+      } else {
+        const raw = input.value.trim();
+        newVal = raw === "" ? "" : ich2NormalizeDateInput(raw);
+      }
+      if (newVal !== oldVal) changes.push({ col, value: newVal });
+    });
+
+    if (changes.length === 0) { ich2CloseEditModal(); return; }
+
+    const saveBtn = document.getElementById("ich2EditSaveBtn");
+    const status = document.getElementById("ich2EditStatus");
+    saveBtn.disabled = true;
+    status.textContent = changes.length + "件を保存中…";
+
+    try {
+      const results = await Promise.all(changes.map(c =>
+        fetch(GAS_URL, { method: "POST", body: JSON.stringify({ type: "updateProgress", seizouBangou, columnName: c.col, value: c.value }) })
+          .then(res => res.json())
+          .then(data => ({ col: c.col, ok: data.result === "success", message: data.message }))
+      ));
+      const failed = results.filter(r => !r.ok);
+      if (failed.length > 0) {
+        throw new Error(failed.map(f => f.col + "(" + (f.message || "失敗") + ")").join("、"));
+      }
+      // 全て成功したら、メモリ上のデータも更新して再描画
+      changes.forEach(c => {
+        const idx = ich2Header.indexOf(c.col);
+        if (idx !== -1) row[idx] = c.value;
+      });
+      ich2CloseEditModal();
+      ich2RenderAll();
+    } catch (e) {
+      status.textContent = "";
+      saveBtn.disabled = false;
+      alert("保存に失敗した項目があります: " + e.message);
+    }
+  }
+
+  document.getElementById("ich2EditSaveBtn").addEventListener("click", ich2SaveEditModal);
+  document.getElementById("ich2EditCancelBtn").addEventListener("click", ich2CloseEditModal);
+  document.getElementById("ich2EditOverlay").addEventListener("click", (e) => {
+    if (e.target.id === "ich2EditOverlay") ich2CloseEditModal();
+  });
 
   function ich2UpdateSelbar() {
     const keys = [...ich2Selected];
