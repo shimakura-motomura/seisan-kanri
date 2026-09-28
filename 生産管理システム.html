@@ -742,7 +742,20 @@
         <input type="checkbox" id="f_coiluse" style="width:16px;height:16px;accent-color:var(--color-accent);margin:0;">
         <label for="f_coiluse" style="margin:0;">コイル使用(部署に関わらず、コイル成形を含む場合はチェック)</label>
       </div>
-      <div class="field"><label>塗装仕様(自由記述・参考メモ)</label><input id="f_tosouShiyou"></div>
+      <div class="field"><label class="sectionLabel">塗装仕様(工程ごとに必要な処理があれば短く記入・任意)</label></div>
+      <div class="grid2">
+        <div class="field"><label>酸洗</label><input id="f_tosouSanArai"></div>
+        <div class="field"><label>研磨</label><input id="f_tosouKenma"></div>
+      </div>
+      <div class="grid2">
+        <div class="field"><label>エポ</label><input id="f_tosouEpo"></div>
+        <div class="field"><label>FRP</label><input id="f_tosouFrp"></div>
+      </div>
+      <div class="grid2">
+        <div class="field"><label>メッキ</label><input id="f_tosouMekki"></div>
+        <div class="field"><label>外装</label><input id="f_tosouGaisou"></div>
+      </div>
+      <div class="field"><label>その他(社内対応品:OC・BPなど)</label><input id="f_tosouSonota"></div>
       <div class="grid2">
         <div class="field"><label>担当者</label><input id="f_tantou"></div>
         <div class="field"><label>m寸法</label><input id="f_mSunpou"></div>
@@ -839,14 +852,15 @@
         <table class="ich2-list">
           <colgroup>
             <col style="width:28px"><col style="width:62px"><col style="width:40px"><col style="width:104px"><col style="width:84px">
-            <col style="width:122px"><col style="width:36px"><col style="width:26px"><col style="width:40px"><col style="width:359px">
+            <col style="width:122px"><col style="width:36px"><col style="width:26px"><col style="width:40px">
+            <col style="width:44px"><col style="width:44px"><col style="width:44px"><col style="width:44px"><col style="width:44px"><col style="width:44px"><col style="width:53px">
             <col style="width:36px"><col style="width:36px"><col style="width:36px"><col style="width:65px"><col style="width:65px"><col style="width:36px">
             <col style="width:36px"><col style="width:82px"><col style="width:34px"><col style="width:52px"><col style="width:52px"><col style="width:84px">
           </colgroup>
           <thead>
             <tr>
               <th class="ich2-grp identify" colspan="5">識別(固定表示)</th>
-              <th class="ich2-grp dim" colspan="5">寸法・製作・塗装</th>
+              <th class="ich2-grp dim" colspan="11">寸法・製作・塗装</th>
               <th class="ich2-grp progress" colspan="6">進捗</th>
               <th class="ich2-grp pic" colspan="6">担当・詳細</th>
             </tr>
@@ -863,7 +877,13 @@
               <th class="ich2-colh">受・完</th>
               <th class="ich2-colh center">区</th>
               <th class="ich2-colh">製作</th>
-              <th class="ich2-colh grp-end">塗装仕様</th>
+              <th class="ich2-colh center" title="酸洗">酸洗</th>
+              <th class="ich2-colh center" title="研磨">研磨</th>
+              <th class="ich2-colh center" title="エポ">エポ</th>
+              <th class="ich2-colh center" title="FRP">FRP</th>
+              <th class="ich2-colh center" title="メッキ">メッキ</th>
+              <th class="ich2-colh center" title="外装">外装</th>
+              <th class="ich2-colh center grp-end" title="その他(社内対応品など)">他</th>
 
               <th id="ich2-col-b" class="ich2-colh center">受</th>
               <th class="ich2-colh center">製</th>
@@ -1403,9 +1423,13 @@
     const H = ich2Header;
     const idx = name => H.indexOf(name);
     const iSeizou = idx("製造番号"), iNouki = idx("納期"), iGenba = idx("現場名"), iHinmei = idx("品名"),
-      iSunpou = idx("寸法"), iJuken = idx("受・完"), iKu = idx("区"), iSeisaku = idx("製"), iCoiluse = idx("コイル使用"), iTosou = idx("塗装仕様"),
+      iSunpou = idx("寸法"), iJuken = idx("受・完"), iKu = idx("区"), iSeisaku = idx("製"), iCoiluse = idx("コイル使用"),
+      iTosouSanArai = idx("酸洗"), iTosouKenma = idx("研磨"), iTosouEpo = idx("エポ"), iTosouFrp = idx("FRP"), iTosouMekki = idx("メッキ"), iTosouGaisou = idx("外装"), iTosouSonota = idx("その他") !== -1 ? idx("その他") : idx("判定不能"),
       iJuchu = idx("受注日"), iSeisakuDay = idx("製作日"), iKansei = idx("完成日"), iNaiso = idx("内装日"), iGaiso = idx("外装日"), iShukka = idx("出荷日"),
       iTantou = idx("担当者"), iMsunpou = idx("m寸法"), iShitsuryou = idx("質量"), iKatabangou = idx("型番"), iBaika = idx("売価(千円)"), iBiko = idx("備考"), iZumen = idx("図");
+
+    // コイル判定などで使う、塗装仕様7列をまとめた文字列(元の単一「塗装仕様」列の代わり)
+    const tosouAll = r => [r[iTosouSanArai], r[iTosouKenma], r[iTosouEpo], r[iTosouFrp], r[iTosouMekki], r[iTosouGaisou], r[iTosouSonota]].filter(Boolean).join(" ");
 
     const q = ich2State.query.trim().toLowerCase();
     let rows = ich2All.filter(r => {
@@ -1413,7 +1437,7 @@
       if (q && !((r[iSeizou]||"")+(r[iGenba]||"")+(r[iHinmei]||"")+(r[iTantou]||"")).toLowerCase().includes(q)) return false;
       if (ich2State.dept !== "全数") {
         if (ich2State.dept === "コイル") {
-          if (!ich2IsCoilRelated(r[iSeisaku], r[iKu], r[iCoiluse], r[iHinmei], r[iTosou])) return false;
+          if (!ich2IsCoilRelated(r[iSeisaku], r[iKu], r[iCoiluse], r[iHinmei], tosouAll(r))) return false;
         } else if (ich2State.dept === "第3工場") {
           if (!ich2IsDai3(r[iKansei])) return false;
         } else if (ich2Kubun(r[iSeisaku], r[iKu]) !== ich2State.dept) {
@@ -1454,7 +1478,7 @@
       if (k === "第1工場") counts.dai1++;
       else if (k === "SUS工場") counts.sus++;
       else if (k !== "コイル") counts.other++;
-      if (ich2IsCoilRelated(r[iSeisaku], r[iKu], r[iCoiluse], r[iHinmei], r[iTosou])) counts.coil++;
+      if (ich2IsCoilRelated(r[iSeisaku], r[iKu], r[iCoiluse], r[iHinmei], tosouAll(r))) counts.coil++;
       if (ich2IsDai3(r[iKansei])) counts.dai3++;
     });
     document.getElementById("ich2Summary").innerHTML = [
@@ -1490,7 +1514,13 @@
           const sc = ich2SeisakuColor(r[iSeisaku], r[iKu]);
           return '<td class="ich2-nowrap"><span class="ich2-chip ich2-chip-seisaku" style="background:'+sc.bg+';color:'+sc.fg+';border-color:'+sc.bd+';">'+ich2Esc(ich2SeisakuLabel(r[iSeisaku]))+'</span></td>';
         })() +
-        '<td class="ich2-nowrap ich2-ellipsis grp-end" title="'+ich2Esc(r[iTosou])+'">'+ich2Esc(r[iTosou])+'</td>' +
+        '<td class="center ich2-nowrap ich2-ellipsis" title="'+ich2Esc(r[iTosouSanArai])+'">'+ich2Esc(r[iTosouSanArai])+'</td>' +
+        '<td class="center ich2-nowrap ich2-ellipsis" title="'+ich2Esc(r[iTosouKenma])+'">'+ich2Esc(r[iTosouKenma])+'</td>' +
+        '<td class="center ich2-nowrap ich2-ellipsis" title="'+ich2Esc(r[iTosouEpo])+'">'+ich2Esc(r[iTosouEpo])+'</td>' +
+        '<td class="center ich2-nowrap ich2-ellipsis" title="'+ich2Esc(r[iTosouFrp])+'">'+ich2Esc(r[iTosouFrp])+'</td>' +
+        '<td class="center ich2-nowrap ich2-ellipsis" title="'+ich2Esc(r[iTosouMekki])+'">'+ich2Esc(r[iTosouMekki])+'</td>' +
+        '<td class="center ich2-nowrap ich2-ellipsis" title="'+ich2Esc(r[iTosouGaisou])+'">'+ich2Esc(r[iTosouGaisou])+'</td>' +
+        '<td class="center ich2-nowrap ich2-ellipsis grp-end" title="'+ich2Esc(r[iTosouSonota])+'">'+ich2Esc(r[iTosouSonota])+'</td>' +
         progIdx.map(ci => {
           const raw = r[ci] || "";
           const colName = H[ci];
@@ -1681,11 +1711,13 @@
   const ICH2_EDIT_TEXT_FIELDS = [
     ["現場名","現場名"], ["品名","品名"], ["寸法","寸法"], ["区","区"],
     ["製","製作区分"], ["担当者","担当者"], ["m寸法","m寸法"], ["質量","質量"],
-    ["型番","型番"], ["売価(千円)","売価(千円)"]
+    ["型番","型番"], ["売価(千円)","売価(千円)"],
+    ["酸洗","塗装:酸洗"], ["研磨","塗装:研磨"], ["エポ","塗装:エポ"], ["FRP","塗装:FRP"],
+    ["メッキ","塗装:メッキ"], ["外装","塗装:外装"], ["その他","塗装:その他"]
   ];
   // 記入量が多い項目は横一列(全幅)のテキストエリアで表示。[列見出し, 表示ラベル]
   const ICH2_EDIT_WIDE_FIELDS = [
-    ["塗装仕様","塗装仕様"], ["備考","備考"]
+    ["備考","備考"]
   ];
   // 進捗の日付項目(対象外「***」チェック付き)。[列見出し, 表示ラベル]
   const ICH2_EDIT_DATE_FIELDS = [
@@ -1900,7 +1932,9 @@
     // 品名に「熱交換器」を含む、または塗装仕様に「内熱源」を含む場合、コイル使用を自動チェックする
     // (手動で外すこともできる。あくまで入力の手間を減らすための自動判定)
     document.getElementById("f_hinmei").addEventListener("input", autoCheckCoilUse);
-    document.getElementById("f_tosouShiyou").addEventListener("input", autoCheckCoilUse);
+    ["f_tosouSanArai", "f_tosouKenma", "f_tosouEpo", "f_tosouFrp", "f_tosouMekki", "f_tosouGaisou", "f_tosouSonota"].forEach(id => {
+      document.getElementById(id).addEventListener("input", autoCheckCoilUse);
+    });
 
     const tabSel = document.getElementById("t_tab");
     tabSel.innerHTML = TOSOU_TABS.map(t => `<option value="${t.key}">${t.key}</option>`).join("");
@@ -1984,12 +2018,14 @@
     }
   }
 
-  // 品名に「熱交換器」を含む、または塗装仕様に「内熱源」を含む場合、コイル使用を自動チェックする
+  // 品名に「熱交換器」を含む、または塗装仕様(いずれかの工程欄)に「内熱源」を含む場合、コイル使用を自動チェックする
   // (手動で外すこともできる。あくまで入力の手間を減らすための自動判定)
   function autoCheckCoilUse() {
     const hinmei = document.getElementById("f_hinmei").value;
-    const tosou = document.getElementById("f_tosouShiyou").value;
-    if (hinmei.includes("熱交換器") || tosou.includes("内熱源")) {
+    const tosouAll = [
+      "f_tosouSanArai", "f_tosouKenma", "f_tosouEpo", "f_tosouFrp", "f_tosouMekki", "f_tosouGaisou", "f_tosouSonota"
+    ].map(id => document.getElementById(id).value).join(" ");
+    if (hinmei.includes("熱交換器") || tosouAll.includes("内熱源")) {
       document.getElementById("f_coiluse").checked = true;
     }
   }
@@ -2025,7 +2061,13 @@
       kubun: document.getElementById("f_kubun").value.trim(),
       seisakuKubun: document.getElementById("f_seisakuKubun").value.trim(),
       coiluse: document.getElementById("f_coiluse").checked ? "TRUE" : "",
-      tosouShiyou: document.getElementById("f_tosouShiyou").value.trim(),
+      tosouSanArai: document.getElementById("f_tosouSanArai").value.trim(),
+      tosouKenma: document.getElementById("f_tosouKenma").value.trim(),
+      tosouEpo: document.getElementById("f_tosouEpo").value.trim(),
+      tosouFrp: document.getElementById("f_tosouFrp").value.trim(),
+      tosouMekki: document.getElementById("f_tosouMekki").value.trim(),
+      tosouGaisou: document.getElementById("f_tosouGaisou").value.trim(),
+      tosouSonota: document.getElementById("f_tosouSonota").value.trim(),
       tantou: document.getElementById("f_tantou").value.trim(),
       mSunpou: document.getElementById("f_mSunpou").value.trim(),
       shitsuryou: document.getElementById("f_shitsuryou").value.trim(),
