@@ -354,12 +354,11 @@
   }
   .ich2-selbar-primary { background: var(--color-accent); color: #fff; border: 0; padding: 7px 16px; font: inherit; font-weight: 700; cursor: pointer; }
   .ich2-selbar-primary:hover { background: var(--color-accent-600); }
+  .ich2-selbar-primary:disabled { background: var(--color-neutral-700); color: var(--color-neutral-400); cursor: default; }
   .ich2-selbar-clear { margin-left: auto; background: none; border: 1px solid var(--color-neutral-600); color: var(--color-neutral-100); padding: 7px 14px; font: inherit; cursor: pointer; }
   .ich2-selbar-clear:hover { background: rgba(255,255,255,0.08); }
-
-  /* 行の「編集」ボタン(製造番号ごとの一括編集画面を開く)。行の高さに影響しないよう、他のセルと同じ詰め方にする */
-  .ich2-edit-btn { display: block; width: 100%; height: 16px; box-sizing: border-box; background: none; border: 0; padding: 0; margin: 0; font-size: 12px; line-height: 16px; cursor: pointer; opacity: 0.85; }
-  .ich2-edit-btn:hover { opacity: 1; transform: scale(1.15); }
+  /* 下部バーを常時固定表示にしたため、隠れないよう画面下に余白を確保 */
+  #screen-ichiran { padding-bottom: 46px; }
 
   /* 製造番号ごとの一括編集モーダル */
   .ich2-edit-overlay { position: fixed; inset: 0; background: rgba(32,30,29,0.55); z-index: 500; display: flex; align-items: center; justify-content: center; padding: 24px; }
@@ -841,14 +840,14 @@
             <col style="width:28px"><col style="width:62px"><col style="width:40px"><col style="width:104px"><col style="width:84px">
             <col style="width:122px"><col style="width:36px"><col style="width:26px"><col style="width:40px"><col style="width:359px">
             <col style="width:36px"><col style="width:36px"><col style="width:36px"><col style="width:65px"><col style="width:65px"><col style="width:36px">
-            <col style="width:36px"><col style="width:82px"><col style="width:34px"><col style="width:52px"><col style="width:52px"><col style="width:84px"><col style="width:44px">
+            <col style="width:36px"><col style="width:82px"><col style="width:34px"><col style="width:52px"><col style="width:52px"><col style="width:84px">
           </colgroup>
           <thead>
             <tr>
               <th class="ich2-grp identify" colspan="5">識別(固定表示)</th>
               <th class="ich2-grp dim" colspan="5">寸法・製作・塗装</th>
               <th class="ich2-grp progress" colspan="6">進捗</th>
-              <th class="ich2-grp pic" colspan="7">担当・詳細</th>
+              <th class="ich2-grp pic" colspan="6">担当・詳細</th>
             </tr>
             <tr>
               <th class="ich2-colh sticky-id" style="left:0;">
@@ -878,14 +877,13 @@
               <th class="ich2-colh">型番</th>
               <th class="ich2-colh right">売価</th>
               <th class="ich2-colh">備考</th>
-              <th class="ich2-colh center">編</th>
             </tr>
           </thead>
           <tbody id="ich2Tbody"></tbody>
         </table>
         <div class="ich2-empty" id="ich2Empty" hidden>該当する案件がありません。検索条件を変えてください。</div>
       </div>
-      <div class="ich2-footnote">製造番号・納期・現場名・品名は固定表示。製造番号をクリックすると図面が開きます。進捗(受・製・完・内・外・出)はクリックでその場編集、それ以外の項目は行右端の「✏」から編集画面で編集します。横スクロールで 寸法・塗装 → 進捗 → 担当・詳細 → 編 の順。</div>
+      <div class="ich2-footnote">製造番号・納期・現場名・品名は固定表示。製造番号をクリックすると図面が開きます。進捗(受・製・完・内・外・出)はクリックでその場編集、それ以外の項目はチェックを1件入れて画面下部の「編集」から編集画面を開きます。横スクロールで 寸法・塗装 → 進捗 → 担当・詳細 の順。</div>
       </div>
 
       <!-- ========== 買入品タブ ========== -->
@@ -937,10 +935,11 @@
       <div class="ich2-footnote">外部から仕入れる部材(バルブ・ポンプ・電気品・配管材・計装品など)の入荷〜納品状況の一覧です。</div>
       </div>
 
-      <div class="ich2-selbar" id="ich2Selbar" hidden>
+      <div class="ich2-selbar" id="ich2Selbar">
         <span id="ich2SelCount"></span>
         <span id="ich2SelBreakdown" style="font-size:11px;color:var(--color-neutral-400);"></span>
-        <button type="button" class="ich2-selbar-primary" onclick="ich2GoShukka()">出荷手配へ</button>
+        <button type="button" class="ich2-selbar-primary" id="ich2SelbarEditBtn" onclick="ich2SelbarEditClick()">編集</button>
+        <button type="button" class="ich2-selbar-primary" id="ich2SelbarShukkaBtn" onclick="ich2GoShukka()">出荷手配へ</button>
         <button type="button" class="ich2-selbar-clear" onclick="ich2Selected.clear(); ich2Render();">選択を解除</button>
       </div>
 
@@ -1274,7 +1273,7 @@
   // コイル関連かどうかの横断判定(部署がコイル/コイル使用チェック/品名に熱交換器/塗装仕様に熱源、のいずれか)
   function ich2IsCoilRelated(seisaku, ku, coiluse, hinmei, tosou) {
     if (ich2Kubun(seisaku, ku) === "コイル") return true;
-    if (!!coiluse) return true;
+    if (String(coiluse || "").trim().toUpperCase() === "TRUE") return true;
     if (String(hinmei || "").includes("熱交換器")) return true;
     if (String(tosou || "").includes("熱源")) return true;
     return false;
@@ -1497,15 +1496,9 @@
         '<td class="ich2-nowrap ich2-ellipsis ich2-tabular" title="'+ich2Esc(r[iKatabangou])+'">'+ich2Esc(r[iKatabangou])+'</td>' +
         '<td class="right ich2-tabular">'+ich2Esc(r[iBaika])+'</td>' +
         '<td class="ich2-nowrap ich2-ellipsis" title="'+ich2Esc(r[iBiko])+'">'+ich2Esc(r[iBiko])+'</td>' +
-        '<td class="center"><button type="button" class="ich2-edit-btn" data-seizou="'+ich2Esc(no)+'" title="この製品の編集画面を開く">📝</button></td>' +
         '</tr>'
       );
     }).join("");
-
-    // 「編集」ボタンで、その製造番号の内容をまとめて編集する画面を開く
-    document.querySelectorAll("#ich2Tbody .ich2-edit-btn").forEach(btn => {
-      btn.addEventListener("click", (e) => { e.stopPropagation(); ich2OpenEditModal(btn.dataset.seizou); });
-    });
 
     // 進捗(受・製・完・内・外・出)バッジのクリックだけ、その場で日付を編集できるようにする。
     // それ以外の項目(納期・区・製・塗装仕様・担当者・m寸法・質量・型番・売価・備考)は、
@@ -1810,14 +1803,22 @@
 
   function ich2UpdateSelbar() {
     const keys = [...ich2Selected];
-    const makeCount = keys.filter(k => k.startsWith("make:")).length;
+    const makeKeys = keys.filter(k => k.startsWith("make:"));
     const buyCount = keys.filter(k => k.startsWith("buy:")).length;
-    const total = makeCount + buyCount;
-    const selbar = document.getElementById("ich2Selbar");
-    selbar.hidden = total === 0;
-    document.getElementById("ich2SelCount").textContent = total + " 件を選択中";
+    const total = makeKeys.length + buyCount;
+    document.getElementById("ich2SelCount").textContent = total === 0 ? "未選択" : (total + " 件を選択中");
     document.getElementById("ich2SelBreakdown").textContent =
-      (makeCount && buyCount) ? "(製作品 " + makeCount + " / 買入品 " + buyCount + ")" : "";
+      (makeKeys.length && buyCount) ? "(製作品 " + makeKeys.length + " / 買入品 " + buyCount + ")" : "";
+    // 「出荷手配へ」は1件以上、「編集」は製作品をちょうど1件選択しているときだけ有効
+    document.getElementById("ich2SelbarShukkaBtn").disabled = total === 0;
+    document.getElementById("ich2SelbarEditBtn").disabled = makeKeys.length !== 1 || buyCount !== 0;
+  }
+
+  // 下部バーの「編集」ボタン:製作品をちょうど1件選択しているときに、その製造番号の編集画面を開く
+  function ich2SelbarEditClick() {
+    const makeKeys = [...ich2Selected].filter(k => k.startsWith("make:"));
+    if (makeKeys.length !== 1) return;
+    ich2OpenEditModal(makeKeys[0].slice("make:".length));
   }
 
   function ich2GoShukka() {
