@@ -359,8 +359,8 @@
   .ich2-selbar-clear { margin-left: auto; background: none; border: 1px solid var(--color-neutral-600); color: var(--color-neutral-100); padding: 7px 14px; font: inherit; cursor: pointer; }
   .ich2-selbar-clear:hover { background: rgba(255,255,255,0.08); }
 
-  /* 行の「編集」ボタン(製造番号ごとの一括編集画面を開く) */
-  .ich2-edit-btn { background: var(--color-bg); border: 1px solid var(--color-neutral-400); color: var(--color-text); padding: 4px 10px; font: inherit; font-size: 12px; font-weight: 700; cursor: pointer; border-radius: 3px; }
+  /* 行の「編集」ボタン(製造番号ごとの一括編集画面を開く)。行の高さに影響しないよう、他のセルと同じ詰め方にする */
+  .ich2-edit-btn { display: block; width: 100%; height: 16px; box-sizing: border-box; background: var(--color-bg); border: 1px solid var(--color-neutral-400); color: var(--color-text); padding: 0; margin: 0; font: inherit; font-size: 10px; line-height: 14px; font-weight: 700; cursor: pointer; }
   .ich2-edit-btn:hover { background: var(--color-accent-100); border-color: var(--color-accent); color: var(--color-accent-700); }
 
   /* 製造番号ごとの一括編集モーダル */
