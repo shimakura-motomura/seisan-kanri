@@ -1177,8 +1177,9 @@
   // 書き込み(登録・進捗更新など)は今まで通りGAS経由。
   const SHEETS_API_KEY = "AIzaSyDrmFie6Mie-8k64rEQT87nHflxZ8Dk94w";
   const SPREADSHEET_ID = "1CWDU2dsX_Sk3uLFnoZ5bJ4LxumypNLPJ9UfzLlU1_Z4";
-  async function ich2FetchViaSheetsApi() {
-    const ranges = ["製作手配一覧", "買入品"].map(r => "ranges=" + encodeURIComponent(r)).join("&");
+  // 複数シートを1回のSheets API呼び出しでまとめて取得する汎用関数(GAS Webアプリを経由しない分、速く安定する)
+  async function ich2FetchSheetsRanges(sheetNames) {
+    const ranges = sheetNames.map(r => "ranges=" + encodeURIComponent(r)).join("&");
     const url = "https://sheets.googleapis.com/v4/spreadsheets/" + SPREADSHEET_ID + "/values:batchGet?" + ranges + "&key=" + SHEETS_API_KEY;
     const res = await fetch(url);
     if (!res.ok) {
@@ -1186,7 +1187,12 @@
       throw new Error("Sheets APIエラー: HTTP " + res.status + (body ? " " + body.slice(0, 200) : ""));
     }
     const data = await res.json();
-    return data.valueRanges; // [{values:[[...]]}, {values:[[...]]}]
+    return data.valueRanges.map(vr => vr.values || []);
+  }
+
+  async function ich2FetchViaSheetsApi() {
+    const [makeRows, buyRows] = await ich2FetchSheetsRanges(["製作手配一覧", "買入品"]);
+    return [{ values: makeRows }, { values: buyRows }]; // 呼び出し元の形式(valueRanges互換)に合わせる
   }
 
   // ================= ナビゲーション =================
@@ -2096,7 +2102,7 @@
 
   async function tsLoadMasters() {
     try {
-      const [buiRows, prodRows] = await Promise.all([ich2FetchJson(GAS_URL + "?type=bui"), ich2FetchJson(GAS_URL + "?type=products")]);
+      const [buiRows, prodRows] = await ich2FetchSheetsRanges(["部位マスタ", "製作手配一覧"]);
       tsBuiList = buiRows.slice(1).map(r => r[0]).filter(Boolean);
       const header = prodRows[0];
       const idxSeizou = header.indexOf("製造番号"), idxGenba = header.indexOf("現場名"), idxHinmei = header.indexOf("品名"), idxSunpou = header.indexOf("寸法"), idxZumen = header.indexOf("図");
@@ -2203,7 +2209,7 @@
     statusEl.textContent = "読み込み中...";
     table.querySelector("thead").innerHTML = ""; table.querySelector("tbody").innerHTML = "";
     try {
-      const rows = await ich2FetchJson(GAS_URL + "?type=tosou_" + encodeURIComponent(tab.key));
+      const [rows] = await ich2FetchSheetsRanges(["塗装_" + tab.key]);
       const header = rows[0];
       const idxSeizou = header.indexOf("製造番号");
       const idxGenba = header.indexOf("現場名");
@@ -2311,7 +2317,7 @@
     statusEl.textContent = "読み込み中...";
     table.querySelector("thead").innerHTML = ""; table.querySelector("tbody").innerHTML = "";
     try {
-      const rows = await ich2FetchJson(GAS_URL + "?type=tosou_メッキスケ");
+      const [rows] = await ich2FetchSheetsRanges(["塗装_メッキスケ"]);
       const header = rows[0];
       const idxGenba = header.indexOf("現場名");
       let body = rows.slice(1).filter(r => r[0] && r[1] && r[idxGenba] !== header[idxGenba]);
