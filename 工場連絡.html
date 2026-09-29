@@ -198,10 +198,33 @@ async function loadJobs() {
   const header = rows[0];
   const idx = name => header.indexOf(name);
   const iSeizou = idx("製造番号"), iGenba = idx("現場名"), iNouki = idx("納期"), iHinmei = idx("品名"),
-    iSunpou = idx("寸法"), iJuken = idx("受・完"), iKu = idx("区"), iSeisaku = idx("製"), iTosou = idx("塗装仕様"),
+    iSunpou = idx("寸法"), iJuken = idx("受・完"), iKu = idx("区"), iSeisaku = idx("製"), iTosouCols = ["酸洗","研磨","エポ","FRP","メッキ","外装","その他"].map(n => { const k = idx(n); return (k === -1 && n === "その他") ? idx("判定不能") : k; }),
     iZumen = idx("図"), iToroku = idx("登録日"),
     iJuchu = idx("受注日"), iSeisakuDay = idx("製作日"), iKansei = idx("完成日"),
     iNaiso = idx("内装日"), iGaiso = idx("外装日"), iShukka = idx("出荷日");
+
+  // 塗装7列のうち、記入がある工程だけを「工程名 部位+本文3文字」で並べる
+  const TOSOU_NAMES = ["酸洗","研磨","エポ","FRP","メッキ","外装","他"];
+  const TOSOU_STRIP = [["酸洗"],["研磨"],["エポキシ","エポ","ブラスト"],["FRP"],["メッキ","ﾒｯｷ"],[],[]];
+  function tosouShortOne(frag, strip) {
+    const f = String(frag || "").trim();
+    if (!f) return "";
+    const m = f.search(/[：:]/);
+    const head = m !== -1 ? f.slice(0, m).trim() : "";
+    let body = m !== -1 ? f.slice(m + 1) : f;
+    strip.forEach(w => { body = body.split(w).join(""); });
+    body = body.replace(/[（(][^）)]*[）)]?/g, "");
+    body = body.replace(/^[\s　#＃]+/, "").trim();
+    return (head.charAt(0) + body.slice(0, 3)) || "●";
+  }
+  function tosouSummary(r, cols) {
+    return cols.map((ci, k) => {
+      const v = ci >= 0 ? String(r[ci] || "").trim() : "";
+      if (!v) return "";
+      const short = v.split("/").map(x => tosouShortOne(x, TOSOU_STRIP[k])).filter(Boolean).join("/");
+      return TOSOU_NAMES[k] + " " + short;
+    }).filter(Boolean).join("　");
+  }
 
   // 完成日が入っていて、かつ今日以前(今日を含む)であれば「第3工場(検査・塗装・出荷)対象」とみなす
   function isDatePassed(v) {
@@ -225,7 +248,7 @@ async function loadJobs() {
         isDai3: isDatePassed(r[iKansei]),
         item: r[iHinmei] || "",
         dims: r[iSunpou] || "",
-        paint: r[iTosou] || "",
+        paint: tosouSummary(r, iTosouCols),
         zumen: zumen,
         // 進捗バー用:受注日→製作日→完成日→内装日→外装日→出荷日の6段階。
         // 日付が入っていれば完了、「***」なら対象外(その工程が無い)、空欄なら未着手

@@ -870,7 +870,7 @@
           <colgroup>
             <col style="width:28px"><col style="width:62px"><col style="width:40px"><col style="width:104px"><col style="width:84px">
             <col style="width:122px"><col style="width:36px"><col style="width:26px"><col style="width:40px">
-            <col style="width:44px"><col style="width:44px"><col style="width:44px"><col style="width:44px"><col style="width:44px"><col style="width:44px"><col style="width:53px">
+            <col style="width:58px"><col style="width:58px"><col style="width:58px"><col style="width:58px"><col style="width:58px"><col style="width:58px"><col style="width:61px">
             <col style="width:36px"><col style="width:36px"><col style="width:36px"><col style="width:65px"><col style="width:65px"><col style="width:36px">
             <col style="width:36px"><col style="width:82px"><col style="width:34px"><col style="width:52px"><col style="width:52px"><col style="width:84px">
           </colgroup>
@@ -922,7 +922,6 @@
         </table>
         <div class="ich2-empty" id="ich2Empty" hidden>該当する案件がありません。検索条件を変えてください。</div>
       </div>
-      <div class="ich2-footnote">製造番号・納期・現場名・品名は固定表示。製造番号をクリックすると図面が開きます。進捗(受・製・完・内・外・出)はクリックでその場編集、それ以外の項目はチェックを1件入れて画面下部の「編集」から編集画面を開きます。横スクロールで 寸法・塗装 → 進捗 → 担当・詳細 の順。</div>
       </div>
 
       <!-- ========== 買入品タブ ========== -->
@@ -1319,17 +1318,30 @@
 
   // 一覧の酸洗〜他の列は幅が狭いため、セルには「元の文章の先頭」を1〜2文字だけそのまま表示する。
   // (例:「内熱源：BP」→「内熱」、「架T：メッキ」→「架T」)。元の文章はセルのtitle属性(マウスオーバー)で見られる。
-  function ich2TosouShortOne(frag) {
+  // 工程ごとに、セルの文章から取り除く言葉(その列を見れば分かる工程名)
+  const ICH2_TOSOU_STRIP = {
+    "酸洗": ["酸洗"], "研磨": ["研磨"], "エポ": ["エポキシ","エポ","ブラスト"],
+    "FRP": ["FRP"], "メッキ": ["メッキ","ﾒｯｷ"], "外装": [], "その他": []
+  };
+  // 「内：444酸洗」→「内444」、「外：耐塩(ｱﾙﾃｸﾄ)」→「外耐塩」、「脚：ﾒｯｷ」→「脚」
+  // 部位の先頭1文字 + 本文の先頭3文字(工程名は取り除く)。全文はtitle(ホバー)で確認できる。
+  function ich2TosouShortOne(frag, proc) {
     const f = String(frag || "").trim();
     if (!f) return "";
-    const colonIdx = f.search(/[：:]/);
-    const head = colonIdx !== -1 ? f.slice(0, colonIdx) : f;
-    return (head || f).slice(0, 2);
+    const m = f.search(/[：:]/);
+    const head = m !== -1 ? f.slice(0, m).trim() : "";
+    let body = m !== -1 ? f.slice(m + 1) : f;
+    (ICH2_TOSOU_STRIP[proc] || []).forEach(w => { body = body.split(w).join(""); });
+    body = body.replace(/[（(][^）)]*[）)]?/g, "");
+    body = body.replace(/^[\s　#＃]+/, "").trim();
+    const part = head.charAt(0);
+    const out = part + body.slice(0, 3);
+    return out || "●";
   }
-  function ich2TosouShort(val) {
+  function ich2TosouShort(val, proc) {
     const s = String(val || "").trim();
     if (!s) return "";
-    return s.split("/").map(ich2TosouShortOne).filter(Boolean).join("/");
+    return s.split("/").map(x => ich2TosouShortOne(x, proc)).filter(Boolean).join("/");
   }
 
   // コイル関連かどうかの横断判定(部署がコイル/コイル使用チェック/品名に熱交換器/塗装仕様に熱源、のいずれか)
@@ -1549,13 +1561,13 @@
           const sc = ich2SeisakuColor(r[iSeisaku], r[iKu]);
           return '<td class="ich2-nowrap"><span class="ich2-chip ich2-chip-seisaku" style="background:'+sc.bg+';color:'+sc.fg+';border-color:'+sc.bd+';">'+ich2Esc(ich2SeisakuLabel(r[iSeisaku]))+'</span></td>';
         })() +
-        '<td class="center ich2-nowrap ich2-ellipsis tz tz-first tz-shade" title="'+ich2Esc(r[iTosouSanArai])+'">'+ich2Esc(ich2TosouShort(r[iTosouSanArai]))+'</td>' +
-        '<td class="center ich2-nowrap ich2-ellipsis tz" title="'+ich2Esc(r[iTosouKenma])+'">'+ich2Esc(ich2TosouShort(r[iTosouKenma]))+'</td>' +
-        '<td class="center ich2-nowrap ich2-ellipsis tz tz-shade" title="'+ich2Esc(r[iTosouEpo])+'">'+ich2Esc(ich2TosouShort(r[iTosouEpo]))+'</td>' +
-        '<td class="center ich2-nowrap ich2-ellipsis tz" title="'+ich2Esc(r[iTosouFrp])+'">'+ich2Esc(ich2TosouShort(r[iTosouFrp]))+'</td>' +
-        '<td class="center ich2-nowrap ich2-ellipsis tz tz-shade" title="'+ich2Esc(r[iTosouMekki])+'">'+ich2Esc(ich2TosouShort(r[iTosouMekki]))+'</td>' +
-        '<td class="center ich2-nowrap ich2-ellipsis tz" title="'+ich2Esc(r[iTosouGaisou])+'">'+ich2Esc(ich2TosouShort(r[iTosouGaisou]))+'</td>' +
-        '<td class="center ich2-nowrap ich2-ellipsis tz tz-shade tz-last" title="'+ich2Esc(r[iTosouSonota])+'">'+ich2Esc(ich2TosouShort(r[iTosouSonota]))+'</td>' +
+        '<td class="center ich2-nowrap ich2-ellipsis tz tz-first tz-shade" title="'+ich2Esc(r[iTosouSanArai])+'">'+ich2Esc(ich2TosouShort(r[iTosouSanArai], '酸洗'))+'</td>' +
+        '<td class="center ich2-nowrap ich2-ellipsis tz" title="'+ich2Esc(r[iTosouKenma])+'">'+ich2Esc(ich2TosouShort(r[iTosouKenma], '研磨'))+'</td>' +
+        '<td class="center ich2-nowrap ich2-ellipsis tz tz-shade" title="'+ich2Esc(r[iTosouEpo])+'">'+ich2Esc(ich2TosouShort(r[iTosouEpo], 'エポ'))+'</td>' +
+        '<td class="center ich2-nowrap ich2-ellipsis tz" title="'+ich2Esc(r[iTosouFrp])+'">'+ich2Esc(ich2TosouShort(r[iTosouFrp], 'FRP'))+'</td>' +
+        '<td class="center ich2-nowrap ich2-ellipsis tz tz-shade" title="'+ich2Esc(r[iTosouMekki])+'">'+ich2Esc(ich2TosouShort(r[iTosouMekki], 'メッキ'))+'</td>' +
+        '<td class="center ich2-nowrap ich2-ellipsis tz" title="'+ich2Esc(r[iTosouGaisou])+'">'+ich2Esc(ich2TosouShort(r[iTosouGaisou], '外装'))+'</td>' +
+        '<td class="center ich2-nowrap ich2-ellipsis tz tz-shade tz-last" title="'+ich2Esc(r[iTosouSonota])+'">'+ich2Esc(ich2TosouShort(r[iTosouSonota], 'その他'))+'</td>' +
         progIdx.map(ci => {
           const raw = r[ci] || "";
           const colName = H[ci];
