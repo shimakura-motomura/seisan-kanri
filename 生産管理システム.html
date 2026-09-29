@@ -309,7 +309,11 @@
   .ich2-toolbar-right { margin-left: auto; }
   .ich2-count { font-size: 12px; color: var(--color-neutral-700); font-variant-numeric: tabular-nums; }
 
-  #ich2Scroller { flex: 1; overflow: auto; border-bottom: 2px solid var(--color-divider); }
+  /* #ich2PaneMake・#ich2PaneBuyをflexコンテナにしないと、中のスクロール領域(flex:1)が効かず、
+     ページ全体がスクロールしてしまい、一覧のヘッダー行が固定されない(見出しが流れて消える)不具合が起きる。 */
+  #ich2PaneMake, #ich2PaneBuy { display: flex; flex-direction: column; flex: 1 1 auto; min-height: 0; }
+  #ich2Scroller { flex: 1; min-height: 0; overflow: auto; border-bottom: 2px solid var(--color-divider); }
+  #ich2BuyScroller { flex: 1; min-height: 0; overflow: auto; border-bottom: 2px solid var(--color-divider); }
   table.ich2-list { table-layout: fixed; border-collapse: separate; border-spacing: 0; font-size: 11px; width: 100%; }
   .ich2-grp { position: sticky; top: 0; z-index: 4; padding: 1px 5px; font-size: 9px; letter-spacing: 0.08em; border-bottom: 1px solid var(--color-neutral-700); text-align: left; }
   .ich2-grp.identify { left: 0; z-index: 6; background: var(--color-neutral-900); color: var(--color-neutral-100); border-right: 2px solid var(--color-text); }
