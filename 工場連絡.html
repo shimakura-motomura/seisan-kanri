@@ -243,7 +243,8 @@ async function loadJobs() {
   }
   // スマホ用の塗装欄:
   //  酸洗・研磨・エポ・FRP・メッキ … 「部位(工程名)」 例「内被(研磨) 脚(ﾒｯｷ)」(エポ・メッキは半角カナ)
-  //  外装・他 … セルの内容をそのまま(見出しなし)
+  //  FRP … 「外(FRP直)」のように記入内容ごと括弧に入れる
+  //  外装・他 … PCの一覧の塗装セルと同じ表示(見出しなし)
   // 全体は半角スペース区切り
   const TOSOU_LABEL = { "酸洗": "酸洗", "研磨": "研磨", "エポ": "ｴﾎﾟ", "FRP": "FRP", "メッキ": "ﾒｯｷ" };
   function tosouPart(frag, proc) {
@@ -262,13 +263,23 @@ async function loadJobs() {
       const v = ci >= 0 ? String(r[ci] || "").trim() : "";
       if (!v) return;
       const proc = procs[k];
-      if (TOSOU_LABEL[proc]) {
+      if (proc === "FRP") {
+        // FRPは「外(FRP直)」のように、記入内容ごと括弧に入れる
+        v.split("/").forEach(x => {
+          const f = String(x || "").trim();
+          if (!f) return;
+          const m = f.search(/[：:]/);
+          const p = m !== -1 ? (partAbbr(f.slice(0, m)) || "●") : "";
+          const body = (m !== -1 ? f.slice(m + 1) : f).replace(/[（(][^）)]*[）)]?/g, "").trim();
+          out.push(p ? p + "(" + (body || "FRP") + ")" : (body || "FRP"));
+        });
+      } else if (TOSOU_LABEL[proc]) {
         v.split("/").forEach(x => {
           const p = tosouPart(x, proc);
           if (p) out.push(p + "(" + TOSOU_LABEL[proc] + ")");
         });
       } else {
-        out.push(v);
+        out.push(tosouCell(v, proc));   // 外装・他 … PCの一覧の塗装セルと同じ表示
       }
     });
     return out.join(" ");
