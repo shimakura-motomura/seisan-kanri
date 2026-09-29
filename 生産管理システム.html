@@ -873,7 +873,7 @@
           <colgroup>
             <col style="width:24px"><col style="width:60px"><col style="width:38px"><col style="width:96px"><col style="width:66px">
             <col style="width:92px"><col style="width:36px"><col style="width:24px"><col style="width:40px">
-            <col style="width:92px"><col style="width:62px"><col style="width:60px"><col style="width:40px"><col style="width:34px"><col style="width:140px"><col style="width:80px">
+            <col style="width:60px"><col style="width:46px"><col style="width:52px"><col style="width:40px"><col style="width:34px"><col style="width:140px"><col style="width:80px">
             <col style="width:36px"><col style="width:36px"><col style="width:36px"><col style="width:65px"><col style="width:65px"><col style="width:36px">
             <col style="width:32px"><col style="width:82px"><col style="width:34px"><col style="width:52px"><col style="width:38px"><col style="width:84px">
           </colgroup>
@@ -1322,33 +1322,34 @@
   // 一覧の酸洗〜他の列は幅が狭いため、セルには「元の文章の先頭」を1〜2文字だけそのまま表示する。
   // (例:「内熱源：BP」→「内熱」、「架T：メッキ」→「架T」)。元の文章はセルのtitle属性(マウスオーバー)で見られる。
   // ===== 塗装セルの表示ルール =====
-  // 酸洗・研磨 : 部位 + 材質      例「内被熱 444」
-  // メッキ     : 部位のみ          例「脚」
-  // エポ・FRP  : 内容(部位)。内容が無ければ部位のみ   例「0.4(内)」
-  // 外装・他   : 内容(部位)        例「耐熱(外熱源) 錆止(外被熱)」
+  // 酸洗・研磨・メッキ : 部位のみ          例「内被」「脚」(材質444・304などはマウスを乗せたときだけ表示)
+  // エポ・FRP・外装・他 : 部位(内容)        例「外熱(耐熱) 外被(錆止)」
+  // 部位の略し方: 内被熱→内被 / 内熱源→内熱 / 外被熱→外被 / 外熱源→外熱 / 内部配管→内管 / プロ→P / バン→B
   const ICH2_TOSOU_STRIP = {
     "酸洗": ["酸洗"], "研磨": ["研磨"], "メッキ": ["メッキ","ﾒｯｷ"],
     "エポ": ["エポキシ","エポ","ｴﾎﾟｷｼ","ｴﾎﾟ"], "FRP": ["FRP"], "外装": [], "その他": []
   };
+  const ICH2_PART_ABBR = [
+    ["内被熱","内被"], ["内熱源","内熱"], ["外被熱","外被"], ["外熱源","外熱"],
+    ["内部配管","内管"], ["ﾌﾟﾛ","P"], ["プロ","P"], ["ﾊﾞﾝ","B"], ["バン","B"]
+  ];
+  function ich2PartAbbr(part) {
+    let p = String(part || "").trim();
+    ICH2_PART_ABBR.forEach(([a, b]) => { p = p.split(a).join(b); });
+    return p;
+  }
   function ich2TosouFrag(frag, proc) {
     const f = String(frag || "").trim();
     if (!f) return "";
     const m = f.search(/[：:]/);
-    const part = m !== -1 ? f.slice(0, m).trim() : "";
+    const part = m !== -1 ? ich2PartAbbr(f.slice(0, m)) : "";
     let body = m !== -1 ? f.slice(m + 1).trim() : f;
     body = body.replace(/[（(][^）)]*[）)]?/g, "").trim();
     (ICH2_TOSOU_STRIP[proc] || []).forEach(w => { body = body.split(w).join(""); });
     body = body.replace(/^[\s　#＃]+/, "").trim();
     if (m === -1) return body || f;              // 「曲げ加工」など、部位が無い記載はそのまま
-    if (proc === "酸洗" || proc === "研磨") {
-      const mat = (body.match(/^[0-9]+[A-Za-z]*/) || [""])[0];
-      return part + (mat ? " " + mat : "");
-    }
-    if (proc === "メッキ") return part || body || "●";
-    if (proc === "エポ" || proc === "FRP" || proc === "外装" || proc === "その他") {
-      return body ? body + (part ? "(" + part + ")" : "") : (part || "●");
-    }
-    return part || body;
+    if (proc === "酸洗" || proc === "研磨" || proc === "メッキ") return part || body || "●";
+    return body ? (part ? part + "(" + body + ")" : body) : (part || "●");
   }
   function ich2TosouCell(val, proc) {
     const s = String(val || "").trim();
