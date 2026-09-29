@@ -332,6 +332,10 @@
   /* 塗装7列: 太い罫線で囲む + 列の間に縦線 + 1列おきに薄い背景 */
   .ich2-grp.tosou { background: var(--color-text); color: var(--color-bg); text-align: center; font-weight: 700; border-left: 3px solid var(--color-text); border-right: 3px solid var(--color-text); }
   .ich2-list .tz { border-left: 1px solid var(--color-divider); }
+  /* 塗装セルは元の文章をそのまま表示(幅に収まらない分は折り返す) */
+  table.ich2-list tbody td.tz-txt { white-space: normal; word-break: break-all; overflow-wrap: anywhere; font-size: 10px; line-height: 1.25; padding: 2px 2px; text-align: left; vertical-align: top; }
+  .ich2-list td.tz-mekki { font-size: 9px; letter-spacing: -0.02em; padding: 2px 1px; }
+  .ich2-colh.tz-mekki { font-size: 8px; padding: 2px 0; letter-spacing: -0.05em; }
   .ich2-list .tz-first { border-left: 3px solid var(--color-text); }
   .ich2-list .tz-last { border-right: 3px solid var(--color-text); }
   .ich2-list .tz-shade { background-image: linear-gradient(rgba(32,30,29,0.08), rgba(32,30,29,0.08)); }
@@ -870,7 +874,7 @@
           <colgroup>
             <col style="width:28px"><col style="width:62px"><col style="width:40px"><col style="width:104px"><col style="width:84px">
             <col style="width:122px"><col style="width:36px"><col style="width:26px"><col style="width:40px">
-            <col style="width:58px"><col style="width:58px"><col style="width:58px"><col style="width:58px"><col style="width:58px"><col style="width:58px"><col style="width:61px">
+            <col style="width:46px"><col style="width:46px"><col style="width:46px"><col style="width:46px"><col style="width:29px"><col style="width:87px"><col style="width:49px">
             <col style="width:36px"><col style="width:36px"><col style="width:36px"><col style="width:65px"><col style="width:65px"><col style="width:36px">
             <col style="width:36px"><col style="width:82px"><col style="width:34px"><col style="width:52px"><col style="width:52px"><col style="width:84px">
           </colgroup>
@@ -899,7 +903,7 @@
               <th class="ich2-colh center tz" title="研磨">研磨</th>
               <th class="ich2-colh center tz tz-shade" title="エポ">エポ</th>
               <th class="ich2-colh center tz" title="FRP">FRP</th>
-              <th class="ich2-colh center tz tz-shade" title="メッキ">メッキ</th>
+              <th class="ich2-colh center tz tz-shade tz-mekki" title="メッキ">メッキ</th>
               <th class="ich2-colh center tz" title="外装">外装</th>
               <th class="ich2-colh center tz tz-shade tz-last" title="その他(社内対応品など)">他</th>
 
@@ -1561,13 +1565,13 @@
           const sc = ich2SeisakuColor(r[iSeisaku], r[iKu]);
           return '<td class="ich2-nowrap"><span class="ich2-chip ich2-chip-seisaku" style="background:'+sc.bg+';color:'+sc.fg+';border-color:'+sc.bd+';">'+ich2Esc(ich2SeisakuLabel(r[iSeisaku]))+'</span></td>';
         })() +
-        '<td class="center ich2-nowrap ich2-ellipsis tz tz-first tz-shade" title="'+ich2Esc(r[iTosouSanArai])+'">'+ich2Esc(ich2TosouShort(r[iTosouSanArai], '酸洗'))+'</td>' +
-        '<td class="center ich2-nowrap ich2-ellipsis tz" title="'+ich2Esc(r[iTosouKenma])+'">'+ich2Esc(ich2TosouShort(r[iTosouKenma], '研磨'))+'</td>' +
-        '<td class="center ich2-nowrap ich2-ellipsis tz tz-shade" title="'+ich2Esc(r[iTosouEpo])+'">'+ich2Esc(ich2TosouShort(r[iTosouEpo], 'エポ'))+'</td>' +
-        '<td class="center ich2-nowrap ich2-ellipsis tz" title="'+ich2Esc(r[iTosouFrp])+'">'+ich2Esc(ich2TosouShort(r[iTosouFrp], 'FRP'))+'</td>' +
-        '<td class="center ich2-nowrap ich2-ellipsis tz tz-shade" title="'+ich2Esc(r[iTosouMekki])+'">'+ich2Esc(ich2TosouShort(r[iTosouMekki], 'メッキ'))+'</td>' +
-        '<td class="center ich2-nowrap ich2-ellipsis tz" title="'+ich2Esc(r[iTosouGaisou])+'">'+ich2Esc(ich2TosouShort(r[iTosouGaisou], '外装'))+'</td>' +
-        '<td class="center ich2-nowrap ich2-ellipsis tz tz-shade tz-last" title="'+ich2Esc(r[iTosouSonota])+'">'+ich2Esc(ich2TosouShort(r[iTosouSonota], 'その他'))+'</td>' +
+        '<td class="tz-txt tz tz-first tz-shade" title="'+ich2Esc(r[iTosouSanArai])+'">'+ich2Esc(r[iTosouSanArai])+'</td>' +
+        '<td class="tz-txt tz" title="'+ich2Esc(r[iTosouKenma])+'">'+ich2Esc(r[iTosouKenma])+'</td>' +
+        '<td class="tz-txt tz tz-shade" title="'+ich2Esc(r[iTosouEpo])+'">'+ich2Esc(r[iTosouEpo])+'</td>' +
+        '<td class="tz-txt tz" title="'+ich2Esc(r[iTosouFrp])+'">'+ich2Esc(r[iTosouFrp])+'</td>' +
+        '<td class="tz-txt tz tz-shade tz-mekki" title="'+ich2Esc(r[iTosouMekki])+'">'+ich2Esc(r[iTosouMekki])+'</td>' +
+        '<td class="tz-txt tz" title="'+ich2Esc(r[iTosouGaisou])+'">'+ich2Esc(r[iTosouGaisou])+'</td>' +
+        '<td class="tz-txt tz tz-shade tz-last" title="'+ich2Esc(r[iTosouSonota])+'">'+ich2Esc(r[iTosouSonota])+'</td>' +
         progIdx.map(ci => {
           const raw = r[ci] || "";
           const colName = H[ci];

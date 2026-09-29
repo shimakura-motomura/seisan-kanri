@@ -73,7 +73,7 @@ input:focus-visible, textarea:focus-visible, button:focus-visible { outline: 2px
 .job-no { flex: 0 0 auto; font-size: 14px; font-weight: 900; color: var(--accent); letter-spacing: 0.02em; }
 .job-line1 { font-size: 10px; font-weight: 700; color: var(--muted-2); line-height: 1.45; width: 100%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .job-line1 .sep { color: var(--sep); }
-.job-line2 { font-size: 10px; font-weight: 500; color: var(--muted); line-height: 1.45; width: 100%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.job-line2 { font-size: 10px; font-weight: 500; color: var(--muted); line-height: 1.45; width: 100%; white-space: normal; overflow-wrap: anywhere; }
 .job-line2 .sep { color: var(--sep-2); }
 .job-progress { display: flex; gap: 2px; margin-top: 4px; }
 .job-progress-seg { flex: 1 1 0; height: 2px; background: var(--divider-25); }
@@ -203,26 +203,12 @@ async function loadJobs() {
     iJuchu = idx("受注日"), iSeisakuDay = idx("製作日"), iKansei = idx("完成日"),
     iNaiso = idx("内装日"), iGaiso = idx("外装日"), iShukka = idx("出荷日");
 
-  // 塗装7列のうち、記入がある工程だけを「工程名 部位+本文3文字」で並べる
+  // 塗装7列のうち、記入がある工程だけを「工程名 元の文章」で並べる
   const TOSOU_NAMES = ["酸洗","研磨","エポ","FRP","メッキ","外装","他"];
-  const TOSOU_STRIP = [["酸洗"],["研磨"],["エポキシ","エポ","ブラスト"],["FRP"],["メッキ","ﾒｯｷ"],[],[]];
-  function tosouShortOne(frag, strip) {
-    const f = String(frag || "").trim();
-    if (!f) return "";
-    const m = f.search(/[：:]/);
-    const head = m !== -1 ? f.slice(0, m).trim() : "";
-    let body = m !== -1 ? f.slice(m + 1) : f;
-    strip.forEach(w => { body = body.split(w).join(""); });
-    body = body.replace(/[（(][^）)]*[）)]?/g, "");
-    body = body.replace(/^[\s　#＃]+/, "").trim();
-    return (head.charAt(0) + body.slice(0, 3)) || "●";
-  }
   function tosouSummary(r, cols) {
     return cols.map((ci, k) => {
       const v = ci >= 0 ? String(r[ci] || "").trim() : "";
-      if (!v) return "";
-      const short = v.split("/").map(x => tosouShortOne(x, TOSOU_STRIP[k])).filter(Boolean).join("/");
-      return TOSOU_NAMES[k] + " " + short;
+      return v ? TOSOU_NAMES[k] + " " + v : "";
     }).filter(Boolean).join("　");
   }
 
