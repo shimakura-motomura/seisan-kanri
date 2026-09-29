@@ -1297,27 +1297,14 @@
     return ich2DatePassed(kanseiVal);
   }
 
-  // 一覧の酸洗〜他の列は幅が狭いため、セルには「該当する部位」を1〜2文字だけ表示する。
-  // (例:「内熱源：BP」→「内」、「架T：メッキ」→「架」)。元の文章はセルのtitle属性(マウスオーバー)で見られる。
-  const ICH2_TOSOU_PREFIX_MAP = [
-    ["プロ内", "内"], ["プロ外", "外"],
-    ["内熱源", "内"], ["外熱源", "外"],
-    ["内被熱", "内"], ["外被熱", "外"],
-    ["内管", "内"], ["外管", "外"],
-    ["内脚", "内"], ["外脚", "外"],
-    ["架T", "架"], ["架ﾃ", "架"]
-  ];
+  // 一覧の酸洗〜他の列は幅が狭いため、セルには「元の文章の先頭」を1〜2文字だけそのまま表示する。
+  // (例:「内熱源：BP」→「内熱」、「架T：メッキ」→「架T」)。元の文章はセルのtitle属性(マウスオーバー)で見られる。
   function ich2TosouShortOne(frag) {
     const f = String(frag || "").trim();
     if (!f) return "";
-    for (const [prefix, label] of ICH2_TOSOU_PREFIX_MAP) {
-      if (f.startsWith(prefix)) return label;
-    }
-    const m = f.match(/^(内|外|脚|架|管|本)/);
-    if (m) return m[1];
     const colonIdx = f.search(/[：:]/);
     const head = colonIdx !== -1 ? f.slice(0, colonIdx) : f;
-    return head.slice(0, 2) || f.slice(0, 2);
+    return (head || f).slice(0, 2);
   }
   function ich2TosouShort(val) {
     const s = String(val || "").trim();
