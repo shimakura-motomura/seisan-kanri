@@ -245,8 +245,8 @@ async function loadJobs() {
     const procs = ["酸洗","研磨","エポ","FRP","メッキ","外装","その他"];
     return cols.map((ci, k) => {
       const v = ci >= 0 ? tosouCell(r[ci], procs[k]) : "";
-      return v ? TOSOU_NAMES[k] + " " + v : "";
-    }).filter(Boolean).join("　");
+      return v ? "〈" + TOSOU_NAMES[k] + "〉" + v : "";
+    }).filter(Boolean).join(" | ");
   }
 
   // 完成日が入っていて、かつ今日以前(今日を含む)であれば「第3工場(検査・塗装・出荷)対象」とみなす
