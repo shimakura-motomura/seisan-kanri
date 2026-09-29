@@ -241,12 +241,37 @@ async function loadJobs() {
     const sep = (proc === "酸洗" || proc === "研磨" || proc === "メッキ") ? "・" : " ";
     return s.split("/").map(x => tosouFrag(x, proc)).filter(Boolean).join(sep);
   }
+  // スマホ用の塗装欄:
+  //  酸洗・研磨・エポ・FRP・メッキ … 「部位(工程名)」 例「内被(研磨) 脚(ﾒｯｷ)」(エポ・メッキは半角カナ)
+  //  外装・他 … セルの内容をそのまま(見出しなし)
+  // 全体は半角スペース区切り
+  const TOSOU_LABEL = { "酸洗": "酸洗", "研磨": "研磨", "エポ": "ｴﾎﾟ", "FRP": "FRP", "メッキ": "ﾒｯｷ" };
+  function tosouPart(frag, proc) {
+    const f = String(frag || "").trim();
+    if (!f) return "";
+    const m = f.search(/[：:]/);
+    if (m !== -1) return partAbbr(f.slice(0, m)) || "●";
+    let body = f.replace(/[（(][^）)]*[）)]?/g, "");
+    (TOSOU_STRIP[proc] || []).forEach(w => { body = body.split(w).join(""); });
+    return body.trim() || f;
+  }
   function tosouSummary(r, cols) {
     const procs = ["酸洗","研磨","エポ","FRP","メッキ","外装","その他"];
-    return cols.map((ci, k) => {
-      const v = ci >= 0 ? tosouCell(r[ci], procs[k]) : "";
-      return v ? "〈" + TOSOU_NAMES[k] + "〉" + v : "";
-    }).filter(Boolean).join(" | ");
+    const out = [];
+    cols.forEach((ci, k) => {
+      const v = ci >= 0 ? String(r[ci] || "").trim() : "";
+      if (!v) return;
+      const proc = procs[k];
+      if (TOSOU_LABEL[proc]) {
+        v.split("/").forEach(x => {
+          const p = tosouPart(x, proc);
+          if (p) out.push(p + "(" + TOSOU_LABEL[proc] + ")");
+        });
+      } else {
+        out.push(v);
+      }
+    });
+    return out.join(" ");
   }
 
   // 完成日が入っていて、かつ今日以前(今日を含む)であれば「第3工場(検査・塗装・出荷)対象」とみなす
