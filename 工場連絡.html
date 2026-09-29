@@ -205,9 +205,45 @@ async function loadJobs() {
 
   // 塗装7列のうち、記入がある工程だけを「工程名 元の文章」で並べる
   const TOSOU_NAMES = ["酸洗","研磨","エポ","FRP","メッキ","外装","他"];
+  // ===== 塗装セルの表示ルール =====
+  // 酸洗・研磨 : 部位 + 材質      例「内被熱 444」
+  // メッキ     : 部位のみ          例「脚」
+  // エポ・FRP  : 内容(部位)。内容が無ければ部位のみ   例「0.4(内)」
+  // 外装・他   : 内容(部位)        例「耐熱(外熱源) 錆止(外被熱)」
+  const TOSOU_STRIP = {
+    "酸洗": ["酸洗"], "研磨": ["研磨"], "メッキ": ["メッキ","ﾒｯｷ"],
+    "エポ": ["エポキシ","エポ","ｴﾎﾟｷｼ","ｴﾎﾟ"], "FRP": ["FRP"], "外装": [], "その他": []
+  };
+  function tosouFrag(frag, proc) {
+    const f = String(frag || "").trim();
+    if (!f) return "";
+    const m = f.search(/[：:]/);
+    const part = m !== -1 ? f.slice(0, m).trim() : "";
+    let body = m !== -1 ? f.slice(m + 1).trim() : f;
+    body = body.replace(/[（(][^）)]*[）)]?/g, "").trim();
+    (TOSOU_STRIP[proc] || []).forEach(w => { body = body.split(w).join(""); });
+    body = body.replace(/^[\s　#＃]+/, "").trim();
+    if (m === -1) return body || f;              // 「曲げ加工」など、部位が無い記載はそのまま
+    if (proc === "酸洗" || proc === "研磨") {
+      const mat = (body.match(/^[0-9]+[A-Za-z]*/) || [""])[0];
+      return part + (mat ? " " + mat : "");
+    }
+    if (proc === "メッキ") return part || body || "●";
+    if (proc === "エポ" || proc === "FRP" || proc === "外装" || proc === "その他") {
+      return body ? body + (part ? "(" + part + ")" : "") : (part || "●");
+    }
+    return part || body;
+  }
+  function tosouCell(val, proc) {
+    const s = String(val || "").trim();
+    if (!s) return "";
+    const sep = (proc === "酸洗" || proc === "研磨" || proc === "メッキ") ? "・" : " ";
+    return s.split("/").map(x => tosouFrag(x, proc)).filter(Boolean).join(sep);
+  }
   function tosouSummary(r, cols) {
+    const procs = ["酸洗","研磨","エポ","FRP","メッキ","外装","その他"];
     return cols.map((ci, k) => {
-      const v = ci >= 0 ? String(r[ci] || "").trim() : "";
+      const v = ci >= 0 ? tosouCell(r[ci], procs[k]) : "";
       return v ? TOSOU_NAMES[k] + " " + v : "";
     }).filter(Boolean).join("　");
   }
