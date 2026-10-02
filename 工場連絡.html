@@ -263,26 +263,36 @@ async function loadJobs() {
       const v = ci >= 0 ? String(r[ci] || "").trim() : "";
       if (!v) return;
       const proc = procs[k];
-      if (proc === "FRP") {
-        // FRPは「外(FRP直)」のように、記入内容ごと括弧に入れる
-        v.split("/").forEach(x => {
-          const f = String(x || "").trim();
-          if (!f) return;
-          const m = f.search(/[：:]/);
-          const p = m !== -1 ? (partAbbr(f.slice(0, m)) || "●") : "";
-          const body = (m !== -1 ? f.slice(m + 1) : f).replace(/[（(][^）)]*[）)]?/g, "").trim();
-          out.push(p ? p + "(" + (body || "FRP") + ")" : (body || "FRP"));
-        });
-      } else if (TOSOU_LABEL[proc]) {
-        v.split("/").forEach(x => {
-          const p = tosouPart(x, proc);
-          if (p) out.push(p + "(" + TOSOU_LABEL[proc] + ")");
-        });
-      } else {
-        out.push(tosouCell(v, proc));   // 外装・他 … PCの一覧の塗装セルと同じ表示
-      }
+      if (/[：:]/.test(v)) { legacySummary(v, proc, out); return; }   // 旧表記(変換前)のセル
+      // 新表記:「部位 材質」「部位」「部位(内容)」
+      if (proc === "FRP" || proc === "外装" || proc === "その他") { out.push(v); return; }   // そのまま(FRPは「外(FRP直)」)
+      const frags = (proc === "エポ") ? v.split(/\s+/) : v.split("・");
+      frags.forEach(fr => {
+        const part = fr.trim().split(/[\s(（]/)[0];
+        if (part) out.push(part + "(" + TOSOU_LABEL[proc] + ")");
+      });
     });
     return out.join(" ");
+  }
+  // 旧表記(「内：444酸洗」など)のセル用。変換が済むまでの互換。
+  function legacySummary(v, proc, out) {
+    if (proc === "FRP") {
+      v.split("/").forEach(x => {
+        const f = String(x || "").trim();
+        if (!f) return;
+        const m = f.search(/[：:]/);
+        const p = m !== -1 ? (partAbbr(f.slice(0, m)) || "●") : "";
+        const body = (m !== -1 ? f.slice(m + 1) : f).replace(/[（(][^）)]*[）)]?/g, "").trim();
+        out.push(p ? p + "(" + (body || "FRP") + ")" : (body || "FRP"));
+      });
+    } else if (TOSOU_LABEL[proc]) {
+      v.split("/").forEach(x => {
+        const p = tosouPart(x, proc);
+        if (p) out.push(p + "(" + TOSOU_LABEL[proc] + ")");
+      });
+    } else {
+      out.push(tosouCell(v, proc));
+    }
   }
 
   // 完成日が入っていて、かつ今日以前(今日を含む)であれば「第3工場(検査・塗装・出荷)対象」とみなす
