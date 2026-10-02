@@ -145,6 +145,7 @@ const state = {
   query: "",
   sort: "no",
   dept: "すべて",
+  showShipped: false,
   sheet: null,
   name: "",
   body: "",
@@ -265,7 +266,7 @@ async function loadJobs() {
       const proc = procs[k];
       if (/[：:]/.test(v)) { legacySummary(v, proc, out); return; }   // 旧表記(変換前)のセル
       // 新表記:「部位 材質」「部位」「部位(内容)」
-      if (proc === "FRP" || proc === "外装" || proc === "その他") { out.push(v); return; }   // そのまま(FRPは「外(FRP直)」)
+      if (proc === "エポ" || proc === "FRP" || proc === "外装" || proc === "その他") { out.push(v); return; }   // そのまま(例「内(エポ0.4)」「外(FRP直)」)
       const frags = (proc === "エポ") ? v.split(/\s+/) : v.split("・");
       frags.forEach(fr => {
         const part = fr.trim().split(/[\s(（]/)[0];
@@ -276,14 +277,14 @@ async function loadJobs() {
   }
   // 旧表記(「内：444酸洗」など)のセル用。変換が済むまでの互換。
   function legacySummary(v, proc, out) {
-    if (proc === "FRP") {
+    if (proc === "FRP" || proc === "エポ") {
       v.split("/").forEach(x => {
         const f = String(x || "").trim();
         if (!f) return;
         const m = f.search(/[：:]/);
         const p = m !== -1 ? (partAbbr(f.slice(0, m)) || "●") : "";
         const body = (m !== -1 ? f.slice(m + 1) : f).replace(/[（(][^）)]*[）)]?/g, "").trim();
-        out.push(p ? p + "(" + (body || "FRP") + ")" : (body || "FRP"));
+        out.push(p ? p + "(" + (body || proc) + ")" : (body || proc));
       });
     } else if (TOSOU_LABEL[proc]) {
       v.split("/").forEach(x => {
@@ -315,6 +316,7 @@ async function loadJobs() {
         juken: r[iJuken] || "",
         dept: kubunToDept(r[iSeisaku], r[iKu]),
         isDai3: isDatePassed(r[iKansei]),
+        shipped: isDatePassed(r[iShukka]),
         item: r[iHinmei] || "",
         dims: r[iSunpou] || "",
         paint: tosouSummary(r, iTosouCols),
@@ -360,6 +362,7 @@ function formatWhen(v) {
 function visibleJobs() {
   const q = state.query.trim();
   let jobs = state.jobs
+    .filter(j => state.showShipped || !j.shipped)
     .filter(j => state.dept === "すべて" || (state.dept === "第3工場" ? j.isDai3 : j.dept === state.dept))
     .filter(j => !q || j.no.includes(q) || j.site.includes(q));
   jobs = jobs.slice().sort((a, b) => {
@@ -412,10 +415,12 @@ function renderJobsToolbar() {
     <div class="sort-row">
       <div class="sort-label">並び</div>
       ${sorts.map(s => `<button class="sort-btn${state.sort === s.key ? " is-active" : ""}" data-action="sort" data-sort="${s.key}">${s.label}</button>`).join("")}
+      <button class="sort-btn${state.showShipped ? " is-active" : ""}" data-action="toggle-shipped">出荷済みも表示</button>
     </div>
     <div class="dept-row">
       ${deptOptions.map(d => {
-        const n = d === "すべて" ? state.jobs.length : d === "第3工場" ? state.jobs.filter(j => j.isDai3).length : state.jobs.filter(j => j.dept === d).length;
+        const pool = state.showShipped ? state.jobs : state.jobs.filter(j => !j.shipped);
+        const n = d === "すべて" ? pool.length : d === "第3工場" ? pool.filter(j => j.isDai3).length : pool.filter(j => j.dept === d).length;
         return `<button class="dept-btn${state.dept === d ? " is-active" : ""}" data-action="dept" data-dept="${escapeHtml(d)}"><span>${escapeHtml(DEPT_LABELS[d] || d)}</span><span class="dept-btn-n">${n}</span></button>`;
       }).join("")}
     </div>
@@ -571,6 +576,7 @@ app.addEventListener("click", async e => {
 
   if (action === "query-clear") { state.query = ""; render(); }
   else if (action === "sort") { state.sort = target.dataset.sort; render(); }
+  else if (action === "toggle-shipped") { state.showShipped = !state.showShipped; render(); }
   else if (action === "dept") { state.dept = target.dataset.dept; render(); }
   else if (action === "tab") { state.tab = target.dataset.tab; render(); }
   else if (action === "job-history") { state.sheet = target.dataset.no; render(); }
