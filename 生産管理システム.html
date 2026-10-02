@@ -75,14 +75,30 @@
   #dropZone .sub { font-size: 12px; margin-top: 6px; color: #aaa; }
   #ocrStatus { font-size: 13px; color: #888; margin-top: 10px; display: none; }
   #skForm { display: none; }
-  .skt-block { border: 1px solid var(--color-divider); padding: 8px 10px; margin-bottom: 8px; background: var(--color-bg); }
-  .skt-title { font-weight: 800; font-size: 13px; margin-bottom: 4px; }
-  .skt-row { display: grid; grid-template-columns: 1.2fr 1.4fr 90px 24px 28px; gap: 6px; align-items: center; margin-bottom: 4px; }
-  .skt-row.noNai { grid-template-columns: 1.2fr 90px 24px 28px; }
-  .skt-row input { font-family: inherit; font-size: 13px; padding: 7px 8px; border: 1px solid #ccc; border-radius: 0; width: 100%; box-sizing: border-box; }
-  .skt-row .u { font-size: 12px; color: #666; }
-  .skt-row button { border: 1px solid #ccc; background: #fff; cursor: pointer; padding: 5px 0; }
-  .skt-add { border: 0; background: none; color: var(--color-accent); font-size: 12px; cursor: pointer; padding: 2px 0; font-weight: 700; }
+  .sk-wrap { width: min(980px, 100%); margin: 10px auto 0; }
+  .sk-top { margin-bottom: 10px; }
+  .sk-top #dropZone { padding: 8px 20px; background: var(--color-bg); }
+  .sk-top #dropZone .sub { margin-top: 2px; }
+  .sk-panel { box-shadow: 0 1px 6px rgba(0,0,0,0.18); }
+  .sk-panel .ich2-edit-body { overflow: visible; gap: 10px; padding: 12px 20px; }
+  .sk-panel .ich2-edit-head { padding: 8px 20px; }
+  .sk-panel .ich2-edit-foot { padding: 9px 20px; }
+  .sk-grid5 select { width: 100%; box-sizing: border-box; height: 30px; padding: 0 6px; font: inherit; font-size: 13px; border: 1px solid var(--color-neutral-400); border-radius: 0; background: var(--color-bg); }
+  .ich2-edit-field.filled input { background: #F5FBF9; border-color: #B7E4D5; }
+  .sk-tosou { display: grid; grid-template-columns: 1fr 1fr; gap: 6px 14px; padding: 10px 12px; background: var(--color-neutral-200); border-left: 3px solid var(--color-text); }
+  .skt-block { display: grid; grid-template-columns: 38px minmax(0, 1fr); gap: 6px; align-items: start; }
+  .skt-title { font-weight: 800; font-size: 12px; line-height: 28px; }
+  .skt-title small { display: block; font-weight: 400; font-size: 9px; line-height: 1; margin-top: -6px; color: var(--color-neutral-700); }
+  .skt-row { display: grid; grid-template-columns: minmax(0,1.1fr) minmax(0,1.2fr) 60px 18px 24px; gap: 4px; align-items: center; margin-bottom: 3px; }
+  .skt-row.noNai { grid-template-columns: minmax(0,2.3fr) 60px 18px 24px; }
+  .skt-row input { font: inherit; font-size: 12px; height: 28px; padding: 0 6px; border: 1px solid var(--color-neutral-400); border-radius: 0; width: 100%; box-sizing: border-box; background: var(--color-bg); }
+  .skt-row input:focus { border-color: var(--color-accent); outline: none; }
+  .skt-row .u { font-size: 10px; color: var(--color-neutral-700); }
+  .skt-row button { border: 1px solid var(--color-neutral-400); background: var(--color-bg); cursor: pointer; height: 28px; padding: 0; font-size: 11px; }
+  .skt-add { border: 0; background: none; color: var(--color-accent); font-size: 11px; cursor: pointer; padding: 0 0 4px; font-weight: 700; }
+  .sk-na { display: flex; flex-wrap: wrap; gap: 14px; font-size: 12px; }
+  .sk-na label { display: flex; align-items: center; gap: 4px; cursor: pointer; }
+  #skResultMsg { margin: 0; flex: 1 1 auto; font-size: 12px; }
 
   .tosouSection { margin: 20px 0 16px; padding-top: 16px; border-top: 1px solid #eee; }
   .sectionLabel { display: block; font-size: 13px; color: var(--color-accent); font-weight: 500; margin-bottom: 8px; }
@@ -726,89 +742,34 @@
       </nav>
       <div class="ich2-today">次長 / 事務所PC</div>
     </header>
-    <h1>製作手配</h1>
-
-    <div class="box">
+    <div class="sk-wrap">
+    <div class="sk-top">
       <div id="dropZone">
-        図面PDFをここにドラッグ&ドロップ<br>
-        (またはタップしてファイルを選択)
+        図面PDFをここにドラッグ&ドロップ (またはクリックしてファイルを選択)
         <div class="sub">読み取り結果は仮入力されます。内容を確認・修正してください。</div>
       </div>
       <input type="file" id="fileInput" accept="application/pdf" style="display:none;">
-      <button type="button" id="skManualBtn" style="margin-top:10px;padding:8px 16px;background:#fff;border:1px solid var(--color-text);border-radius:0;font-size:13px;cursor:pointer;" onclick="document.getElementById('skForm').style.display='block';this.style.display='none';">PDFなしで手入力する</button>
+      <button type="button" id="skManualBtn" style="margin-top:8px;padding:8px 16px;background:#fff;border:1px solid var(--color-text);border-radius:0;font-size:13px;cursor:pointer;" onclick="document.getElementById('skForm').style.display='block';this.style.display='none';">PDFなしで手入力する</button>
       <div id="ocrStatus">読み取り中です。少々お待ちください...</div>
     </div>
 
-    <div class="box" id="skForm">
-      <div class="hint">※黄緑色の項目は読み取り結果からの仮入力です。内容を確認してください。</div>
-      <div class="field"><label>製造番号</label><input id="f_seizouBangou"></div>
-      <div class="grid2">
-        <div class="field"><label>納期</label><input id="f_nouki"></div>
-        <div class="field"><label>現場名</label><input id="f_genbaMei"></div>
+    <div id="skForm"><div class="ich2-edit-panel sk-panel">
+      <div class="ich2-edit-head"><span class="ttl">製作手配 登録</span><span class="no">新規</span><span class="sub">緑色の項目は図面からの仮入力です。内容を確認してください</span></div>
+      <div class="ich2-edit-body">
+        <div><div class="ich2-edit-sec-h"><b>基本情報</b><label style="font-size:11px;display:flex;align-items:center;gap:4px;cursor:pointer;"><input type="checkbox" id="f_coiluse" style="accent-color:var(--color-accent);">コイル使用(コイル成形を含む場合)</label><i></i></div>
+          <div class="ich2-edit-grid sk-grid5"><div class="ich2-edit-field"><label for="f_seizouBangou">製造番号</label><input type="text" id="f_seizouBangou"></div><div class="ich2-edit-field"><label for="f_nouki">納期</label><input type="text" id="f_nouki"></div><div class="ich2-edit-field"><label for="f_genbaMei">現場名</label><input type="text" id="f_genbaMei"></div><div class="ich2-edit-field"><label for="f_hinmei">品名</label><input type="text" id="f_hinmei"></div><div class="ich2-edit-field"><label for="f_sunpou">寸法</label><input type="text" id="f_sunpou"></div><div class="ich2-edit-field"><label for="f_zairyou">材質</label><input type="text" id="f_zairyou" placeholder="例 444"></div><div class="ich2-edit-field"><label for="f_jukenKansei">受・完</label><input type="text" id="f_jukenKansei" placeholder="例 2026/10/15"></div><div class="ich2-edit-field"><label for="f_kubun">区</label><select id="f_kubun"><option value=""></option><option value="外">外(適用外)</option><option value="一">一(一圧)</option><option value="二">二(二圧)</option><option value="小">小(小型圧力容器)</option><option value="消">消(消防検査)</option></select></div><div class="ich2-edit-field"><label for="f_seisakuKubun">製作</label><select id="f_seisakuKubun"><option value=""></option><option value="1">1(第一工場)</option><option value="S">S(SUS工場)</option><option value="杉">杉(杉原)</option><option value="コ">コ(コイル)</option></select></div><div class="ich2-edit-field"><label for="f_tantou">担当者</label><input type="text" id="f_tantou"></div><div class="ich2-edit-field"><label for="f_mSunpou">m寸法</label><input type="text" id="f_mSunpou"></div><div class="ich2-edit-field"><label for="f_shitsuryou">質量</label><input type="text" id="f_shitsuryou"></div><div class="ich2-edit-field"><label for="f_katabangou">型番</label><input type="text" id="f_katabangou"></div><div class="ich2-edit-field"><label for="f_baika">売価(千円)</label><input type="text" id="f_baika"></div><div class="ich2-edit-field"><label for="f_zumenLink">図面リンク(自動)</label><input type="text" id="f_zumenLink" readonly></div></div></div>
+        <div><div class="ich2-edit-sec-h"><b>塗装仕様</b><span>工程ごとに「部位・内容・vol」を入力 / 複数ある場合は「＋行を追加」</span><i></i></div>
+          <div class="sk-tosou" id="skTosouBlocks"></div><datalist id="sk_bui_list"></datalist></div>
+        <div><div class="ich2-edit-sec-h"><b>備考</b><i></i></div>
+          <div class="ich2-edit-field"><textarea id="f_tokkiShiyou" style="width:100%;box-sizing:border-box;height:36px;padding:6px 8px;font:inherit;font-size:13px;border:1px solid var(--color-neutral-400);border-radius:0;resize:vertical;"></textarea></div></div>
+        <div><div class="ich2-edit-sec-h"><b>不要な工程</b><span>チェック = 対象外「―」</span><i></i></div><div class="sk-na"><label><input type="checkbox" id="f_na_juchu" style="accent-color:var(--color-accent);">受注</label><label><input type="checkbox" id="f_na_seisaku" style="accent-color:var(--color-accent);">製作</label><label><input type="checkbox" id="f_na_kansei" style="accent-color:var(--color-accent);">完成</label><label><input type="checkbox" id="f_na_naiso" style="accent-color:var(--color-accent);">内装</label><label><input type="checkbox" id="f_na_gaiso" style="accent-color:var(--color-accent);">外装</label><label><input type="checkbox" id="f_na_shukka" style="accent-color:var(--color-accent);">出荷</label></div></div>
       </div>
-      <div class="field"><label>品名</label><input id="f_hinmei"></div>
-      <div class="grid2">
-        <div class="field"><label>寸法</label><input id="f_sunpou"></div>
-        <div class="field"><label>材質(例: 444, 304)</label><input id="f_zairyou"></div>
+      <div class="ich2-edit-foot">
+        <span id="skResultMsg"></span>
+        <button type="button" class="ich2-edit-cancel" id="skCancelBtn">キャンセル</button>
+        <button type="button" class="ich2-edit-save" id="skRegisterBtn">登録する</button>
       </div>
-      <div class="field"><label>受・完(検査日/完成予定日)</label><input id="f_jukenKansei" placeholder="例: 2026/10/15"></div>
-      <div class="grid2">
-        <div class="field"><label>区</label>
-          <select id="f_kubun">
-            <option value=""></option>
-            <option value="外">外(適用外)</option>
-            <option value="一">一(一圧)</option>
-            <option value="二">二(二圧)</option>
-            <option value="小">小(小型圧力容器)</option>
-            <option value="消">消(消防検査)</option>
-          </select>
-        </div>
-        <div class="field"><label>製作</label>
-          <select id="f_seisakuKubun">
-            <option value=""></option>
-            <option value="1">1(第一工場)</option>
-            <option value="S">S(SUS工場)</option>
-            <option value="杉">杉(杉原)</option>
-            <option value="コ">コ(コイル)</option>
-          </select>
-        </div>
-      </div>
-      <div class="field" style="display:flex;align-items:center;gap:8px;">
-        <input type="checkbox" id="f_coiluse" style="width:16px;height:16px;accent-color:var(--color-accent);margin:0;">
-        <label for="f_coiluse" style="margin:0;">コイル使用(部署に関わらず、コイル成形を含む場合はチェック)</label>
-      </div>
-      <div class="field"><label class="sectionLabel">塗装仕様(工程ごとに「部位・内容・vol」を入力。複数ある場合は「＋行を追加」)</label></div>
-      <div id="skTosouBlocks"></div>
-      <datalist id="sk_bui_list"></datalist>
-      <div class="grid2">
-        <div class="field"><label>担当者</label><input id="f_tantou"></div>
-        <div class="field"><label>m寸法</label><input id="f_mSunpou"></div>
-      </div>
-      <div class="grid2">
-        <div class="field"><label>質量</label><input id="f_shitsuryou"></div>
-        <div class="field"><label>型番</label><input id="f_katabangou"></div>
-      </div>
-      <div class="field"><label>売価(千円)</label><input id="f_baika" type="number"></div>
-      <div class="field"><label>備考</label><input id="f_tokkiShiyou"></div>
-      <div class="field"><label>図面リンク(自動で入ります)</label><input id="f_zumenLink" readonly></div>
-
-      <div class="tosouSection">
-        <label class="sectionLabel">この製品では不要な工程(該当するものにチェック)</label>
-        <div style="display:flex;flex-wrap:wrap;gap:12px;font-size:13px;">
-          <label style="display:flex;align-items:center;gap:4px;"><input type="checkbox" id="f_na_juchu" style="width:14px;height:14px;accent-color:var(--color-accent);">受注</label>
-          <label style="display:flex;align-items:center;gap:4px;"><input type="checkbox" id="f_na_seisaku" style="width:14px;height:14px;accent-color:var(--color-accent);">製作</label>
-          <label style="display:flex;align-items:center;gap:4px;"><input type="checkbox" id="f_na_kansei" style="width:14px;height:14px;accent-color:var(--color-accent);">完成</label>
-          <label style="display:flex;align-items:center;gap:4px;"><input type="checkbox" id="f_na_naiso" style="width:14px;height:14px;accent-color:var(--color-accent);">内装</label>
-          <label style="display:flex;align-items:center;gap:4px;"><input type="checkbox" id="f_na_gaiso" style="width:14px;height:14px;accent-color:var(--color-accent);">外装</label>
-          <label style="display:flex;align-items:center;gap:4px;"><input type="checkbox" id="f_na_shukka" style="width:14px;height:14px;accent-color:var(--color-accent);">出荷</label>
-        </div>
-      </div>
-
-      <div style="display:flex;gap:10px;align-items:center;">
-        <button id="skRegisterBtn">登録する</button>
-        <button type="button" id="skCancelBtn" style="padding:10px 20px;background:#fff;color:var(--color-text);border:1px solid var(--color-text);border-radius:0;font-size:14px;cursor:pointer;">キャンセル</button>
-      </div>
-      <div id="skResultMsg"></div>
+    </div></div>
     </div>
   </div>
 
@@ -2040,9 +2001,9 @@
     SK_PROCS.forEach(pr => {
       const blk = document.createElement("div");
       blk.className = "skt-block"; blk.dataset.proc = pr.key;
-      blk.innerHTML = '<div class="skt-title">' + pr.key + (pr.key === "その他" ? '<span style="font-weight:400;color:#666;font-size:11px;"> (社内対応品:OC・BPなど)</span>' : "") + '</div>' +
+      blk.innerHTML = '<div class="skt-title">' + pr.key + '</div>' +
         '<datalist id="sk_nai_' + pr.key + '">' + pr.naiyou.map(n => '<option value="' + ich2Esc(n) + '">').join("") + '</datalist>' +
-        '<div class="skt-rows"></div><button type="button" class="skt-add">＋行を追加</button>';
+        '<div><div class="skt-rows"></div><button type="button" class="skt-add">＋行を追加</button></div>';
       blk.querySelector(".skt-add").addEventListener("click", () => skAddRow(pr, blk.querySelector(".skt-rows")));
       box.appendChild(blk);
       skAddRow(pr, blk.querySelector(".skt-rows"));
@@ -2093,9 +2054,9 @@
   }
 
   function skResetForm() {
-    document.querySelectorAll("#skForm input:not([type=checkbox]), #skForm select").forEach(el => { el.value = ""; });
+    document.querySelectorAll("#skForm input:not([type=checkbox]), #skForm select, #skForm textarea").forEach(el => { el.value = ""; });
     document.querySelectorAll("#skForm input[type=checkbox]").forEach(el => { el.checked = false; });
-    document.querySelectorAll("#skForm .field.filled").forEach(el => el.classList.remove("filled"));
+    document.querySelectorAll("#skForm .ich2-edit-field.filled").forEach(el => el.classList.remove("filled"));
     skBuildBlocks();
     const msg = document.getElementById("skResultMsg"); msg.style.display = "none"; msg.textContent = "";
   }
@@ -2166,7 +2127,7 @@
       if (val) {
         const el = document.getElementById(id);
         el.value = val;
-        el.closest(".field").classList.add("filled");
+        el.closest(".ich2-edit-field").classList.add("filled");
       }
     }
     autoCheckCoilUse();
