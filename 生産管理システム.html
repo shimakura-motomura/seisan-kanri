@@ -75,6 +75,14 @@
   #dropZone .sub { font-size: 12px; margin-top: 6px; color: #aaa; }
   #ocrStatus { font-size: 13px; color: #888; margin-top: 10px; display: none; }
   #skForm { display: none; }
+  .skt-block { border: 1px solid var(--color-divider); padding: 8px 10px; margin-bottom: 8px; background: var(--color-bg); }
+  .skt-title { font-weight: 800; font-size: 13px; margin-bottom: 4px; }
+  .skt-row { display: grid; grid-template-columns: 1.2fr 1.4fr 90px 24px 28px; gap: 6px; align-items: center; margin-bottom: 4px; }
+  .skt-row.noNai { grid-template-columns: 1.2fr 90px 24px 28px; }
+  .skt-row input { font-family: inherit; font-size: 13px; padding: 7px 8px; border: 1px solid #ccc; border-radius: 0; width: 100%; box-sizing: border-box; }
+  .skt-row .u { font-size: 12px; color: #666; }
+  .skt-row button { border: 1px solid #ccc; background: #fff; cursor: pointer; padding: 5px 0; }
+  .skt-add { border: 0; background: none; color: var(--color-accent); font-size: 12px; cursor: pointer; padding: 2px 0; font-weight: 700; }
 
   .tosouSection { margin: 20px 0 16px; padding-top: 16px; border-top: 1px solid #eee; }
   .sectionLabel { display: block; font-size: 13px; color: var(--color-accent); font-weight: 500; margin-bottom: 8px; }
@@ -739,7 +747,10 @@
         <div class="field"><label>現場名</label><input id="f_genbaMei"></div>
       </div>
       <div class="field"><label>品名</label><input id="f_hinmei"></div>
-      <div class="field"><label>寸法</label><input id="f_sunpou"></div>
+      <div class="grid2">
+        <div class="field"><label>寸法</label><input id="f_sunpou"></div>
+        <div class="field"><label>材質(例: 444, 304)</label><input id="f_zairyou"></div>
+      </div>
       <div class="field"><label>受・完(検査日/完成予定日)</label><input id="f_jukenKansei" placeholder="例: 2026/10/15"></div>
       <div class="grid2">
         <div class="field"><label>区</label>
@@ -766,20 +777,9 @@
         <input type="checkbox" id="f_coiluse" style="width:16px;height:16px;accent-color:var(--color-accent);margin:0;">
         <label for="f_coiluse" style="margin:0;">コイル使用(部署に関わらず、コイル成形を含む場合はチェック)</label>
       </div>
-      <div class="field"><label class="sectionLabel">塗装仕様(工程ごとに必要な処理があれば短く記入・任意)</label></div>
-      <div class="grid2">
-        <div class="field"><label>酸洗</label><input id="f_tosouSanArai"></div>
-        <div class="field"><label>研磨</label><input id="f_tosouKenma"></div>
-      </div>
-      <div class="grid2">
-        <div class="field"><label>エポ</label><input id="f_tosouEpo"></div>
-        <div class="field"><label>FRP</label><input id="f_tosouFrp"></div>
-      </div>
-      <div class="grid2">
-        <div class="field"><label>メッキ</label><input id="f_tosouMekki"></div>
-        <div class="field"><label>外装</label><input id="f_tosouGaisou"></div>
-      </div>
-      <div class="field"><label>その他(社内対応品:OC・BPなど)</label><input id="f_tosouSonota"></div>
+      <div class="field"><label class="sectionLabel">塗装仕様(工程ごとに「部位・内容・vol」を入力。複数ある場合は「＋行を追加」)</label></div>
+      <div id="skTosouBlocks"></div>
+      <datalist id="sk_bui_list"></datalist>
       <div class="grid2">
         <div class="field"><label>担当者</label><input id="f_tantou"></div>
         <div class="field"><label>m寸法</label><input id="f_mSunpou"></div>
@@ -804,20 +804,10 @@
         </div>
       </div>
 
-      <div class="tosouSection">
-        <label class="sectionLabel">塗装仕様(必要な処理を追加してください)</label>
-        <div class="tosouAddRow">
-          <select id="t_tab"></select>
-          <select id="t_bui"></select>
-          <select id="t_naiyou"></select>
-          <input id="t_vol" type="number" step="0.1" placeholder="vol">
-          <span class="unitLabel" id="t_unit"></span>
-          <button type="button" id="t_addBtn">追加</button>
-        </div>
-        <div id="tosouList"></div>
+      <div style="display:flex;gap:10px;align-items:center;">
+        <button id="skRegisterBtn">登録する</button>
+        <button type="button" id="skCancelBtn" style="padding:10px 20px;background:#fff;color:var(--color-text);border:1px solid var(--color-text);border-radius:0;font-size:14px;cursor:pointer;">キャンセル</button>
       </div>
-
-      <button id="skRegisterBtn">登録する</button>
       <div id="skResultMsg"></div>
     </div>
   </div>
@@ -876,15 +866,15 @@
         <table class="ich2-list">
           <colgroup>
             <col style="width:24px"><col style="width:60px"><col style="width:38px"><col style="width:96px"><col style="width:66px">
-            <col style="width:92px"><col style="width:36px"><col style="width:24px"><col style="width:40px">
+            <col style="width:92px"><col style="width:40px"><col style="width:36px"><col style="width:24px"><col style="width:40px">
             <col style="width:40px"><col style="width:40px"><col style="width:40px"><col style="width:40px"><col style="width:40px"><col style="width:112px"><col style="width:80px">
             <col style="width:36px"><col style="width:36px"><col style="width:36px"><col style="width:65px"><col style="width:65px"><col style="width:36px">
-            <col style="width:32px"><col style="width:82px"><col style="width:34px"><col style="width:52px"><col style="width:38px"><col style="width:144px">
+            <col style="width:32px"><col style="width:82px"><col style="width:34px"><col style="width:52px"><col style="width:38px"><col style="width:104px">
           </colgroup>
           <thead>
             <tr>
               <th class="ich2-grp identify" colspan="5">識別(固定表示)</th>
-              <th class="ich2-grp dim" colspan="4">寸法・製作</th>
+              <th class="ich2-grp dim" colspan="5">寸法・製作</th>
               <th class="ich2-grp tosou" colspan="7">塗装</th>
               <th class="ich2-grp progress" colspan="6">進捗</th>
               <th class="ich2-grp pic" colspan="6">担当・詳細</th>
@@ -899,6 +889,7 @@
               <th class="ich2-colh sticky-id grp-end" style="left:218px;">品名</th>
 
               <th id="ich2-col-a" class="ich2-colh">寸法</th>
+              <th class="ich2-colh">材質</th>
               <th class="ich2-colh">受・完</th>
               <th class="ich2-colh center">区</th>
               <th class="ich2-colh">製作</th>
@@ -1507,7 +1498,7 @@
     const H = ich2Header;
     const idx = name => H.indexOf(name);
     const iSeizou = idx("製造番号"), iNouki = idx("納期"), iGenba = idx("現場名"), iHinmei = idx("品名"),
-      iSunpou = idx("寸法"), iJuken = idx("受・完"), iKu = idx("区"), iSeisaku = idx("製"), iCoiluse = idx("コイル使用"),
+      iSunpou = idx("寸法"), iZairyou = idx("材質"), iJuken = idx("受・完"), iKu = idx("区"), iSeisaku = idx("製"), iCoiluse = idx("コイル使用"),
       iTosouSanArai = idx("酸洗"), iTosouKenma = idx("研磨"), iTosouEpo = idx("エポ"), iTosouFrp = idx("FRP"), iTosouMekki = idx("メッキ"), iTosouGaisou = idx("外装"), iTosouSonota = idx("その他") !== -1 ? idx("その他") : idx("判定不能"),
       iJuchu = idx("受注日"), iSeisakuDay = idx("製作日"), iKansei = idx("完成日"), iNaiso = idx("内装日"), iGaiso = idx("外装日"), iShukka = idx("出荷日"),
       iTantou = idx("担当者"), iMsunpou = idx("m寸法"), iShitsuryou = idx("質量"), iKatabangou = idx("型番"), iBaika = idx("売価(千円)"), iBiko = idx("備考"), iZumen = idx("図");
@@ -1592,6 +1583,7 @@
         '<td class="ich2-sticky-col ich2-nowrap ich2-ellipsis" style="left:122px;">'+ich2Esc(r[iGenba])+'</td>' +
         '<td class="ich2-sticky-col ich2-muted ich2-nowrap ich2-ellipsis grp-end" style="left:218px;">'+ich2Esc(r[iHinmei])+'</td>' +
         '<td class="ich2-nowrap ich2-tabular">'+ich2Esc(r[iSunpou])+'</td>' +
+        '<td class="ich2-nowrap ich2-tabular ich2-ellipsis" title="'+ich2Esc(iZairyou !== -1 ? r[iZairyou] : "")+'">'+ich2Esc(iZairyou !== -1 ? r[iZairyou] : "")+'</td>' +
         '<td class="ich2-nowrap ich2-tabular ich2-muted" title="'+ich2Esc(formatDateOnly(r[iJuken]))+'">'+ich2Esc(formatDateShort(r[iJuken]))+'</td>' +
         '<td class="center ich2-muted">'+ich2Esc(r[iKu])+'</td>' +
         (() => {
@@ -1793,7 +1785,7 @@
   // ============ 製造番号ごとの一括編集モーダル ============
   // 基本項目(自由記入のテキスト欄・グリッド表示)。[列見出し, 表示ラベル]
   const ICH2_EDIT_BASE_FIELDS = [
-    ["現場名","現場名"], ["品名","品名"], ["寸法","寸法"], ["区","区"],
+    ["現場名","現場名"], ["品名","品名"], ["寸法","寸法"], ["材質","材質"], ["区","区"],
     ["製","製作区分"], ["担当者","担当者"], ["m寸法","m寸法"], ["質量","質量"],
     ["型番","型番"], ["売価(千円)","売価(千円)"]
   ];
@@ -2011,7 +2003,6 @@
     { key: "メッキ", unit: "kg", naiyou: ["メッキ"] },
     { key: "外装", unit: "㎡", naiyou: ["錆止","耐熱","耐塩(アルテクトプライマー)","エポ系錆止(ハイポンファインデクロ)","その他"] },
   ];
-  let tosouItems = [];
 
   function initSeisaku() {
     const dropZone = document.getElementById("dropZone");
@@ -2028,51 +2019,94 @@
     // 品名に「熱交換器」を含む、または塗装仕様に「内熱源」を含む場合、コイル使用を自動チェックする
     // (手動で外すこともできる。あくまで入力の手間を減らすための自動判定)
     document.getElementById("f_hinmei").addEventListener("input", autoCheckCoilUse);
-    ["f_tosouSanArai", "f_tosouKenma", "f_tosouEpo", "f_tosouFrp", "f_tosouMekki", "f_tosouGaisou", "f_tosouSonota"].forEach(id => {
-      document.getElementById(id).addEventListener("input", autoCheckCoilUse);
-    });
-
-    const tabSel = document.getElementById("t_tab");
-    tabSel.innerHTML = TOSOU_TABS.map(t => `<option value="${t.key}">${t.key}</option>`).join("");
-    tabSel.addEventListener("change", updateNaiyouOptions);
-    updateNaiyouOptions();
+    skBuildBlocks();
+    document.getElementById("skCancelBtn").addEventListener("click", skCancel);
 
     ich2FetchJson(GAS_URL + "?type=bui").then(rows => {
       const buiList = rows.slice(1).map(r => r[0]).filter(Boolean);
-      document.getElementById("t_bui").innerHTML = buiList.map(b => `<option value="${b}">${b}</option>`).join("");
+      document.getElementById("sk_bui_list").innerHTML = buiList.map(b => `<option value="${ich2Esc(b)}">`).join("");
     }).catch(e => console.error("部位マスタ読み込み失敗", e));
-
-    document.getElementById("t_addBtn").addEventListener("click", () => {
-      tosouItems.push({
-        tab: document.getElementById("t_tab").value,
-        bui: document.getElementById("t_bui").value,
-        naiyou: document.getElementById("t_naiyou").value,
-        vol: document.getElementById("t_vol").value.trim(),
-      });
-      document.getElementById("t_vol").value = "";
-      renderTosouList();
-    });
 
     document.getElementById("skRegisterBtn").addEventListener("click", submitSeisaku);
   }
 
-  function updateNaiyouOptions() {
-    const tabKey = document.getElementById("t_tab").value;
-    const tab = TOSOU_TABS.find(t => t.key === tabKey);
-    document.getElementById("t_naiyou").innerHTML = tab.naiyou.map(n => `<option value="${n}">${n}</option>`).join("");
-    document.getElementById("t_unit").textContent = tab.unit;
+  // ---- 塗装仕様の入力(工程ごとに「部位・内容・vol」を複数行) ----
+  const SK_PROCS = TOSOU_TABS.map(t => ({ key: t.key, unit: t.unit, naiyou: t.naiyou, useNaiyou: ["エポ","FRP","外装"].includes(t.key), sheet: true }))
+    .concat([{ key: "その他", unit: "", naiyou: ["BP","OC"], useNaiyou: true, sheet: false }]);
+
+  function skBuildBlocks() {
+    const box = document.getElementById("skTosouBlocks");
+    box.innerHTML = "";
+    SK_PROCS.forEach(pr => {
+      const blk = document.createElement("div");
+      blk.className = "skt-block"; blk.dataset.proc = pr.key;
+      blk.innerHTML = '<div class="skt-title">' + pr.key + (pr.key === "その他" ? '<span style="font-weight:400;color:#666;font-size:11px;"> (社内対応品:OC・BPなど)</span>' : "") + '</div>' +
+        '<datalist id="sk_nai_' + pr.key + '">' + pr.naiyou.map(n => '<option value="' + ich2Esc(n) + '">').join("") + '</datalist>' +
+        '<div class="skt-rows"></div><button type="button" class="skt-add">＋行を追加</button>';
+      blk.querySelector(".skt-add").addEventListener("click", () => skAddRow(pr, blk.querySelector(".skt-rows")));
+      box.appendChild(blk);
+      skAddRow(pr, blk.querySelector(".skt-rows"));
+    });
   }
 
-  function renderTosouList() {
-    const listEl = document.getElementById("tosouList");
-    listEl.innerHTML = "";
-    tosouItems.forEach((item, i) => {
-      const div = document.createElement("div");
-      div.className = "tosouItem";
-      div.innerHTML = `<span>${item.tab} / ${item.bui} / ${item.naiyou}${item.vol ? " / " + item.vol : ""}</span><button type="button">削除</button>`;
-      div.querySelector("button").addEventListener("click", () => { tosouItems.splice(i, 1); renderTosouList(); });
-      listEl.appendChild(div);
+  function skAddRow(pr, rowsEl) {
+    const row = document.createElement("div");
+    row.className = "skt-row" + (pr.useNaiyou ? "" : " noNai");
+    row.innerHTML = '<input class="sk-bui" list="sk_bui_list" placeholder="部位">' +
+      (pr.useNaiyou ? '<input class="sk-nai" list="sk_nai_' + pr.key + '" placeholder="内容">' : "") +
+      '<input class="sk-vol" type="number" step="0.1" placeholder="vol"><span class="u">' + ich2Esc(pr.unit) + '</span>' +
+      '<button type="button" title="この行を削除">✕</button>';
+    row.querySelector("button").addEventListener("click", () => {
+      if (rowsEl.children.length > 1) row.remove();
+      else row.querySelectorAll("input").forEach(i => { i.value = ""; });
+      autoCheckCoilUse();
     });
+    row.querySelectorAll("input").forEach(i => i.addEventListener("input", autoCheckCoilUse));
+    rowsEl.appendChild(row);
+  }
+
+  // 入力内容を「一覧に保存する表記」と「塗装画面に登録する行」に変換する
+  function skCollect() {
+    const zairyou = document.getElementById("f_zairyou").value.trim();
+    const cells = {}; const items = []; const rawParts = [];
+    SK_PROCS.forEach(pr => {
+      const blk = document.querySelector('#skTosouBlocks .skt-block[data-proc="' + pr.key + '"]');
+      const frags = [];
+      blk.querySelectorAll(".skt-row").forEach(row => {
+        const bui = row.querySelector(".sk-bui").value.trim();
+        const naiEl = row.querySelector(".sk-nai");
+        const nai = (naiEl ? naiEl.value : "").replace(/[（(][^）)]*[）)]?/g, "").trim();
+        const vol = row.querySelector(".sk-vol").value.trim();
+        if (!bui && !nai) return;
+        rawParts.push(bui);
+        const b = ich2PartAbbr(bui);
+        let frag;
+        if (pr.key === "酸洗" || pr.key === "研磨") frag = b + (zairyou ? " " + zairyou : "");
+        else if (pr.key === "メッキ") frag = b;
+        else frag = b ? (nai ? b + "(" + nai + ")" : b) : nai;
+        if (frag) frags.push(frag);
+        if (pr.sheet && b) items.push({ tab: pr.key, bui: b, naiyou: pr.useNaiyou ? nai : pr.key, vol: vol, zairyou: (pr.key === "酸洗" || pr.key === "研磨") ? zairyou : "" });
+      });
+      cells[pr.key] = frags.join((pr.key === "酸洗" || pr.key === "研磨" || pr.key === "メッキ") ? "・" : " ");
+    });
+    return { cells, items, rawParts };
+  }
+
+  function skResetForm() {
+    document.querySelectorAll("#skForm input:not([type=checkbox]), #skForm select").forEach(el => { el.value = ""; });
+    document.querySelectorAll("#skForm input[type=checkbox]").forEach(el => { el.checked = false; });
+    document.querySelectorAll("#skForm .field.filled").forEach(el => el.classList.remove("filled"));
+    skBuildBlocks();
+    const msg = document.getElementById("skResultMsg"); msg.style.display = "none"; msg.textContent = "";
+  }
+
+  function skCancel() {
+    if (!confirm("入力した内容を消して、閉じますか?")) return;
+    skResetForm();
+    document.getElementById("skForm").style.display = "none";
+    document.getElementById("dropZone").style.display = "block";
+    document.getElementById("skManualBtn").style.display = "";
+    document.getElementById("ocrStatus").style.display = "none";
   }
 
   function fileToBase64(file) {
@@ -2118,10 +2152,8 @@
   // (手動で外すこともできる。あくまで入力の手間を減らすための自動判定)
   function autoCheckCoilUse() {
     const hinmei = document.getElementById("f_hinmei").value;
-    const tosouAll = [
-      "f_tosouSanArai", "f_tosouKenma", "f_tosouEpo", "f_tosouFrp", "f_tosouMekki", "f_tosouGaisou", "f_tosouSonota"
-    ].map(id => document.getElementById(id).value).join(" ");
-    if (hinmei.includes("熱交換器") || tosouAll.includes("内熱源")) {
+    const tosouAll = skCollect().rawParts.join(" ");
+    if (hinmei.includes("熱交換器") || (tosouAll.includes("内熱源") || tosouAll.includes("内熱"))) {
       document.getElementById("f_coiluse").checked = true;
     }
   }
@@ -2146,6 +2178,7 @@
     const btn = document.getElementById("skRegisterBtn");
     const resultMsg = document.getElementById("skResultMsg");
     btn.disabled = true; btn.textContent = "登録中...";
+    const tosou = skCollect();
 
     const payload = {
       type: "addProduct", seizouBangou,
@@ -2157,13 +2190,14 @@
       kubun: document.getElementById("f_kubun").value.trim(),
       seisakuKubun: document.getElementById("f_seisakuKubun").value.trim(),
       coiluse: document.getElementById("f_coiluse").checked ? "TRUE" : "",
-      tosouSanArai: document.getElementById("f_tosouSanArai").value.trim(),
-      tosouKenma: document.getElementById("f_tosouKenma").value.trim(),
-      tosouEpo: document.getElementById("f_tosouEpo").value.trim(),
-      tosouFrp: document.getElementById("f_tosouFrp").value.trim(),
-      tosouMekki: document.getElementById("f_tosouMekki").value.trim(),
-      tosouGaisou: document.getElementById("f_tosouGaisou").value.trim(),
-      tosouSonota: document.getElementById("f_tosouSonota").value.trim(),
+      tosouSanArai: tosou.cells["酸洗"],
+      tosouKenma: tosou.cells["研磨"],
+      tosouEpo: tosou.cells["エポ"],
+      tosouFrp: tosou.cells["FRP"],
+      tosouMekki: tosou.cells["メッキ"],
+      tosouGaisou: tosou.cells["外装"],
+      tosouSonota: tosou.cells["その他"],
+      zairyou: document.getElementById("f_zairyou").value.trim(),
       tantou: document.getElementById("f_tantou").value.trim(),
       mSunpou: document.getElementById("f_mSunpou").value.trim(),
       shitsuryou: document.getElementById("f_shitsuryou").value.trim(),
@@ -2183,22 +2217,27 @@
       const res = await fetch(GAS_URL, { method: "POST", body: JSON.stringify(payload) });
       if (!res.ok) throw new Error("通信エラー: " + res.status);
 
-      for (const item of tosouItems) {
-        await fetch(GAS_URL, {
-          method: "POST",
-          body: JSON.stringify({
-            type: "addTosou", tab: item.tab, seizouBangou,
-            nouki: payload.nouki, genbaMei: payload.genbaMei, hinmei: payload.hinmei, sunpou: payload.sunpou,
-            bui: item.bui, naiyou: item.naiyou, vol: item.vol || "",
-            zairyou: "", kakaku: "", gyousha: "", hankomiYotei: "", kanseiNouhin: "", biko: "",
-          }),
-        });
+      let tosouFail = 0;
+      for (const item of tosou.items) {
+        try {
+          const r2 = await fetch(GAS_URL, {
+            method: "POST",
+            body: JSON.stringify({
+              type: "addTosou", tab: item.tab, seizouBangou,
+              nouki: payload.nouki, genbaMei: payload.genbaMei, hinmei: payload.hinmei, sunpou: payload.sunpou,
+              bui: item.bui, naiyou: item.naiyou, vol: item.vol || "",
+              zairyou: item.zairyou || "", kakaku: "", gyousha: "", hankomiYotei: "", kanseiNouhin: "", biko: "",
+            }),
+          });
+          if (!r2.ok) tosouFail++;
+        } catch (e2) { tosouFail++; }
       }
 
-      resultMsg.textContent = "登録しました:" + seizouBangou + "(塗装仕様 " + tosouItems.length + "件も連動登録)";
+      const doneMsg = "登録しました:" + seizouBangou + "(塗装画面にも " + (tosou.items.length - tosouFail) + "件登録)" + (tosouFail ? " ※" + tosouFail + "件は塗装画面への登録に失敗しました。塗装画面で手動追加してください" : "");
+      skResetForm();
+      resultMsg.textContent = doneMsg;
       resultMsg.className = "success"; resultMsg.style.display = "block";
       btn.textContent = "登録する"; btn.disabled = false;
-      tosouItems = []; renderTosouList();
     } catch (e) {
       resultMsg.textContent = "登録に失敗しました。詳細: " + e.message;
       resultMsg.className = "error"; resultMsg.style.display = "block";
