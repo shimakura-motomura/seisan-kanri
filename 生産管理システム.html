@@ -2386,9 +2386,10 @@
         } else if (label === "製作") {
           td.textContent = ich2SeisakuLabel(v);
         } else if (label === "価格" || label === "工数㎡") {
-          const n = parseFloat(String(v).replace(/[^0-9.\-]/g, ""));
+          const pure = /^[¥￥\s]*[\d,]+(\.\d+)?\s*円?$/.test(String(v));   // 数字だけの価格だけ合計・桁区切り(「真砂」「?」などの書き込みはそのまま)
+          const n = pure ? parseFloat(String(v).replace(/[^0-9.]/g, "")) : NaN;
           if (!isNaN(n)) { sum += n; sumLabel = label; }
-          td.textContent = (v === "" || isNaN(n)) ? v : n.toLocaleString();
+          td.textContent = isNaN(n) ? v : n.toLocaleString();
           td.style.textAlign = "right";
         } else if (TS_DATE_LABELS.includes(label)) {
           td.textContent = formatDateShort(v);
