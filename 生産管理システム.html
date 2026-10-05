@@ -902,6 +902,9 @@
           <button data-filter="waiting">出荷待ち</button>
           <button data-filter="done">納品済み</button>
         </div>
+        <div class="ich2-filter-group" id="ich2BuyShippedGroup">
+          <button type="button" id="ich2BuyShowShipped" data-active="false">出荷済みも表示</button>
+        </div>
         <label class="ich2-sort-label">
           並び順
           <select class="input" id="ich2BuySort">
@@ -1246,7 +1249,8 @@
   let ich2Tab = "make";
   let ich2BuyAll = [];
   let ich2BuyHeader = [];
-  const ich2BuyState = { query: "", filter: "all", sort: "in" };
+  let ich2BuyRowNo = [];   // 買入品の各行の、シート上の行番号
+  const ich2BuyState = { query: "", filter: "all", sort: "in", showShipped: false };
 
   function ich2Esc(s) {
     return String(s ?? "").replace(/[&<>"']/g, c => ({ "&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;" }[c]));
@@ -1418,8 +1422,12 @@
 
       const buyRows = (valueRanges[1] && valueRanges[1].values) || [];
       ich2BuyHeader = buyRows[0] || [];
-      const idxModel = ich2BuyHeader.indexOf("型式");
-      ich2BuyAll = buyRows.slice(1).filter(r => r[idxModel]);
+      const idxModel = ich2BuyHeader.indexOf("型式"), idxBSite = ich2BuyHeader.indexOf("現場名"), idxBKubun = ich2BuyHeader.indexOf("区分");
+      ich2BuyAll = []; ich2BuyRowNo = [];
+      buyRows.forEach((r, k) => {
+        if (k === 0) return;
+        if (r[idxModel] || r[idxBSite] || r[idxBKubun]) { ich2BuyAll.push(r); ich2BuyRowNo.push(k + 1); }   // シート上の行番号も控える
+      });
     } catch (e) {
       statusEl.textContent = "読み込みに失敗しました: " + e.message;
       return;
@@ -1431,6 +1439,7 @@
         document.querySelectorAll("#ich2Subtabs button").forEach(b => b.classList.toggle("active", b === btn));
         document.getElementById("ich2PaneMake").hidden = ich2Tab !== "make";
         document.getElementById("ich2PaneBuy").hidden = ich2Tab !== "buy";
+        document.getElementById("ich2Summary").hidden = ich2Tab === "buy";   // 買入品では「全数〜他」の集計は不要
         ich2RenderAll();
       });
     });
@@ -1468,6 +1477,11 @@
       });
     });
     document.getElementById("ich2BuySort").addEventListener("change", e => { ich2BuyState.sort = e.target.value; ich2RenderAll(); });
+    document.getElementById("ich2BuyShowShipped").addEventListener("click", (e) => {
+      ich2BuyState.showShipped = !ich2BuyState.showShipped;
+      e.target.classList.toggle("active", ich2BuyState.showShipped);
+      ich2RenderAll();
+    });
 
     ich2RenderAll();
   }
@@ -1624,12 +1638,14 @@
   function ich2RenderBuy() {
     const H = ich2BuyHeader;
     const idx = name => H.indexOf(name);
-    const iKubun = idx("区分"), iModel = idx("型式"), iQty = idx("数"), iIn = idx("工場入"), iSite = idx("現場名"),
-      iOut = idx("出荷日"), iDone = idx("納品"), iNote = idx("備考"), iPic = idx("担当");
+    const iKubun = idx("区分"), iModel = idx("型式"), iQty = (idx("数") !== -1 ? idx("数") : H.findIndex(h => /^数/.test(String(h)))), iIn = idx("工場入"), iSite = idx("現場名"),
+      iOut = idx("出荷日"), iDone = (idx("納品") !== -1 ? idx("納品") : H.findIndex(h => String(h).includes("納品"))), iNote = idx("備考"), iPic = idx("担当");
 
     const q = ich2BuyState.query.trim().toLowerCase();
-    let rows = ich2BuyAll.map((r, i) => ({ r, rowIndex: i + 2 })).filter(({ r }) => {
+    let rows = ich2BuyAll.map((r, i) => ({ r, rowIndex: ich2BuyRowNo[i] })).filter(({ r }) => {
       if (q && !((r[iModel]||"")+(r[iSite]||"")+(r[iNote]||"")+(r[iPic]||"")+(r[iKubun]||"")).toLowerCase().includes(q)) return false;
+      // 出荷済み(出荷日が今日以前、または納品済み)は、「出荷済みも表示」か「納品済み」絞り込みのときだけ出す
+      if (!ich2BuyState.showShipped && ich2BuyState.filter !== "done" && (ich2IsShipped(r[iOut]) || ich2DatePassed(r[iDone]))) return false;
       if (ich2BuyState.filter === "soon") {
         const v = r[iIn]; if (!v) return false;
         const d = new Date(v); if (isNaN(d.getTime())) return false;
@@ -1661,15 +1677,19 @@
         '<td class="ich2-nowrap"><span class="ich2-chip" style="background:var(--color-accent-100);color:var(--color-accent-800);border-color:var(--color-accent-300);">'+ich2Esc(r[iKubun])+'</span></td>' +
         '<td class="ich2-nowrap ich2-ellipsis" title="'+ich2Esc(r[iModel])+'">'+ich2Esc(r[iModel])+'</td>' +
         '<td class="right ich2-tabular">'+ich2Esc(r[iQty])+'</td>' +
-        '<td class="center">'+ich2Badge(ich2Cell(r[iIn]))+'</td>' +
+        '<td class="center ich2-buy-edit" data-row="'+rowIndex+'" data-col="工場入" data-val="'+ich2Esc(r[iIn])+'" style="cursor:pointer;" title="クリックで日付を入力">'+ich2Badge(ich2Cell(r[iIn]))+'</td>' +
         '<td class="ich2-nowrap ich2-ellipsis">'+ich2Esc(r[iSite])+'</td>' +
-        '<td class="center">'+ich2Badge(ich2Cell(r[iOut]))+'</td>' +
+        '<td class="center ich2-buy-edit" data-row="'+rowIndex+'" data-col="出荷日" data-val="'+ich2Esc(r[iOut])+'" style="cursor:pointer;" title="クリックで日付を入力">'+ich2Badge(ich2Cell(r[iOut]))+'</td>' +
         '<td class="center">'+ich2Badge(ich2Cell(r[iDone]))+'</td>' +
         '<td class="ich2-nowrap ich2-ellipsis ich2-muted" title="'+ich2Esc(r[iNote])+'">'+ich2Esc(r[iNote])+'</td>' +
         '<td class="ich2-nowrap">'+ich2Esc(r[iPic])+'</td>' +
         '</tr>'
       );
     }).join("");
+
+    document.querySelectorAll("#ich2BuyTbody .ich2-buy-edit").forEach(td => {
+      td.addEventListener("click", () => ich2StartEditBuy(td));
+    });
 
     const selectAllEl = document.getElementById("ich2BuySelectAll");
     const visibleKeys = rows.map(({ rowIndex }) => "buy:" + rowIndex);
@@ -1747,6 +1767,51 @@
       if (e.relatedTarget && e.relatedTarget.classList.contains("ich2-prog-na-btn")) return;
       finish(true);
     });
+  }
+
+  // 買入品の「工場入」「出荷日」を、その場で日付入力できるようにする
+  function ich2StartEditBuy(td) {
+    if (td.querySelector("input")) return;
+    const rowIndex = Number(td.dataset.row), columnName = td.dataset.col;
+    const current = ich2EditableDateValue(td.dataset.val || "");
+    const original = td.innerHTML;
+    td.style.position = "relative"; td.style.zIndex = "50";
+    td.innerHTML = '<span style="position:absolute;top:50%;left:0;transform:translateY(-50%);display:inline-flex;gap:2px;align-items:center;background:var(--color-bg);padding:2px;box-shadow:0 2px 8px rgba(32,30,29,0.25);z-index:50;">' +
+      '<input type="text" class="ich2-prog-input" value="' + ich2Esc(current) + '" placeholder="例: 9/10" style="width:90px;font-size:14px;padding:5px 6px;border:2px solid var(--color-accent);text-align:center;font-family:inherit;box-sizing:border-box;">' +
+      '</span>';
+    const input = td.querySelector("input");
+    input.focus(); input.select();
+    let done = false;
+    const reset = () => { td.style.position = ""; td.style.zIndex = ""; };
+    const finish = (save) => {
+      if (done) return; done = true;
+      if (!save) { td.innerHTML = original; reset(); return; }
+      const newVal = ich2NormalizeDateInput(input.value.trim());
+      if (newVal === current) { td.innerHTML = original; reset(); return; }
+      ich2SaveBuyCell(rowIndex, columnName, newVal, td, original);
+    };
+    input.addEventListener("keydown", e => {
+      if (e.key === "Enter") { e.preventDefault(); finish(true); }
+      else if (e.key === "Escape") { e.preventDefault(); finish(false); }
+    });
+    input.addEventListener("blur", () => finish(true));
+  }
+
+  async function ich2SaveBuyCell(rowIndex, columnName, value, td, original) {
+    td.innerHTML = '<span style="font-size:9px;color:var(--color-neutral-600);">更新中</span>';
+    try {
+      const iModel = ich2BuyHeader.indexOf("型式");
+      const row = ich2BuyAll[ich2BuyRowNo.indexOf(rowIndex)];
+      const res = await fetch(GAS_URL, { method: "POST", body: JSON.stringify({ type: "updateBuyCell", rowIndex, columnName, value, model: row ? row[iModel] : "" }) });
+      const data = await res.json();
+      if (data.result !== "success") throw new Error(data.message || "更新に失敗しました");
+      const iCol = ich2BuyHeader.indexOf(columnName);
+      if (row && iCol !== -1) row[iCol] = value;
+      ich2RenderAll();
+    } catch (e) {
+      alert("更新に失敗しました: " + e.message);
+      td.innerHTML = original; td.style.position = ""; td.style.zIndex = "";
+    }
   }
 
   async function ich2SaveProgress(seizouBangou, columnName, value, td, original) {
@@ -1957,7 +2022,7 @@
     const iGenba = ich2Header.indexOf("現場名"), iHinmei = ich2Header.indexOf("品名");
     const iBuySite = ich2BuyHeader.indexOf("現場名"), iBuyModel = ich2BuyHeader.indexOf("型式");
     const buyKeys = [...ich2Selected].filter(k => k.startsWith("buy:")).map(k => Number(k.split(":")[1]));
-    const selectedBuyRows = ich2BuyAll.filter((r, i) => buyKeys.includes(i + 2));
+    const selectedBuyRows = ich2BuyAll.filter((r, i) => buyKeys.includes(ich2BuyRowNo[i]));
 
     const genbaList = [...new Set([
       ...selectedRows.map(r => r[iGenba]),
