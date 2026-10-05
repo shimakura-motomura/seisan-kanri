@@ -2327,7 +2327,12 @@
       rows.forEach((r, k) => {
         if (k === 0) return;
         if (!(r[iGenba] && r[iHinmei] && r[iSeizou] !== header[iSeizou])) return;
-        list.push({ rowIndex: k + 1, get: name => { const c = header.indexOf(name); return c === -1 ? "" : (r[c] == null ? "" : r[c]); } });
+        if (/^[（(]?記入例/.test(String(r[header.indexOf("備考")] || ""))) return;   // シート2行目の「記入例」行は除く
+        list.push({ rowIndex: k + 1, get: name => {
+          let c = header.indexOf(name);
+          if (c === -1 && name === "完成納品") c = header.findIndex(h => String(h).includes("納品"));   // シートの見出しが「完成/納品日」でも読めるように
+          return c === -1 ? "" : (r[c] == null ? "" : r[c]);
+        } });
       });
       const q = tsQuery.toLowerCase();
       if (q) list = list.filter(o => ((o.get("製造番号"))+(o.get("現場名"))+(o.get("品名"))).toLowerCase().includes(q));
