@@ -1267,7 +1267,7 @@
 
   // 出荷済みかどうかの判定:出荷日が入っていて、かつ今日以前(今日を含む)の日付であれば出荷済み
   function ich2IsShipped(shukkaVal) {
-    return ich2DatePassed(shukkaVal);
+    return ich2DatePassed(shukkaVal) || /^[?？]$|取消/.test((shukkaVal||"").toString().trim());
   }
 
   // 第3工場(検査・塗装・出荷)対象かどうかの判定:部署を問わず、完成日が入っていれば対象

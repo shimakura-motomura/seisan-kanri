@@ -316,7 +316,7 @@ async function loadJobs() {
         juken: r[iJuken] || "",
         dept: kubunToDept(r[iSeisaku], r[iKu]),
         isDai3: isDatePassed(r[iKansei]),
-        shipped: isDatePassed(r[iShukka]),
+        shipped: isDatePassed(r[iShukka]) || /^[?？]$|取消/.test((r[iShukka]||"").toString().trim()),
         item: r[iHinmei] || "",
         dims: r[iSunpou] || "",
         paint: tosouSummary(r, iTosouCols),
