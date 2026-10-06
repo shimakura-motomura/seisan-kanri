@@ -26,15 +26,16 @@
   --page-bg: #dedcda;
 }
 * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
-html, body { margin: 0; height: 100%; overflow: hidden; background: var(--page-bg); color: var(--ink); font-family: "Archivo", "Noto Sans JP", system-ui, sans-serif; }
+html, body { margin: 0; background: var(--page-bg); color: var(--ink); font-family: "Archivo", "Noto Sans JP", system-ui, sans-serif; }
 button { font: inherit; color: inherit; cursor: pointer; border: 0; border-radius: 0; background: none; padding: 0; -webkit-appearance: none; appearance: none; }
 input, textarea { font: inherit; color: inherit; -webkit-appearance: none; appearance: none; }
 input:focus-visible, textarea:focus-visible, button:focus-visible { outline: 2px solid var(--accent); outline-offset: -2px; }
 ::-webkit-scrollbar { width: 0; height: 0; }
 
-.app { position: fixed; inset: 0; width: 100%; max-width: 560px; margin: 0 auto; background: var(--bg); display: flex; flex-direction: column; overflow: hidden; }
+/* ページ本体(画面全体)をスクロールさせる作り。スマホで画面の最上部をタッチすると一番上に戻る動きが効くようにするため */
+.app { position: relative; width: 100%; max-width: 560px; margin: 0 auto; background: var(--bg); display: flex; flex-direction: column; min-height: 100vh; min-height: 100dvh; }
 
-.header { flex: 0 0 auto; background: var(--bg); border-bottom: 2px solid var(--ink); }
+.header { flex: 0 0 auto; position: sticky; top: 0; z-index: 20; background: var(--bg); border-bottom: 2px solid var(--ink); }
 .header-row { display: flex; align-items: flex-end; justify-content: space-between; padding: 14px 16px 10px; }
 .header-eyebrow { font-size: 11px; letter-spacing: 0.14em; font-weight: 700; color: var(--muted); }
 .header-title { font-size: 26px; font-weight: 900; line-height: 1; }
@@ -44,7 +45,7 @@ input:focus-visible, textarea:focus-visible, button:focus-visible { outline: 2px
 
 .search-row { display: flex; align-items: center; border-top: 1px solid var(--divider-25); }
 .search-icon { flex: 0 0 auto; padding: 0 10px 0 16px; font-size: 15px; color: var(--muted); }
-.search-input { flex: 1 1 auto; min-width: 0; height: 48px; border: 0; background: transparent; font-size: 15px; font-weight: 500; outline: none; color: var(--ink); }
+.search-input { flex: 1 1 auto; min-width: 0; height: 48px; border: 0; background: transparent; font-size: 16px; font-weight: 500; outline: none; color: var(--ink); }
 .search-input::placeholder { color: var(--muted); opacity: 1; }
 .search-clear { flex: 0 0 auto; height: 48px; width: 48px; border-left: 1px solid var(--divider-25); background: transparent; font-size: 13px; font-weight: 700; color: var(--muted); }
 
@@ -58,7 +59,7 @@ input:focus-visible, textarea:focus-visible, button:focus-visible { outline: 2px
 .dept-btn.is-active { background: var(--ink); color: var(--bg); }
 .dept-btn-n { font-size: 10px; font-weight: 700; opacity: 0.7; }
 
-.main { flex: 1 1 auto; min-height: 0; overflow-y: auto; }
+.main { flex: 1 1 auto; min-height: 0; }
 
 .job-list { padding-bottom: 12px; }
 .job-row { display: flex; align-items: stretch; border-bottom: 1px solid var(--divider-35); background: var(--bg); }
@@ -103,14 +104,14 @@ input:focus-visible, textarea:focus-visible, button:focus-visible { outline: 2px
 .post-when { flex: 0 0 auto; font-size: 12px; font-weight: 700; color: var(--muted); }
 .post-body { font-size: 15px; line-height: 1.55; white-space: pre-wrap; }
 
-.tabbar { flex: 0 0 auto; display: flex; border-top: 2px solid var(--ink); background: var(--bg); }
+.tabbar { flex: 0 0 auto; position: sticky; bottom: 0; z-index: 20; display: flex; border-top: 2px solid var(--ink); background: var(--bg); padding-bottom: env(safe-area-inset-bottom); }
 .tab-btn { flex: 1 1 0; height: 62px; background: transparent; color: var(--ink); display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 3px; }
 .tab-btn.is-active { background: var(--ink); color: var(--bg); }
 .tab-btn + .tab-btn { border-left: 2px solid var(--ink); }
 .tab-btn-main { font-size: 17px; font-weight: 900; }
 .tab-btn-sub { font-size: 10px; letter-spacing: 0.08em; font-weight: 700; opacity: 0.75; }
 
-.sheet-backdrop { position: absolute; inset: 0; background: var(--backdrop); display: flex; flex-direction: column; justify-content: flex-end; }
+.sheet-backdrop { position: fixed; inset: 0; max-width: 560px; margin: 0 auto; z-index: 50; background: var(--backdrop); display: flex; flex-direction: column; justify-content: flex-end; }
 .sheet-panel { background: var(--bg); border-top: 2px solid var(--ink); max-height: 76%; display: flex; flex-direction: column; }
 .sheet-head { display: flex; align-items: flex-start; justify-content: space-between; padding: 14px 16px; border-bottom: 2px solid var(--ink); }
 .sheet-eyebrow { font-size: 10px; letter-spacing: 0.12em; font-weight: 700; color: var(--muted); }
@@ -409,7 +410,7 @@ function renderJobsToolbar() {
   return `
     <div class="search-row">
       <div class="search-icon">検索</div>
-      <input class="search-input" data-action="query-input" placeholder="製造番号・現場名で検索" value="${escapeHtml(state.query)}">
+      <input class="search-input" data-action="query-input" type="text" inputmode="text" enterkeyhint="search" autocomplete="off" autocapitalize="off" autocorrect="off" spellcheck="false" placeholder="製造番号・現場名で検索" value="${escapeHtml(state.query)}">
       <button class="search-clear" data-action="query-clear">×</button>
     </div>
     <div class="sort-row">
@@ -545,8 +546,8 @@ function render() {
     </div>
     ${renderSheet()}
   `;
-  const scrollEl = app.querySelector(".main");
-  if (scrollEl) scrollEl.scrollTop = 0;
+  document.body.style.overflow = state.sheet ? "hidden" : "";   // 履歴シートを開いている間は、後ろの画面を動かさない
+  window.scrollTo(0, 0);
   focusPreservedInput();
 }
 
@@ -562,11 +563,30 @@ function focusPreservedInput() {
   pendingFocus = null;
 }
 
+// 検索欄・入力欄は、打つたびに画面全体を作り直さない(作り直すと入力欄が消えて、日本語の変換が途切れたり、キーボードが閉じたりする)
+function updateJobsList() {
+  const main = app.querySelector(".main");
+  if (main) main.innerHTML = renderJobsTab();
+  const num = app.querySelector(".header-count-num");
+  if (num) num.textContent = visibleJobs().length;
+  window.scrollTo(0, 0);
+}
+function updatePostHint() {
+  const hint = app.querySelector(".post-submit-hint");
+  if (hint) hint.textContent = (state.name.trim() && state.body.trim() && !state.posting) ? "" : "お名前と内容を入力";
+}
+app.addEventListener("compositionend", e => {
+  if (e.target.dataset && e.target.dataset.action === "query-input") { state.query = e.target.value; updateJobsList(); }
+});
 app.addEventListener("input", e => {
   const action = e.target.dataset.action;
-  if (action === "query-input") { state.query = e.target.value; pendingFocus = { action, pos: e.target.selectionStart }; render(); }
-  else if (action === "name-input") { state.name = e.target.value; pendingFocus = { action, pos: e.target.selectionStart }; render(); }
-  else if (action === "body-input") { state.body = e.target.value; pendingFocus = { action, pos: e.target.selectionStart }; render(); }
+  if (action === "query-input") {
+    state.query = e.target.value;
+    if (e.isComposing) return;       // 変換の途中は、確定してから絞り込む
+    updateJobsList();
+  }
+  else if (action === "name-input") { state.name = e.target.value; updatePostHint(); }
+  else if (action === "body-input") { state.body = e.target.value; updatePostHint(); }
 });
 
 app.addEventListener("click", async e => {
