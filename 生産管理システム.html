@@ -248,7 +248,10 @@
   .ts3-cal-legend { flex-wrap: wrap; row-gap: 4px; }
   .ts3-cal-legend i { display: inline-block; width: 12px; height: 12px; border: 1px solid var(--color-neutral-600); vertical-align: middle; margin-right: 3px; }
   /* 塗料在庫 */
-  table.ts3-data.ts3-paint td.nm { max-width: 170px; text-align: left; }
+  table.ts3-data.ts3-paint td.nm { max-width: 135px; text-align: left; }
+  table.ts3-data.ts3-paint td.ts3-note { text-align: left; }
+  table.ts3-data.ts3-paint td.ts3-note .ts3-card { display: flex; justify-content: flex-start; width: 100%; max-width: none; min-width: 0; }
+  table.ts3-data.ts3-paint td.ts3-inline:not(.ts3-note) .ts3-card { min-width: 34px; }
   table.ts3-data.ts3-paint td.num { text-align: right; }
   table.ts3-data.ts3-paint td.cap { font-weight: 800; }
   .ts3-paint-cfg { font-size: 11px; display: inline-flex; align-items: center; gap: 3px; }
@@ -2626,6 +2629,7 @@
   const TS_PAIR = { "酸洗": "研磨", "エポ": "FRP", "メッキ": TS_SCHEDULE_KEY, "外装": TS_PAINT_KEY };
   // 左の一覧の幅(%)。書いていないタブは半々
   const TS_RATIO = { "メッキ": 65, "外装": 65 };
+  const TS_NOTE_COL = { "メッキ": "内容" };
   const TS_PLATING_GAP = 4;       // 持込から引取までの日数(中3日 = 4日後が引取)
   const TS_BIG_KG = 3000;         // この重量を超えたら大型車両
   const TS_PAIR_SUBS = Object.values(TS_PAIR);
@@ -2851,6 +2855,7 @@
   function tsRenderTosouTable(table, tab, rowsList, opt) {
     const compact = !!opt.compact, p = opt.p, pane = p.name;
     const cols = TS_COLS[tab.key];
+    const noteLabel = TS_NOTE_COL[tab.key] || "備考";     // 残りの幅を使う列(メッキは「内容」を広く、備考は狭く)
     const thead = table.querySelector("thead"), tbody = table.querySelector("tbody");
     table.classList.toggle("compact", compact);
     thead.innerHTML = ""; tbody.innerHTML = "";
@@ -2866,7 +2871,7 @@
       const th = document.createElement("th"); th.textContent = label;
       if (label === "製造番号") th.className = "ts3-sticky after-chk";
       if (label === "納期") th.className = "ts3-sticky after-no";
-      if (label === "備考") th.className = "ts3-note";
+      if (label === noteLabel) th.className = "ts3-note";
       trh.appendChild(th);
     });
     thead.appendChild(trh);
@@ -2899,7 +2904,8 @@
           td.textContent = tsDisplayValue(label, v);
         }
         if (label === "納期") td.className = "ts3-sticky after-no";
-        if (label === "備考") { td.className = "ts3-note"; td.title = td.textContent; }
+        if (label === noteLabel) { td.className = "ts3-note"; td.title = td.textContent; }
+        else if (label === "備考") { td.style.maxWidth = "110px"; td.style.textAlign = "left"; td.title = td.textContent; }
         if (TS_INLINE[label]) {
           td.classList.add("ts3-inline");
           td.title = "クリックで入力";
@@ -3254,7 +3260,7 @@
     const latest = tsPaint.rows.map(o => o.date).filter(Boolean).sort().pop() || "";
     tsEl(p, "stat").textContent = tsPaint.err ? tsPaint.err : list.length + "品目" + (latest ? " ／ 更新 " + latest : "");
     const head = ["品名", "斗缶", "4L缶", "残量L", "㎡/L(目安)", "塗装可能㎡", "備考"];
-    table.querySelector("thead").innerHTML = "<tr>" + head.map(h => "<th>" + h + "</th>").join("") + "</tr>";
+    table.querySelector("thead").innerHTML = "<tr>" + head.map(h => "<th" + (h === "備考" ? ' class="ts3-note"' : "") + ">" + h + "</th>").join("") + "</tr>";
     const tb = table.querySelector("tbody"); tb.innerHTML = "";
     list.forEach(o => {
       const a = tsQty(o.tokan), b = tsQty(o.can4), cov = parseFloat(String(o.cov).normalize("NFKC"));
@@ -3263,7 +3269,7 @@
       const area = (L != null && cov > 0) ? Math.round(L * cov) : null;
       const tr = document.createElement("tr");
       const cell = (cls, text) => { const td = document.createElement("td"); td.className = cls; td.textContent = text; tr.appendChild(td); return td; };
-      const card = (field, val, w) => { const td = document.createElement("td"); td.className = "ts3-inline"; const c = document.createElement("span"); c.className = "ts3-card" + (val ? "" : " empty") + (w ? " wide" : ""); c.textContent = val || "　"; td.appendChild(c); td.addEventListener("click", () => tsPaintEdit(td, o, field)); tr.appendChild(td); };
+      const card = (field, val, w) => { const td = document.createElement("td"); td.className = "ts3-inline" + (field === "備考" ? " ts3-note" : ""); const c = document.createElement("span"); c.className = "ts3-card" + (val ? "" : " empty") + (w ? " wide" : ""); c.textContent = val || "　"; td.appendChild(c); td.addEventListener("click", () => tsPaintEdit(td, o, field)); tr.appendChild(td); };
       const nm = cell("nm", o.name); nm.title = o.name;
       card("斗缶", o.tokan); card("4L缶", o.can4);
       cell("num", bad ? "?" : kg ? "kg缶" : tsRound1(L));
