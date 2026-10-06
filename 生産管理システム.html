@@ -2650,7 +2650,8 @@
   let tsModalTab = null;
 
   async function initTosou() {
-    await tsLoadMasters();
+    // 製作手配一覧(大きい)の読み込みを待たずに、タブの一覧の読み込みを同時に始める。読み終わったら表示を更新する
+    const mastersP = tsLoadMasters();
     for (const p of [TSP.main, TSP.sub]) {
       tsEl(p, "search").addEventListener("input", e => { p.query = e.target.value.trim(); tsPaneChanged(p); });
       document.querySelectorAll("#" + p.ids.seg + " button").forEach(btn => btn.addEventListener("click", () => {
@@ -2676,6 +2677,7 @@
     document.getElementById("tsEditCancelBtn").addEventListener("click", tsCloseModal);
     document.getElementById("tsEditSaveBtn").addEventListener("click", tsSaveModal);
     tsRender();
+    mastersP.then(() => { [TSP.main, TSP.sub].forEach(p => { if (p.all && p.all.length && p.tabKey && p.tabKey !== TS_SCHEDULE_KEY && p.tabKey !== TS_PAINT_KEY) tsApply(p); }); });
   }
 
   async function tsLoadMasters() {
@@ -3124,6 +3126,7 @@
   async function tsLoadSchedule(p) {
     const stat = tsEl(p, "stat");
     stat.textContent = "読み込み中...";
+    const loadP = ich2FetchSheetsRanges(["メッキ積載"]).catch(() => null);     // 積載重量は同時に読み込む(シートが無くてもOK)
     try {
       const [rows] = await ich2FetchSheetsRanges(["塗装_" + TS_SCHEDULE_KEY]);
       if (p.tabKey !== TS_SCHEDULE_KEY) return;
@@ -3133,7 +3136,7 @@
     // 積載重量は別シート。まだ無くても(未作成でも)カレンダーは表示する
     tsCal.loads = {};
     try {
-      const [lr] = await ich2FetchSheetsRanges(["メッキ積載"]);
+      const lrr = await loadP, lr = lrr && lrr[0];
       (lr || []).slice(1).forEach(r => { const d = tsCalDate(r[0]), kg = parseFloat(String(r[1] || "").replace(/,/g, "")); if (d && kg) tsCal.loads[tsDKey(d.y, d.m, d.d)] = kg; });
     } catch (e) { /* シート未作成 */ }
     if (p.tabKey === TS_SCHEDULE_KEY) tsRenderCalendar(p);
