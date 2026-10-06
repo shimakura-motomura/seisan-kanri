@@ -189,7 +189,7 @@
   td.ts3-inline { cursor: pointer; text-align: center; padding-left: 3px !important; padding-right: 3px !important; }
   td.ts3-inline:hover { background: rgba(236,48,19,0.08); }
   .ts3-card { display: inline-flex; align-items: center; justify-content: center; height: 18px; min-width: 44px; max-width: 70px; padding: 0 4px; box-sizing: border-box; font-size: 10.5px; border: 1px solid var(--color-neutral-400, #b5b0ab); background: #fff; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; vertical-align: middle; }
-  .ich2-badge.ts3-co { width: 46px; font-size: 10px; display: inline-flex; }
+  .ich2-badge.ts3-co { width: 36px; font-size: 10px; display: inline-flex; }
   table.ts3-data th.ts3-note, table.ts3-data td.ts3-note { width: 100%; max-width: 0 !important; overflow: hidden; text-overflow: ellipsis; text-align: left; }
   .ts3-card.empty { border-style: dashed; background: transparent; color: transparent; }
   .ts3-card.wide { min-width: 62px; max-width: 90px; }
@@ -198,11 +198,12 @@
   .ts3-split.two .ts3-pane-main-title { display: block; }
   /* ぎゅっと表示(酸洗+研磨を左右に並べるとき) */
   table.ts3-data.compact { font-size: 10.5px; }
-  table.ts3-data.compact th { padding: 4px 3px; font-size: 10px; }
-  table.ts3-data.compact td { padding: 1px 3px; max-width: 84px; overflow: hidden; text-overflow: ellipsis; }
-  table.ts3-data.compact th.ts3-chk, table.ts3-data.compact td.ts3-chk { width: 22px; min-width: 22px; padding: 1px 2px; }
-  table.ts3-data.compact th.ts3-sticky.after-chk, table.ts3-data.compact td.ts3-sticky.after-chk { left: 22px; width: 62px; min-width: 62px; max-width: 62px; }
-  table.ts3-data.compact th.ts3-sticky.after-no, table.ts3-data.compact td.ts3-sticky.after-no { left: 84px; }
+  table.ts3-data.compact th { padding: 4px 5.5px; font-size: 10px; }
+  table.ts3-data.compact td { padding: 1px 5.5px; max-width: 90px; overflow: hidden; text-overflow: ellipsis; }
+  table.ts3-data th.ts3-chk, table.ts3-data td.ts3-chk, table.ts3-data .ts3-sticky { box-sizing: border-box; }
+  table.ts3-data.compact th.ts3-chk, table.ts3-data.compact td.ts3-chk { width: 26px; min-width: 26px; padding: 1px 3px; }
+  table.ts3-data.compact th.ts3-sticky.after-chk, table.ts3-data.compact td.ts3-sticky.after-chk { left: 26px; width: 72px; min-width: 72px; max-width: 72px; }
+  table.ts3-data.compact th.ts3-sticky.after-no, table.ts3-data.compact td.ts3-sticky.after-no { left: 98px; }
   table.ts3-data tr.ts3-selected td { background: var(--color-accent-100); }
   .ts3-chk input { accent-color: var(--color-accent); cursor: pointer; }
   #screen-tosou { padding-bottom: 0; }
