@@ -209,6 +209,26 @@
   table.ts3-data tr.ts3-selected td { background: var(--color-accent-100); }
   .ts3-chk input { accent-color: var(--color-accent); cursor: pointer; }
   #screen-tosou { padding-bottom: 0; }
+  .ts3-seg[hidden], .ts3-cal-nav[hidden], .ich2-selbar-primary[hidden], .ich2-selbar-clear[hidden], .ts3-cal[hidden], table.ts3-data[hidden], .ts3-sort[hidden] { display: none !important; }
+  .ts3-cal-nav { display: inline-flex; align-items: center; gap: 6px; }
+  .ts3-cal-nav .ts3-btn { padding: 4px 9px; }
+  .ts3-cal-nav b { min-width: 92px; text-align: center; font-size: 14px; }
+  .ts3-cal { padding: 0; }
+  .ts3-cal-grid { display: grid; grid-template-columns: repeat(7, minmax(0, 1fr)); }
+  .ts3-cal-dow { position: sticky; top: 0; z-index: 2; text-align: center; font-size: 11px; font-weight: 700; padding: 5px 0; background: var(--color-neutral-200); box-shadow: inset 0 -2px 0 var(--color-divider); }
+  .ts3-cal-dow.sun, .ts3-cal-num.sun { color: #c0392b; }
+  .ts3-cal-dow.sat, .ts3-cal-num.sat { color: #1f5fa8; }
+  .ts3-cal-day { min-height: 84px; padding: 2px 3px 3px; border-right: 1px solid var(--color-divider); border-bottom: 1px solid var(--color-divider); cursor: pointer; overflow: hidden; background: var(--color-bg); }
+  .ts3-cal-day:hover { background: rgba(236,48,19,0.06); }
+  .ts3-cal-day.out { background: rgba(32,30,29,0.04); }
+  .ts3-cal-day.out .ts3-cal-num { opacity: 0.4; }
+  .ts3-cal-day.today { box-shadow: inset 0 0 0 2px var(--color-accent); }
+  .ts3-cal-num { font-size: 11px; font-weight: 700; }
+  .ts3-cal-ev { display: block; margin-top: 2px; padding: 0 3px; border: 1px solid; font-size: 10px; line-height: 14px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .ts3-cal-ev.in { background: #fbe8cc; color: #7a4a05; border-color: #c87a12; }
+  .ts3-cal-ev.out { background: #dfeee4; color: #1e5c37; border-color: #2f7d4f; }
+  .ts3-cal-more { font-size: 10px; color: var(--color-neutral-700); margin-top: 1px; }
+  .ts3-cal-legend { font-size: 11px; padding: 6px 4px; display: flex; gap: 12px; align-items: center; }
   .ts3-sort { min-height: 32px; font-size: 13px; padding: 4px 6px; font-family: inherit; color: var(--color-text); background: var(--color-neutral-100); border: 1px solid var(--color-divider); }
   .ts3-sort[hidden] { display: none; }
   .ts3-pane .ts3-filter-input { width: 180px; }
@@ -1093,13 +1113,18 @@
           <select class="ts3-sort" id="tsSort2" title="並び順">
             <option value="nouki">納期順</option><option value="seiban">製造番号順</option><option value="genba">現場名順</option><option value="yotei">予定順</option>
           </select>
+          <span class="ts3-cal-nav" id="tsCalNav" hidden>
+            <button type="button" class="ts3-btn" id="tsCalPrev">◀</button>
+            <b id="tsCalTitle"></b>
+            <button type="button" class="ts3-btn" id="tsCalNext">▶</button>
+            <button type="button" class="ts3-btn" id="tsCalToday">今月</button>
+          </span>
           <span class="ts3-count-label" id="tsListStatus2">読み込み中...</span>
         </div>
-        <div class="ts3-list-scroll"><table class="ts3-data" id="tsListTable2"><thead></thead><tbody></tbody></table></div>
+        <div class="ts3-list-scroll"><table class="ts3-data" id="tsListTable2"><thead></thead><tbody></tbody></table><div class="ts3-cal" id="tsCalBox" hidden></div></div>
       </div>
     </div>
     <span id="tsFootnote" hidden></span>
-    <div class="ts3-add-panel" id="tsFormBox" style="display:none;margin-bottom:70px;"></div>
 
     <div class="ich2-selbar" id="tsSelbar">
       <div class="ts3-bargrp" id="tsBarMain">
@@ -1117,6 +1142,28 @@
         <button type="button" class="ich2-selbar-primary" id="tsBtnAdd2">手動追加</button>
         <button type="button" class="ich2-selbar-primary" id="tsBtnDone2">完了にする</button>
         <button type="button" class="ich2-selbar-clear" id="tsBtnClear2">選択を解除</button>
+      </div>
+    </div>
+
+    <div class="ich2-edit-overlay" id="tsSchedOverlay" hidden>
+      <div class="ich2-edit-panel" style="width:min(560px,100%);">
+        <div class="ich2-edit-head"><span class="ttl">メッキスケ 追加</span><span class="no" id="tsSchedNo"></span></div>
+        <div class="ich2-edit-body">
+          <div class="ich2-edit-grid" style="grid-template-columns:repeat(2,minmax(0,1fr));">
+            <div class="ich2-edit-field"><label>日付</label><input type="text" id="ts_sc_date" placeholder="例 10/24"></div>
+            <div class="ich2-edit-field"><label>区分</label><select id="ts_sc_kubun" style="width:100%;height:30px;font-size:13px;"><option value="持込">持込</option><option value="引取">引取</option></select></div>
+            <div class="ich2-edit-field" style="grid-column:span 2;"><label>現場名</label><input type="text" id="ts_sc_genba" list="ts_sc_genba_list"></div>
+            <div class="ich2-edit-field"><label>基数</label><input type="text" id="ts_sc_kisuu" placeholder="例 2"></div>
+            <div class="ich2-edit-field"><label>備考</label><input type="text" id="ts_sc_biko"></div>
+          </div>
+          <datalist id="ts_sc_genba_list"></datalist>
+        </div>
+        <div class="ich2-edit-foot">
+          <span class="ich2-edit-hint">日付と現場名は必須です</span>
+          <span class="ich2-edit-status" id="tsSchedStatus"></span>
+          <button type="button" class="ich2-edit-cancel" id="tsSchedCancelBtn">キャンセル</button>
+          <button type="button" class="ich2-edit-save" id="tsSchedSaveBtn">追加する</button>
+        </div>
       </div>
     </div>
 
@@ -2526,6 +2573,11 @@
   // ================= 塗装 =================
   let tsCurrentTab = TOSOU_TABS[0].key;
   const TS_SCHEDULE_KEY = "メッキスケ";
+  // 左右に並べて表示する組み合わせ(左のタブ → 右に並べるもの)
+  const TS_PAIR = { "酸洗": "研磨", "エポ": "FRP", "メッキ": TS_SCHEDULE_KEY };
+  const TS_PAIR_SUBS = Object.values(TS_PAIR);
+  const TS_TAB_LABEL = { "酸洗": "酸洗/研磨", "エポ": "エポ/FRP", "メッキ": "メッキ/スケ" };
+  const TS_TAB_SUB2 = { "酸洗": "PICKLING / POLISH", "エポ": "EPOXY / FRP", "メッキ": "PLATING / SCHEDULE" };
   let tsBuiList = [];
   let tsProductMap = {};
   const TS_IDS = {
@@ -2555,6 +2607,11 @@
       tsEl(p, "clr").addEventListener("click", () => { p.sel.clear(); tsSyncSelection(); });
     }
     window.addEventListener("resize", tsFit);
+    document.getElementById("tsCalPrev").addEventListener("click", () => { tsCal.month--; if (tsCal.month < 0) { tsCal.month = 11; tsCal.year--; } tsRenderCalendar(TSP.sub); });
+    document.getElementById("tsCalNext").addEventListener("click", () => { tsCal.month++; if (tsCal.month > 11) { tsCal.month = 0; tsCal.year++; } tsRenderCalendar(TSP.sub); });
+    document.getElementById("tsCalToday").addEventListener("click", () => { const d = new Date(); tsCal.year = d.getFullYear(); tsCal.month = d.getMonth(); tsRenderCalendar(TSP.sub); });
+    document.getElementById("tsSchedCancelBtn").addEventListener("click", () => { document.getElementById("tsSchedOverlay").hidden = true; });
+    document.getElementById("tsSchedSaveBtn").addEventListener("click", tsSaveSched);
     document.getElementById("tsEditCancelBtn").addEventListener("click", tsCloseModal);
     document.getElementById("tsEditSaveBtn").addEventListener("click", tsSaveModal);
     tsRender();
@@ -2578,11 +2635,11 @@
   function tsRenderTabbar() {
     const bar = document.getElementById("tsTabbar");
     bar.innerHTML = "";
-    [...TOSOU_TABS.map(t => t.key).filter(k => k !== "研磨"), TS_SCHEDULE_KEY].forEach(key => {
+    TOSOU_TABS.map(t => t.key).filter(k => !TS_PAIR_SUBS.includes(k)).forEach(key => {
       const btn = document.createElement("button");
       btn.className = "ts3-tab-btn" + (key === tsCurrentTab ? " active" : "");
-      const label = key === "酸洗" ? "酸洗/研磨" : key;     // 研磨は酸洗の右側に並べて表示
-      const sub = key === "酸洗" ? "PICKLING / POLISH" : (TS_TAB_SUB[key] || "");
+      const label = TS_TAB_LABEL[key] || key;
+      const sub = TS_TAB_SUB2[key] || TS_TAB_SUB[key] || "";
       btn.innerHTML = label + '<span class="ts3-tab-sub">' + sub + '</span><span class="ts3-tab-underline"></span>';
       btn.addEventListener("click", () => { tsCurrentTab = key; tsRender(); });
       bar.appendChild(btn);
@@ -2591,23 +2648,26 @@
 
   function tsRender() {
     tsRenderTabbar();
-    const sched = tsCurrentTab === TS_SCHEDULE_KEY;
-    const two = tsCurrentTab === "酸洗";      // 酸洗タブは、左に酸洗・右に研磨を並べる
-    TSP.main.tabKey = tsCurrentTab; TSP.sub.tabKey = two ? "研磨" : null;
+    const subKey = TS_PAIR[tsCurrentTab] || null;
+    const two = !!subKey, calMode = subKey === TS_SCHEDULE_KEY;
+    TSP.main.tabKey = tsCurrentTab; TSP.sub.tabKey = subKey;
     [TSP.main, TSP.sub].forEach(p => p.sel.clear());
-    document.getElementById("tsFormBox").style.display = "none";
-    document.getElementById("tsPaneSub").hidden = !two;
-    document.getElementById("tsBarSub").hidden = !two;
-    document.getElementById("tsMainTitle").hidden = !two;
-    document.getElementById("tsBarLbl").hidden = !two;
-    document.getElementById("tsSort").hidden = sched;
-    document.getElementById("tsSplit").classList.toggle("two", two);
-    if (sched) { tsRenderScheduleForm(); tsLoadScheduleList(); tsSyncSelection(); }
-    else { tsLoadList(TSP.main); if (two) tsLoadList(TSP.sub); }
+    const $ = id => document.getElementById(id);
+    $("tsPaneSub").hidden = !two; $("tsBarSub").hidden = !two;
+    $("tsMainTitle").hidden = !two; $("tsBarLbl").hidden = !two;
+    $("tsMainTitle").textContent = tsCurrentTab; $("tsBarLbl").textContent = tsCurrentTab;
+    $("tsSubTitle").textContent = subKey || ""; $("tsBarLbl2").textContent = subKey || "";
+    // 右側がカレンダー(メッキスケ)のときは、一覧用の部品を隠してカレンダー用の部品を出す
+    $("tsListTable2").hidden = calMode; $("tsCalBox").hidden = !calMode; $("tsCalNav").hidden = !calMode;
+    $("tsStatusFilter2").hidden = calMode; $("tsSort2").hidden = calMode;
+    $("tsBtnEdit2").hidden = calMode; $("tsBtnDone2").hidden = calMode; $("tsBtnClear2").hidden = calMode;
+    $("tsSplit").classList.toggle("two", two);
+    tsLoadList(TSP.main);
+    if (two) tsLoadList(TSP.sub);
     tsFit(); setTimeout(tsFit, 300);
   }
   function tsPaneChanged(p) {
-    if (tsCurrentTab === TS_SCHEDULE_KEY) tsLoadScheduleList();
+    if (p.tabKey === TS_SCHEDULE_KEY) tsRenderCalendar(p);
     else tsApply(p);
   }
   // 一覧の高さを、画面の下の操作バーのすぐ上までにそろえる(下に無駄な空きを作らない)
@@ -2695,11 +2755,12 @@
     const keys = new Set(list.map(o => o.key));
     [...p.sel].forEach(k => { if (!keys.has(k)) p.sel.delete(k); });     // 絞り込みで見えなくなった行は選択から外す
     tsEl(p, "stat").textContent = list.length + "件";
-    tsRenderTosouTable(tsEl(p, "table"), tab, list, { compact: tsCurrentTab === "酸洗", p });
+    tsRenderTosouTable(tsEl(p, "table"), tab, list, { compact: !!TS_PAIR[tsCurrentTab], p });
     tsSyncSelection(); tsFit();
   }
 
   async function tsLoadList(p) {
+    if (p.tabKey === TS_SCHEDULE_KEY) return tsLoadSchedule(p);
     const tab = TOSOU_TABS.find(t => t.key === p.tabKey); if (!tab) return;
     const table = tsEl(p, "table");
     tsEl(p, "stat").textContent = "読み込み中...";
@@ -2713,7 +2774,7 @@
   }
 
   // 表の中で直接書き換えられる項目(表の見出し → シートの列名)
-  const TS_INLINE = { "予定": "搬入予定", "納品": "完成納品", "社名": "業者" };
+  const TS_INLINE = { "予定": "搬入予定", "持込": "搬入予定", "完成": "完成日", "納品": "完成納品", "社名": "業者", "業者": "業者" };
   function tsDisplayValue(label, v) {
     if (label === "材質") return String(v == null ? "" : v).replace(/^\s*SUS\s*/i, "");   // 「SUS」は省いて 304 / 444 などだけ表示
     if (TS_DATE_LABELS.includes(label)) return formatDateShort(v);
@@ -2792,7 +2853,7 @@
       td.innerHTML = ich2Badge(c, String(c.text).length > 5);
       return;
     }
-    if (label === "社名") {     // 社名は会社ごとに色分け(同じ会社は同じ色)。空欄はグレーの「—」
+    if (label === "社名" || label === "業者") {     // 社名・業者は会社ごとに色分け(同じ会社は同じ色)。空欄はグレーの「—」
       const name = String(v == null ? "" : v).trim();
       if (!name) { td.innerHTML = ich2Badge(ich2Cell(""), false).replace('class="ich2-badge"', 'class="ich2-badge ts3-co"'); return; }
       let h = 0; for (const ch of name) h = (h * 31 + ch.charCodeAt(0)) >>> 0;
@@ -2845,7 +2906,6 @@
 
   // 選択状態を、チェック・行の色・下部バーに反映
   function tsSyncSelection() {
-    const sched = tsCurrentTab === TS_SCHEDULE_KEY;
     [TSP.main, TSP.sub].forEach(p => {
       document.querySelectorAll("#" + p.ids.table + " tbody tr[data-key]").forEach(tr => {
         const on = p.sel.has(tr.dataset.key);
@@ -2854,8 +2914,8 @@
       });
       const all = document.querySelector("#" + p.ids.table + " .ts3-checkall");
       if (all) all.checked = p.rows.length > 0 && p.rows.every(o => p.sel.has(o.key));
-      const n = p.sel.size, off = sched && p === TSP.main;
-      tsEl(p, "cnt").textContent = off ? "メッキスケ" : (n === 0 ? "未選択" : n + " 件を選択中");
+      const n = p.sel.size, off = p.tabKey === TS_SCHEDULE_KEY;
+      tsEl(p, "cnt").textContent = off ? "カレンダー" : (n === 0 ? "未選択" : n + " 件を選択中");
       tsEl(p, "edit").disabled = off || n !== 1;
       tsEl(p, "done").disabled = off || n === 0;
       tsEl(p, "add").disabled = false;
@@ -2869,11 +2929,7 @@
     if (o) tsOpenModal(o, p.tabKey);
   }
   function tsAddClick(p) {
-    if (tsCurrentTab === TS_SCHEDULE_KEY) {
-      const box = document.getElementById("tsFormBox");
-      box.style.display = box.style.display === "none" ? "block" : "none";
-      return;
-    }
+    if (p.tabKey === TS_SCHEDULE_KEY) { tsOpenSched(null); return; }
     tsOpenModal(null, p.tabKey);
   }
 
@@ -2979,106 +3035,90 @@
     p.sel.clear(); tsApply(p);
   }
 
-  // 塗装系シート・メッキスケシート共通のテーブル描画(先頭列を固定表示・製造番号クリックで図面を開く・日付は短縮表示・価格は合計を表示)
-  function tsRenderTable(table, header, body, idxSeizou) {
-    const idxPrice = header.findIndex(h => h.includes("価格"));
-    const trh = document.createElement("tr");
-    header.forEach((h, i) => {
-      const th = document.createElement("th");
-      th.textContent = h;
-      if (i === idxSeizou) th.classList.add("ts3-sticky");
-      trh.appendChild(th);
-    });
-    table.querySelector("thead").appendChild(trh);
-    const tbody = table.querySelector("tbody");
-    let priceSum = 0;
-    body.forEach(r => {
-      const tr = document.createElement("tr");
-      header.forEach((_h, i) => {
-        const c = r[i] == null ? "" : r[i];
-        const td = document.createElement("td");
-        if (i === idxSeizou) {
-          td.classList.add("ts3-sticky");
-          const product = tsProductMap[c];
-          if (product && product.zumen) {
-            const a = document.createElement("button");
-            a.type = "button";
-            a.className = "ts3-no-link"; a.title = "図面をプレビュー";
-            a.addEventListener("click", () => openZumenPreview(product.zumen));
-            a.textContent = c;
-            td.appendChild(a);
-          } else {
-            td.textContent = c;
-          }
-        } else if (i === idxPrice) {
-          const n = parseFloat(String(c).replace(/[^0-9.\-]/g, ""));
-          if (!isNaN(n)) priceSum += n;
-          td.textContent = c === "" || c == null ? "" : n.toLocaleString();
-        } else {
-          td.textContent = /納期|予定|納品|日/.test(header[i] || "") ? formatDateShort(c) : c;
-        }
-        tr.appendChild(td);
-      });
-      tbody.appendChild(tr);
-    });
+  // ================= メッキスケ(カレンダー) =================
+  const tsCal = { year: new Date().getFullYear(), month: new Date().getMonth(), events: [] };
+
+  // シートの日付(「2026/9/24」「9/24」など)を年・月・日に直す
+  function tsCalDate(v) {
+    let s = String(formatDateOnly(String(v == null ? "" : v)) || "").trim();
+    if (/^\d{1,2}[\/\-]\d{1,2}$/.test(s)) s = ich2NormalizeDateInput(s);
+    const m = s.match(/^(\d{4})[\/\-](\d{1,2})[\/\-](\d{1,2})/);
+    return m ? { y: +m[1], m: +m[2], d: +m[3] } : null;
   }
 
-  function tsRenderScheduleForm() {
-    const box = document.getElementById("tsFormBox");
-    box.innerHTML = `
-      <h5 style="font-family:var(--font-heading);font-weight:800;margin:0 0 14px;">メッキスケ に手動追加</h5>
-      <div class="ts3-add-grid">
-        <div class="ts3-field"><label>日付</label><input class="ts3-input" id="ts_s_hiduke" placeholder="例: 2026/9/24"></div>
-        <div class="ts3-field"><label>区分</label><select class="ts3-input" id="ts_s_kubun"><option value="持込">持込</option><option value="引取">引取</option></select></div>
-        <div class="ts3-field"><label>現場名</label><input class="ts3-input" id="ts_s_genba"></div>
-        <div class="ts3-field"><label>基数</label><input class="ts3-input" id="ts_s_kisuu" type="number"></div>
-        <div class="ts3-field"><label>備考</label><input class="ts3-input" id="ts_s_biko"></div>
-      </div>
-      <button class="ts3-btn" style="margin-top:16px;padding:8px 20px;background:var(--color-accent);color:#fff;border-color:var(--color-accent);" id="tsAddBtn">追加する</button>
-      <span id="tsAddResult"></span>
-    `;
-    document.getElementById("tsAddBtn").addEventListener("click", tsSubmitSchedule);
-  }
-
-  async function tsSubmitSchedule() {
-    const resultEl = document.getElementById("tsAddResult");
-    const btn = document.getElementById("tsAddBtn");
-    btn.disabled = true; btn.textContent = "追加中...";
-    const payload = {
-      type: "addSchedule",
-      hiduke: document.getElementById("ts_s_hiduke").value.trim(),
-      kubun: document.getElementById("ts_s_kubun").value,
-      genbaMei: document.getElementById("ts_s_genba").value.trim(),
-      kisuu: document.getElementById("ts_s_kisuu").value.trim(),
-      biko: document.getElementById("ts_s_biko").value.trim(),
-    };
+  async function tsLoadSchedule(p) {
+    const stat = tsEl(p, "stat");
+    stat.textContent = "読み込み中...";
     try {
-      const res = await fetch(GAS_URL, { method: "POST", body: JSON.stringify(payload) });
-      const data = await res.json();
-      if (data.result !== "success") throw new Error(data.message || "登録に失敗しました");
-      resultEl.textContent = "追加しました"; resultEl.className = "success";
-      tsRenderScheduleForm(); tsLoadScheduleList();
-    } catch (e) {
-      resultEl.textContent = "失敗: " + e.message; resultEl.className = "error";
-      btn.disabled = false; btn.textContent = "追加する";
+      const [rows] = await ich2FetchSheetsRanges(["塗装_" + TS_SCHEDULE_KEY]);
+      if (p.tabKey !== TS_SCHEDULE_KEY) return;
+      tsCal.events = rows.slice(1).map((r, k) => ({ rowIndex: k + 2, date: tsCalDate(r[0]), kubun: String(r[1] || "").trim(), genba: String(r[2] || "").trim(), kisuu: String(r[3] || "").trim(), biko: String(r[4] || "").trim() }))
+        .filter(e => e.genba || e.date);
+      tsRenderCalendar(p);
+    } catch (e) { stat.textContent = "読み込みに失敗しました: " + e.message; }
+  }
+
+  function tsRenderCalendar(p) {
+    const box = document.getElementById("tsCalBox");
+    const { year, month } = tsCal;
+    document.getElementById("tsCalTitle").textContent = year + "年" + (month + 1) + "月";
+    const q = p.query.toLowerCase();
+    const evs = tsCal.events.filter(e => e.date && (!q || (e.genba + e.biko).toLowerCase().includes(q)));
+    const byDay = {};
+    evs.forEach(e => { const k = e.date.y + "-" + e.date.m + "-" + e.date.d; (byDay[k] = byDay[k] || []).push(e); });
+    const first = new Date(year, month, 1), startOffset = first.getDay();
+    const daysInMonth = new Date(year, month + 1, 0).getDate();
+    const cells = Math.ceil((startOffset + daysInMonth) / 7) * 7;
+    const today = new Date();
+    const nBasu = (kind) => evs.filter(e => e.date.y === year && e.date.m === month + 1 && e.kubun === kind).reduce((a, e) => a + (parseFloat(e.kisuu) || 0), 0);
+    tsEl(p, "stat").textContent = "持込 " + nBasu("持込") + "基 ／ 引取 " + nBasu("引取") + "基";
+    let html = '<div class="ts3-cal-grid">' + ["日","月","火","水","木","金","土"].map((w, i) => '<div class="ts3-cal-dow' + (i === 0 ? " sun" : i === 6 ? " sat" : "") + '">' + w + '</div>').join("");
+    for (let c = 0; c < cells; c++) {
+      const dt = new Date(year, month, 1 - startOffset + c);
+      const y = dt.getFullYear(), m = dt.getMonth() + 1, d = dt.getDate(), dow = dt.getDay();
+      const list = byDay[y + "-" + m + "-" + d] || [];
+      const isOut = dt.getMonth() !== month;
+      const isToday = y === today.getFullYear() && m === today.getMonth() + 1 && d === today.getDate();
+      const show = list.slice(0, 4);
+      html += '<div class="ts3-cal-day' + (isOut ? " out" : "") + (isToday ? " today" : "") + '" data-date="' + y + "/" + m + "/" + d + '">' +
+        '<div class="ts3-cal-num' + (dow === 0 ? " sun" : dow === 6 ? " sat" : "") + '">' + (d === 1 ? m + "/" : "") + d + '</div>' +
+        show.map(e => '<span class="ts3-cal-ev ' + (e.kubun === "引取" ? "out" : "in") + '" title="' + ich2Esc(e.kubun + " " + e.genba + (e.kisuu ? " ×" + e.kisuu : "") + (e.biko ? "（" + e.biko + "）" : "")) + '">' +
+          (e.kubun === "引取" ? "引" : "持") + " " + ich2Esc(e.genba) + (e.kisuu ? " ×" + ich2Esc(e.kisuu) : "") + '</span>').join("") +
+        (list.length > show.length ? '<div class="ts3-cal-more">ほか' + (list.length - show.length) + '件</div>' : "") + '</div>';
     }
+    html += '</div><div class="ts3-cal-legend"><span class="ts3-cal-ev in" style="display:inline-block;margin:0;">持　持込</span><span class="ts3-cal-ev out" style="display:inline-block;margin:0;">引　引取</span><span>日付をクリックすると、その日に追加できます</span></div>';
+    box.innerHTML = html;
+    box.querySelectorAll(".ts3-cal-day").forEach(el => el.addEventListener("click", () => tsOpenSched(el.dataset.date)));
+    tsFit();
   }
 
-  async function tsLoadScheduleList() {
-    const statusEl = document.getElementById("tsListStatus");
-    const table = document.getElementById("tsListTable");
-    statusEl.textContent = "読み込み中...";
-    table.querySelector("thead").innerHTML = ""; table.querySelector("tbody").innerHTML = "";
+  function tsOpenSched(dateStr) {
+    const t = new Date();
+    document.getElementById("ts_sc_date").value = dateStr || (t.getFullYear() + "/" + (t.getMonth() + 1) + "/" + t.getDate());
+    document.getElementById("ts_sc_kubun").value = "持込";
+    ["ts_sc_genba", "ts_sc_kisuu", "ts_sc_biko"].forEach(id => { document.getElementById(id).value = ""; });
+    const names = [...new Set(TSP.main.all.map(o => o.get("現場名")).filter(Boolean))];
+    document.getElementById("ts_sc_genba_list").innerHTML = names.map(n => '<option value="' + ich2Esc(n) + '">').join("");
+    document.getElementById("tsSchedStatus").textContent = "";
+    const btn = document.getElementById("tsSchedSaveBtn"); btn.disabled = false; btn.textContent = "追加する";
+    document.getElementById("tsSchedOverlay").hidden = false;
+    document.getElementById("ts_sc_genba").focus();
+  }
+
+  async function tsSaveSched() {
+    const status = document.getElementById("tsSchedStatus"), btn = document.getElementById("tsSchedSaveBtn");
+    const date = ich2NormalizeDateInput(document.getElementById("ts_sc_date").value.trim());
+    const genba = document.getElementById("ts_sc_genba").value.trim();
+    if (!date || !genba) { status.textContent = "日付と現場名は必須です"; return; }
+    if (!tsCalDate(date)) { status.textContent = "日付は「10/24」「2026/10/24」の形で入力してください"; return; }
+    btn.disabled = true; btn.textContent = "追加中..."; status.textContent = "";
     try {
-      const [rows] = await ich2FetchSheetsRanges(["塗装_メッキスケ"]);
-      const header = rows[0];
-      const idxGenba = header.indexOf("現場名");
-      let body = rows.slice(1).filter(r => r[0] && r[1] && r[idxGenba] !== header[idxGenba]);
-      const q = TSP.main.query.toLowerCase();
-      if (q) body = body.filter(r => (r[idxGenba]||"").toLowerCase().includes(q));
-      statusEl.textContent = body.length + "件";
-      tsRenderTable(table, header, body.slice().reverse(), -1);
-    } catch (e) { statusEl.textContent = "読み込みに失敗しました: " + e.message; }
+      await tsPost({ type: "addSchedule", hiduke: date, kubun: document.getElementById("ts_sc_kubun").value, genbaMei: genba,
+        kisuu: document.getElementById("ts_sc_kisuu").value.trim(), biko: document.getElementById("ts_sc_biko").value.trim() });
+      document.getElementById("tsSchedOverlay").hidden = true;
+      const d = tsCalDate(date); if (d) { tsCal.year = d.y; tsCal.month = d.m - 1; }
+      tsLoadSchedule(TSP.sub);
+    } catch (e) { status.textContent = "失敗: " + e.message; btn.disabled = false; btn.textContent = "追加する"; }
   }
 
   // ================= 出荷 =================
