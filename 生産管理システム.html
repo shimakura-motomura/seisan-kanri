@@ -355,7 +355,7 @@
   .ich2-grp.pic { background: var(--color-neutral-800); color: var(--color-neutral-100); }
   .ich2-colh { position: sticky; top: 17px; z-index: 3; background: var(--color-bg); padding: 2px 3px; font-size: 10px; text-align: left; border-bottom: 2px solid var(--color-text); }
   .ich2-colh.flat { top: 0; }
-  table.ich2-list-flat { table-layout: fixed; width: 990px; max-width: 100%; }   /* 買入品は件数が少ないので、横いっぱいに広げず左に詰める */
+  table.ich2-list-flat { table-layout: fixed; width: 894px; max-width: 100%; }   /* 買入品は件数が少ないので、横いっぱいに広げず左に詰める */
   .ich2-colh.sticky-id { z-index: 6; }
   .ich2-colh.center { text-align: center; }
   .ich2-colh.right { text-align: right; }
@@ -942,7 +942,7 @@
                 <input type="checkbox" id="ich2BuySelectAll" style="width:13px;height:13px;accent-color:var(--color-accent);cursor:pointer;display:block;margin:0 auto;">
               </th>
               <th class="ich2-colh flat" style="width:70px;">区分</th>
-              <th class="ich2-colh flat" style="width:240px;">型式</th>
+              <th class="ich2-colh flat" style="width:144px;">型式</th>
               <th class="ich2-colh flat right" style="width:44px;">数</th>
               <th class="ich2-colh flat center" style="width:64px;">工場入</th>
               <th class="ich2-colh flat" style="width:170px;">現場名</th>
@@ -963,6 +963,7 @@
           <div class="ich2-edit-foot">
             <span class="ich2-edit-hint" id="ich2BuyModalSel">未選択</span>
             <button type="button" class="ich2-edit-cancel" id="ich2BuyCloseBtn">閉じる</button>
+            <button type="button" class="ich2-edit-cancel" id="ich2BuyEditBtn" style="border-color:var(--color-text);">編集</button>
             <button type="button" class="ich2-edit-save" id="ich2BuyShukkaBtn">出荷手配へ</button>
           </div>
         </div>
@@ -992,7 +993,7 @@
   <!-- ============ 買入品 登録(製作手配画面から) ============ -->
   <div class="ich2-edit-overlay" id="bkOverlay" hidden>
     <div class="ich2-edit-panel" style="width:min(900px,100%);">
-      <div class="ich2-edit-head"><span class="ttl">買入品 登録</span><span class="no">新規</span><span class="sub">図面のない買入品(バルブ・ポンプ・電気品・配管材・計装品など)を登録します</span></div>
+      <div class="ich2-edit-head"><span class="ttl" id="bkTtl">買入品 登録</span><span class="no" id="bkNo">新規</span><span class="sub">図面のない買入品(バルブ・ポンプ・電気品・配管材・計装品など)を登録します</span></div>
       <div class="ich2-edit-body" id="bkBody">
         <div><div class="ich2-edit-grid">
           <div class="ich2-edit-field"><label>区分</label><input type="text" id="bk_kubun" list="bk_kubun_list" placeholder="例 密閉"></div>
@@ -1008,7 +1009,7 @@
         <datalist id="bk_kubun_list"></datalist>
       </div>
       <div class="ich2-edit-foot">
-        <span class="ich2-edit-hint">型式と現場名は必須です。続けて登録できます</span>
+        <span class="ich2-edit-hint" id="bkHint">型式と現場名は必須です。続けて登録できます</span>
         <span class="ich2-edit-status" id="bkStatus"></span>
         <button type="button" class="ich2-edit-cancel" id="bkCancelBtn">閉じる</button>
         <button type="button" class="ich2-edit-save" id="bkSaveBtn">登録する</button>
@@ -1717,7 +1718,7 @@
       return (
         '<tr style="--rowbg:' + (checked ? "var(--color-accent-100)" : "var(--color-bg)") + ';background:var(--rowbg);">' +
         '<td class="center" style="background:var(--rowbg);"><input type="checkbox" class="ich2-buy-row-check" data-key="'+ich2Esc(key)+'" '+(checked?"checked":"")+' style="width:13px;height:13px;accent-color:var(--color-accent);"></td>' +
-        '<td class="ich2-nowrap"><span class="ich2-chip" style="background:var(--color-accent-100);color:var(--color-accent-800);border-color:var(--color-accent-300);">'+ich2Esc(r[iKubun])+'</span></td>' +
+        '<td class="ich2-nowrap">'+ich2Esc(r[iKubun])+'</td>' +
         '<td class="ich2-nowrap ich2-ellipsis" title="'+ich2Esc(r[iModel])+'">'+ich2Esc(r[iModel])+'</td>' +
         '<td class="right ich2-tabular">'+ich2Esc(r[iQty])+'</td>' +
         '<td class="center ich2-buy-edit" data-row="'+rowIndex+'" data-col="工場入" data-val="'+ich2Esc(r[iIn])+'" style="cursor:pointer;" title="クリックで日付を入力">'+ich2Badge(ich2Cell(r[iIn]))+'</td>' +
@@ -2054,6 +2055,7 @@
     if (bm) {
       bm.textContent = total === 0 ? "未選択" : (total + " 件を選択中(製作品 " + makeKeys.length + " / 買入品 " + buyCount + ")");
       document.getElementById("ich2BuyShukkaBtn").disabled = total === 0;
+      document.getElementById("ich2BuyEditBtn").disabled = buyCount !== 1;   // 買入品をちょうど1件選んだときだけ編集できる
     }
     document.getElementById("ich2SelbarEditBtn").disabled = makeKeys.length !== 1 || buyCount !== 0;
   }
@@ -2346,8 +2348,44 @@
   // ================= 買入品 登録(製作手配画面のボタンから) =================
   const BK_IDS = ["bk_kubun","bk_model","bk_qty","bk_pic","bk_site","bk_in","bk_out","bk_done","bk_note"];
 
-  async function bkOpen() {
-    BK_IDS.forEach(id => { document.getElementById(id).value = ""; });
+  let bkEditing = null;   // null=新規登録 / {rowIndex, row}=編集中
+
+  // 編集:選んだ1件の内容を入れて開く
+  function bkOpenEdit() {
+    const key = [...ich2Selected].find(k => k.startsWith("buy:"));
+    if (!key) return;
+    const rowNo = Number(key.split(":")[1]);
+    const row = ich2BuyAll[ich2BuyRowNo.indexOf(rowNo)];
+    if (!row) return;
+    bkOpen(true);
+    const H = ich2BuyHeader;
+    const fi = n => H.indexOf(n);
+    const iQ = H.findIndex(h => /^数/.test(String(h))), iD = H.findIndex(h => String(h).includes("納品"));
+    const map = { bk_kubun: fi("区分"), bk_model: fi("型式"), bk_qty: iQ, bk_pic: fi("担当"), bk_site: fi("現場名"), bk_in: fi("工場入"), bk_out: fi("出荷日"), bk_done: iD, bk_note: fi("備考") };
+    const dateIds = ["bk_in", "bk_out", "bk_done"];
+    Object.keys(map).forEach(id => {
+      let v = map[id] === -1 ? "" : (row[map[id]] || "");
+      if (dateIds.includes(id)) v = ich2EditableDateValue(v);
+      const el = document.getElementById(id); el.value = v; el.dataset.orig = v;
+    });
+    bkEditing = { rowNo, row, map };
+    document.getElementById("bkTtl").textContent = "買入品 編集";
+    document.getElementById("bkNo").textContent = row[fi("型式")] || "";
+    document.getElementById("bkHint").textContent = "変更した項目だけが保存されます";
+    document.getElementById("bkSaveBtn").textContent = "保存";
+    document.getElementById("bkCancelBtn").textContent = "キャンセル";
+  }
+
+  async function bkOpen(editMode) {
+    if (!editMode) {
+      bkEditing = null;
+      document.getElementById("bkTtl").textContent = "買入品 登録";
+      document.getElementById("bkNo").textContent = "新規";
+      document.getElementById("bkHint").textContent = "型式と現場名は必須です。続けて登録できます";
+      document.getElementById("bkSaveBtn").textContent = "登録する";
+      document.getElementById("bkCancelBtn").textContent = "閉じる";
+    }
+    BK_IDS.forEach(id => { document.getElementById(id).value = ""; delete document.getElementById(id).dataset.orig; });
     document.getElementById("bkStatus").textContent = "";
     document.getElementById("bkOverlay").hidden = false;
     document.getElementById("bk_kubun").focus();
@@ -2364,8 +2402,29 @@
     const v = id => document.getElementById(id).value.trim();
     const st = document.getElementById("bkStatus"), btn = document.getElementById("bkSaveBtn");
     if (!v("bk_model") || !v("bk_site")) { st.textContent = "型式と現場名を入力してください"; return; }
-    btn.disabled = true; st.textContent = "登録中...";
+    btn.disabled = true; st.textContent = bkEditing ? "保存中..." : "登録中...";
     try {
+      if (bkEditing) {
+        // 変えた項目だけ、1項目ずつ保存する
+        const modelNow = bkEditing.row[ich2BuyHeader.indexOf("型式")] || "";
+        const dateIds = ["bk_in", "bk_out", "bk_done"];
+        let changed = 0;
+        for (const id of BK_IDS) {
+          const el = document.getElementById(id);
+          if (el.value.trim() === (el.dataset.orig || "").trim()) continue;
+          const col = bkEditing.map[id]; if (col === -1) continue;
+          const val = dateIds.includes(id) ? ich2NormalizeDateInput(el.value.trim()) : el.value.trim();
+          const res = await fetch(GAS_URL, { method: "POST", body: JSON.stringify({ type: "updateBuyCell", rowIndex: bkEditing.rowNo, columnName: ich2BuyHeader[col], value: val, model: modelNow }) });
+          const data = await res.json();
+          if (data.result !== "success") throw new Error(data.message || "保存に失敗しました");
+          bkEditing.row[col] = val; changed++;
+        }
+        if (!changed) { st.textContent = "変更がありません"; btn.disabled = false; return; }
+        document.getElementById("bkOverlay").hidden = true;
+        bkEditing = null; ich2RenderAll();
+        btn.disabled = false;
+        return;
+      }
       const res = await fetch(GAS_URL, { method: "POST", body: JSON.stringify({
         type: "addBuy", kubun: v("bk_kubun"), model: v("bk_model"), qty: v("bk_qty"),
         in: ich2NormalizeDateInput(v("bk_in")), site: v("bk_site"), out: ich2NormalizeDateInput(v("bk_out")),
@@ -2395,7 +2454,8 @@
     } catch (e) { console.error("買入品の再読み込み失敗", e); }
   }
 
-  document.getElementById("bkOpenBtn").addEventListener("click", bkOpen);
+  document.getElementById("bkOpenBtn").addEventListener("click", () => bkOpen(false));
+  document.getElementById("ich2BuyEditBtn").addEventListener("click", bkOpenEdit);
   document.getElementById("bkCancelBtn").addEventListener("click", () => { document.getElementById("bkOverlay").hidden = true; });
   document.getElementById("bkSaveBtn").addEventListener("click", bkSave);
 
