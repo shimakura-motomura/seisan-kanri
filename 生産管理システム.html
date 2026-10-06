@@ -353,7 +353,7 @@
   .ich2-grp.pic { background: var(--color-neutral-800); color: var(--color-neutral-100); }
   .ich2-colh { position: sticky; top: 17px; z-index: 3; background: var(--color-bg); padding: 2px 3px; font-size: 10px; text-align: left; border-bottom: 2px solid var(--color-text); }
   .ich2-colh.flat { top: 0; }
-  table.ich2-list-flat { table-layout: fixed; width: 100%; }
+  table.ich2-list-flat { table-layout: fixed; width: 990px; max-width: 100%; }   /* 買入品は件数が少ないので、横いっぱいに広げず左に詰める */
   .ich2-colh.sticky-id { z-index: 6; }
   .ich2-colh.center { text-align: center; }
   .ich2-colh.right { text-align: right; }
@@ -909,7 +909,7 @@
           並び順
           <select class="input" id="ich2BuySort">
             <option value="in">工場入順</option>
-            <option value="out">出荷日順</option>
+            <option value="out">出荷順</option>
             <option value="site">現場名順</option>
           </select>
         </label>
@@ -925,12 +925,12 @@
                 <input type="checkbox" id="ich2BuySelectAll" style="width:13px;height:13px;accent-color:var(--color-accent);cursor:pointer;display:block;margin:0 auto;">
               </th>
               <th class="ich2-colh flat" style="width:70px;">区分</th>
-              <th class="ich2-colh flat">型式</th>
-              <th class="ich2-colh flat right" style="width:56px;">数</th>
-              <th class="ich2-colh flat center" style="width:60px;">工場入</th>
+              <th class="ich2-colh flat" style="width:240px;">型式</th>
+              <th class="ich2-colh flat right" style="width:44px;">数</th>
+              <th class="ich2-colh flat center" style="width:64px;">工場入</th>
               <th class="ich2-colh flat" style="width:170px;">現場名</th>
-              <th class="ich2-colh flat center" style="width:60px;">出荷日</th>
-              <th class="ich2-colh flat center" style="width:60px;">納品</th>
+              <th class="ich2-colh flat center" style="width:64px;">出荷</th>
+              <th class="ich2-colh flat center" style="width:64px;">納品</th>
               <th class="ich2-colh flat" style="width:170px;">備考</th>
               <th class="ich2-colh flat" style="width:56px;">担当</th>
             </tr>
@@ -1679,8 +1679,8 @@
         '<td class="right ich2-tabular">'+ich2Esc(r[iQty])+'</td>' +
         '<td class="center ich2-buy-edit" data-row="'+rowIndex+'" data-col="工場入" data-val="'+ich2Esc(r[iIn])+'" style="cursor:pointer;" title="クリックで日付を入力">'+ich2Badge(ich2Cell(r[iIn]))+'</td>' +
         '<td class="ich2-nowrap ich2-ellipsis">'+ich2Esc(r[iSite])+'</td>' +
-        '<td class="center ich2-buy-edit" data-row="'+rowIndex+'" data-col="出荷日" data-val="'+ich2Esc(r[iOut])+'" style="cursor:pointer;" title="クリックで日付を入力">'+ich2Badge(ich2Cell(r[iOut]))+'</td>' +
-        '<td class="center">'+ich2Badge(ich2Cell(r[iDone]))+'</td>' +
+        '<td class="center ich2-buy-edit" data-row="'+rowIndex+'" data-col="'+ich2Esc(H[iOut])+'" data-val="'+ich2Esc(r[iOut])+'" style="cursor:pointer;" title="クリックで日付を入力">'+ich2Badge(ich2Cell(r[iOut]))+'</td>' +
+        '<td class="center ich2-buy-edit" data-row="'+rowIndex+'" data-col="'+ich2Esc(H[iDone])+'" data-val="'+ich2Esc(r[iDone])+'" style="cursor:pointer;" title="クリックで日付を入力">'+ich2Badge(ich2Cell(r[iDone]))+'</td>' +
         '<td class="ich2-nowrap ich2-ellipsis ich2-muted" title="'+ich2Esc(r[iNote])+'">'+ich2Esc(r[iNote])+'</td>' +
         '<td class="ich2-nowrap">'+ich2Esc(r[iPic])+'</td>' +
         '</tr>'
