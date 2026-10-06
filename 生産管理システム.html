@@ -228,6 +228,32 @@
   .ts3-cal-ev.in { background: #fbe8cc; color: #7a4a05; border-color: #c87a12; }
   .ts3-cal-ev.out { background: #dfeee4; color: #1e5c37; border-color: #2f7d4f; }
   .ts3-cal-more { font-size: 10px; color: var(--color-neutral-700); margin-top: 1px; }
+  /* 3か月カレンダー(メッキ) */
+  .ts3-cal-dowrow { position: sticky; top: 0; z-index: 3; display: grid; grid-template-columns: repeat(7, minmax(0, 1fr)); background: var(--color-neutral-200); box-shadow: inset 0 -2px 0 var(--color-divider); }
+  .ts3-cal-dowrow .ts3-cal-dow { position: static; box-shadow: none; }
+  .ts3-cal-mhead { font-size: 12px; font-weight: 800; padding: 5px 6px; background: var(--color-neutral-100); border-bottom: 1px solid var(--color-divider); }
+  .ts3-cal-day { min-height: 66px; }
+  .ts3-cal-day.d-in { background: #fdecd0; }
+  .ts3-cal-day.d-out { background: #dcefe3; }
+  .ts3-cal-day.d-in.d-out { background: linear-gradient(135deg, #fdecd0 50%, #dcefe3 50%); }
+  .ts3-cal-day.d-gh { background: repeating-linear-gradient(135deg, #f2f9f4, #f2f9f4 5px, #dcefe3 5px, #dcefe3 7px); }
+  .ts3-cal-day.out { opacity: 0.45; }
+  .ts3-cal-day.big { box-shadow: inset 0 0 0 2px #c0392b; }
+  .ts3-cal-top { display: flex; justify-content: space-between; align-items: center; gap: 2px; }
+  .ts3-cal-kg { font-size: 9.5px; line-height: 13px; padding: 0 3px; border: 1px dashed var(--color-neutral-400, #b5b0ab); color: var(--color-neutral-600); background: rgba(255,255,255,0.7); cursor: text; white-space: nowrap; }
+  .ts3-cal-kg.has { border-style: solid; color: var(--color-text); font-weight: 700; }
+  .ts3-cal-kg.big { background: #c0392b; border-color: #c0392b; color: #fff; }
+  .ts3-cal-big { font-size: 9.5px; font-weight: 800; color: #c0392b; line-height: 12px; text-align: right; }
+  .ts3-cal-ev.gh { background: #fff; color: #1e5c37; border-style: dashed; border-color: #2f7d4f; }
+  .ts3-cal-legend { flex-wrap: wrap; row-gap: 4px; }
+  .ts3-cal-legend i { display: inline-block; width: 12px; height: 12px; border: 1px solid var(--color-neutral-600); vertical-align: middle; margin-right: 3px; }
+  /* 塗料在庫 */
+  table.ts3-data.ts3-paint td.nm { max-width: 170px; text-align: left; }
+  table.ts3-data.ts3-paint td.num { text-align: right; }
+  table.ts3-data.ts3-paint td.cap { font-weight: 800; }
+  .ts3-paint-cfg { font-size: 11px; display: inline-flex; align-items: center; gap: 3px; }
+  .ts3-paint-cfg[hidden] { display: none !important; }
+  .ts3-paint-cfg input { width: 38px; height: 26px; font-size: 12px; text-align: center; border: 1px solid var(--color-divider); background: var(--color-neutral-100); font-family: inherit; }
   .ts3-cal-legend { font-size: 11px; padding: 6px 4px; display: flex; gap: 12px; align-items: center; }
   .ts3-sort { min-height: 32px; font-size: 13px; padding: 4px 6px; font-family: inherit; color: var(--color-text); background: var(--color-neutral-100); border: 1px solid var(--color-divider); }
   .ts3-sort[hidden] { display: none; }
@@ -1113,6 +1139,7 @@
           <select class="ts3-sort" id="tsSort2" title="並び順">
             <option value="nouki">納期順</option><option value="seiban">製造番号順</option><option value="genba">現場名順</option><option value="yotei">予定順</option>
           </select>
+          <span class="ts3-paint-cfg" id="tsPaintCfg" hidden title="斗缶1缶あたりのリットル数(容量の仮定)">斗缶＝<input type="text" id="tsPaintTokan" value="16" inputmode="decimal">L</span>
           <span class="ts3-cal-nav" id="tsCalNav" hidden>
             <button type="button" class="ts3-btn" id="tsCalPrev">◀</button>
             <b id="tsCalTitle"></b>
@@ -1163,6 +1190,27 @@
           <span class="ich2-edit-status" id="tsSchedStatus"></span>
           <button type="button" class="ich2-edit-cancel" id="tsSchedCancelBtn">キャンセル</button>
           <button type="button" class="ich2-edit-save" id="tsSchedSaveBtn">追加する</button>
+        </div>
+      </div>
+    </div>
+
+    <div class="ich2-edit-overlay" id="tsPaintOverlay" hidden>
+      <div class="ich2-edit-panel" style="width:min(520px,100%);">
+        <div class="ich2-edit-head"><span class="ttl">塗料在庫 追加</span></div>
+        <div class="ich2-edit-body">
+          <div class="ich2-edit-grid" style="grid-template-columns:repeat(2,minmax(0,1fr));">
+            <div class="ich2-edit-field" style="grid-column:span 2;"><label>品名</label><input type="text" id="ts_pt_name"></div>
+            <div class="ich2-edit-field"><label>斗缶</label><input type="text" id="ts_pt_tokan" placeholder="例 4+3/4"></div>
+            <div class="ich2-edit-field"><label>4L缶</label><input type="text" id="ts_pt_can4" placeholder="例 1/2"></div>
+            <div class="ich2-edit-field"><label>㎡/L(目安)</label><input type="text" id="ts_pt_cov" placeholder="例 7"></div>
+            <div class="ich2-edit-field"><label>備考</label><input type="text" id="ts_pt_biko"></div>
+          </div>
+        </div>
+        <div class="ich2-edit-foot">
+          <span class="ich2-edit-hint">品名は必須です</span>
+          <span class="ich2-edit-status" id="tsPaintStatus"></span>
+          <button type="button" class="ich2-edit-cancel" id="tsPaintCancelBtn">キャンセル</button>
+          <button type="button" class="ich2-edit-save" id="tsPaintSaveBtn">追加する</button>
         </div>
       </div>
     </div>
@@ -2574,10 +2622,15 @@
   let tsCurrentTab = TOSOU_TABS[0].key;
   const TS_SCHEDULE_KEY = "メッキスケ";
   // 左右に並べて表示する組み合わせ(左のタブ → 右に並べるもの)
-  const TS_PAIR = { "酸洗": "研磨", "エポ": "FRP", "メッキ": TS_SCHEDULE_KEY };
+  const TS_PAINT_KEY = "塗料在庫";
+  const TS_PAIR = { "酸洗": "研磨", "エポ": "FRP", "メッキ": TS_SCHEDULE_KEY, "外装": TS_PAINT_KEY };
+  // 左の一覧の幅(%)。書いていないタブは半々
+  const TS_RATIO = { "メッキ": 65, "外装": 65 };
+  const TS_PLATING_GAP = 4;       // 持込から引取までの日数(中3日 = 4日後が引取)
+  const TS_BIG_KG = 3000;         // この重量を超えたら大型車両
   const TS_PAIR_SUBS = Object.values(TS_PAIR);
-  const TS_TAB_LABEL = { "酸洗": "酸洗/研磨", "エポ": "エポ/FRP", "メッキ": "メッキ/スケ" };
-  const TS_TAB_SUB2 = { "酸洗": "PICKLING / POLISH", "エポ": "EPOXY / FRP", "メッキ": "PLATING / SCHEDULE" };
+  const TS_TAB_LABEL = { "酸洗": "酸洗/研磨", "エポ": "エポ/FRP", "メッキ": "メッキ/スケ", "外装": "外装/塗料在庫" };
+  const TS_TAB_SUB2 = { "酸洗": "PICKLING / POLISH", "エポ": "EPOXY / FRP", "メッキ": "PLATING / SCHEDULE", "外装": "EXTERIOR / PAINT STOCK" };
   let tsBuiList = [];
   let tsProductMap = {};
   const TS_IDS = {
@@ -2610,6 +2663,10 @@
     document.getElementById("tsCalPrev").addEventListener("click", () => { tsCal.month--; if (tsCal.month < 0) { tsCal.month = 11; tsCal.year--; } tsRenderCalendar(TSP.sub); });
     document.getElementById("tsCalNext").addEventListener("click", () => { tsCal.month++; if (tsCal.month > 11) { tsCal.month = 0; tsCal.year++; } tsRenderCalendar(TSP.sub); });
     document.getElementById("tsCalToday").addEventListener("click", () => { const d = new Date(); tsCal.year = d.getFullYear(); tsCal.month = d.getMonth(); tsRenderCalendar(TSP.sub); });
+    document.getElementById("tsPaintCancelBtn").addEventListener("click", () => { document.getElementById("tsPaintOverlay").hidden = true; });
+    document.getElementById("tsPaintSaveBtn").addEventListener("click", tsSavePaint);
+    try { const v = localStorage.getItem("tsPaintTokan"); if (v) document.getElementById("tsPaintTokan").value = v; } catch (e) {}
+    document.getElementById("tsPaintTokan").addEventListener("change", e => { try { localStorage.setItem("tsPaintTokan", e.target.value); } catch (x) {} tsRenderPaint(TSP.sub); });
     document.getElementById("tsSchedCancelBtn").addEventListener("click", () => { document.getElementById("tsSchedOverlay").hidden = true; });
     document.getElementById("tsSchedSaveBtn").addEventListener("click", tsSaveSched);
     document.getElementById("tsEditCancelBtn").addEventListener("click", tsCloseModal);
@@ -2649,7 +2706,7 @@
   function tsRender() {
     tsRenderTabbar();
     const subKey = TS_PAIR[tsCurrentTab] || null;
-    const two = !!subKey, calMode = subKey === TS_SCHEDULE_KEY;
+    const two = !!subKey, calMode = subKey === TS_SCHEDULE_KEY, paintMode = subKey === TS_PAINT_KEY, special = calMode || paintMode;
     TSP.main.tabKey = tsCurrentTab; TSP.sub.tabKey = subKey;
     [TSP.main, TSP.sub].forEach(p => p.sel.clear());
     const $ = id => document.getElementById(id);
@@ -2659,8 +2716,16 @@
     $("tsSubTitle").textContent = subKey || ""; $("tsBarLbl2").textContent = subKey || "";
     // 右側がカレンダー(メッキスケ)のときは、一覧用の部品を隠してカレンダー用の部品を出す
     $("tsListTable2").hidden = calMode; $("tsCalBox").hidden = !calMode; $("tsCalNav").hidden = !calMode;
-    $("tsStatusFilter2").hidden = calMode; $("tsSort2").hidden = calMode;
-    $("tsBtnEdit2").hidden = calMode; $("tsBtnDone2").hidden = calMode; $("tsBtnClear2").hidden = calMode;
+    $("tsPaintCfg").hidden = !paintMode;
+    $("tsSearch2").placeholder = paintMode ? "品名で検索" : calMode ? "現場名で検索" : "製番・現場名・品名で検索";
+    $("tsListTable2").classList.remove("ts3-paint");
+    $("tsStatusFilter2").hidden = special; $("tsSort2").hidden = special;
+    $("tsBtnEdit2").hidden = special; $("tsBtnDone2").hidden = special; $("tsBtnClear2").hidden = special;
+    const ratio = TS_RATIO[tsCurrentTab];
+    [["tsPaneMain", "tsBarMain"], ["tsPaneSub", "tsBarSub"]].forEach(([a, b], i) => {
+      const f = (two && ratio) ? (i === 0 ? "0 0 calc(" + ratio + "% - 7px)" : "1 1 0") : "";
+      $(a).style.flex = f; $(b).style.flex = f;
+    });
     $("tsSplit").classList.toggle("two", two);
     tsLoadList(TSP.main);
     if (two) tsLoadList(TSP.sub);
@@ -2668,6 +2733,7 @@
   }
   function tsPaneChanged(p) {
     if (p.tabKey === TS_SCHEDULE_KEY) tsRenderCalendar(p);
+    else if (p.tabKey === TS_PAINT_KEY) tsRenderPaint(p);
     else tsApply(p);
   }
   // 一覧の高さを、画面の下の操作バーのすぐ上までにそろえる(下に無駄な空きを作らない)
@@ -2761,6 +2827,7 @@
 
   async function tsLoadList(p) {
     if (p.tabKey === TS_SCHEDULE_KEY) return tsLoadSchedule(p);
+    if (p.tabKey === TS_PAINT_KEY) return tsLoadPaint(p);
     const tab = TOSOU_TABS.find(t => t.key === p.tabKey); if (!tab) return;
     const table = tsEl(p, "table");
     tsEl(p, "stat").textContent = "読み込み中...";
@@ -2914,8 +2981,8 @@
       });
       const all = document.querySelector("#" + p.ids.table + " .ts3-checkall");
       if (all) all.checked = p.rows.length > 0 && p.rows.every(o => p.sel.has(o.key));
-      const n = p.sel.size, off = p.tabKey === TS_SCHEDULE_KEY;
-      tsEl(p, "cnt").textContent = off ? "カレンダー" : (n === 0 ? "未選択" : n + " 件を選択中");
+      const n = p.sel.size, off = p.tabKey === TS_SCHEDULE_KEY || p.tabKey === TS_PAINT_KEY;
+      tsEl(p, "cnt").textContent = off ? (p.tabKey === TS_PAINT_KEY ? "塗料在庫" : "カレンダー") : (n === 0 ? "未選択" : n + " 件を選択中");
       tsEl(p, "edit").disabled = off || n !== 1;
       tsEl(p, "done").disabled = off || n === 0;
       tsEl(p, "add").disabled = false;
@@ -2930,6 +2997,7 @@
   }
   function tsAddClick(p) {
     if (p.tabKey === TS_SCHEDULE_KEY) { tsOpenSched(null); return; }
+    if (p.tabKey === TS_PAINT_KEY) { tsOpenPaint(); return; }
     tsOpenModal(null, p.tabKey);
   }
 
@@ -3035,8 +3103,9 @@
     p.sel.clear(); tsApply(p);
   }
 
-  // ================= メッキスケ(カレンダー) =================
-  const tsCal = { year: new Date().getFullYear(), month: new Date().getMonth(), events: [] };
+  // ================= メッキスケ(カレンダー・3か月) =================
+  const tsCal = { year: new Date().getFullYear(), month: new Date().getMonth(), events: [], loads: {} };
+  const tsDKey = (y, m, d) => y + "/" + m + "/" + d;
 
   // シートの日付(「2026/9/24」「9/24」など)を年・月・日に直す
   function tsCalDate(v) {
@@ -3054,42 +3123,203 @@
       if (p.tabKey !== TS_SCHEDULE_KEY) return;
       tsCal.events = rows.slice(1).map((r, k) => ({ rowIndex: k + 2, date: tsCalDate(r[0]), kubun: String(r[1] || "").trim(), genba: String(r[2] || "").trim(), kisuu: String(r[3] || "").trim(), biko: String(r[4] || "").trim() }))
         .filter(e => e.genba || e.date);
-      tsRenderCalendar(p);
-    } catch (e) { stat.textContent = "読み込みに失敗しました: " + e.message; }
+    } catch (e) { stat.textContent = "読み込みに失敗しました: " + e.message; return; }
+    // 積載重量は別シート。まだ無くても(未作成でも)カレンダーは表示する
+    tsCal.loads = {};
+    try {
+      const [lr] = await ich2FetchSheetsRanges(["メッキ積載"]);
+      (lr || []).slice(1).forEach(r => { const d = tsCalDate(r[0]), kg = parseFloat(String(r[1] || "").replace(/,/g, "")); if (d && kg) tsCal.loads[tsDKey(d.y, d.m, d.d)] = kg; });
+    } catch (e) { /* シート未作成 */ }
+    if (p.tabKey === TS_SCHEDULE_KEY) tsRenderCalendar(p);
   }
 
   function tsRenderCalendar(p) {
     const box = document.getElementById("tsCalBox");
-    const { year, month } = tsCal;
-    document.getElementById("tsCalTitle").textContent = year + "年" + (month + 1) + "月";
+    const y0 = tsCal.year, m0 = tsCal.month;
+    const endD = new Date(y0, m0 + 2, 1);
+    document.getElementById("tsCalTitle").textContent = y0 + "年" + (m0 + 1) + "月〜" + (endD.getFullYear() !== y0 ? endD.getFullYear() + "年" : "") + (endD.getMonth() + 1) + "月";
     const q = p.query.toLowerCase();
     const evs = tsCal.events.filter(e => e.date && (!q || (e.genba + e.biko).toLowerCase().includes(q)));
     const byDay = {};
-    evs.forEach(e => { const k = e.date.y + "-" + e.date.m + "-" + e.date.d; (byDay[k] = byDay[k] || []).push(e); });
-    const first = new Date(year, month, 1), startOffset = first.getDay();
-    const daysInMonth = new Date(year, month + 1, 0).getDate();
-    const cells = Math.ceil((startOffset + daysInMonth) / 7) * 7;
+    const put = (k, e) => { (byDay[k] = byDay[k] || []).push(e); };
+    evs.forEach(e => put(tsDKey(e.date.y, e.date.m, e.date.d), e));
+    // 引取予定(持込の4日後)。同じ現場の引取がすでに入っていれば出さない
+    const ds = e => new Date(e.date.y, e.date.m - 1, e.date.d).getTime();
+    evs.filter(e => e.kubun === "持込").forEach(e => {
+      if (evs.some(o => o.kubun === "引取" && o.genba === e.genba && ds(o) >= ds(e))) return;
+      const g = new Date(e.date.y, e.date.m - 1, e.date.d + TS_PLATING_GAP);
+      put(tsDKey(g.getFullYear(), g.getMonth() + 1, g.getDate()), { kubun: "引取予定", ghost: true, genba: e.genba, kisuu: e.kisuu, biko: "持込の" + TS_PLATING_GAP + "日後(中" + (TS_PLATING_GAP - 1) + "日)" });
+    });
     const today = new Date();
-    const nBasu = (kind) => evs.filter(e => e.date.y === year && e.date.m === month + 1 && e.kubun === kind).reduce((a, e) => a + (parseFloat(e.kisuu) || 0), 0);
-    tsEl(p, "stat").textContent = "持込 " + nBasu("持込") + "基 ／ 引取 " + nBasu("引取") + "基";
-    let html = '<div class="ts3-cal-grid">' + ["日","月","火","水","木","金","土"].map((w, i) => '<div class="ts3-cal-dow' + (i === 0 ? " sun" : i === 6 ? " sat" : "") + '">' + w + '</div>').join("");
-    for (let c = 0; c < cells; c++) {
-      const dt = new Date(year, month, 1 - startOffset + c);
-      const y = dt.getFullYear(), m = dt.getMonth() + 1, d = dt.getDate(), dow = dt.getDay();
-      const list = byDay[y + "-" + m + "-" + d] || [];
-      const isOut = dt.getMonth() !== month;
-      const isToday = y === today.getFullYear() && m === today.getMonth() + 1 && d === today.getDate();
-      const show = list.slice(0, 4);
-      html += '<div class="ts3-cal-day' + (isOut ? " out" : "") + (isToday ? " today" : "") + '" data-date="' + y + "/" + m + "/" + d + '">' +
-        '<div class="ts3-cal-num' + (dow === 0 ? " sun" : dow === 6 ? " sat" : "") + '">' + (d === 1 ? m + "/" : "") + d + '</div>' +
-        show.map(e => '<span class="ts3-cal-ev ' + (e.kubun === "引取" ? "out" : "in") + '" title="' + ich2Esc(e.kubun + " " + e.genba + (e.kisuu ? " ×" + e.kisuu : "") + (e.biko ? "（" + e.biko + "）" : "")) + '">' +
-          (e.kubun === "引取" ? "引" : "持") + " " + ich2Esc(e.genba) + (e.kisuu ? " ×" + ich2Esc(e.kisuu) : "") + '</span>').join("") +
-        (list.length > show.length ? '<div class="ts3-cal-more">ほか' + (list.length - show.length) + '件</div>' : "") + '</div>';
+    const fmtKg = n => Number(n).toLocaleString("ja-JP");
+    let nIn = 0, nOut = 0, nBig = 0;
+    let html = '<div class="ts3-cal-dowrow">' + ["日","月","火","水","木","金","土"].map((w, i) => '<div class="ts3-cal-dow' + (i === 0 ? " sun" : i === 6 ? " sat" : "") + '">' + w + '</div>').join("") + '</div>';
+    for (let mi = 0; mi < 3; mi++) {
+      const first = new Date(y0, m0 + mi, 1), year = first.getFullYear(), month = first.getMonth();
+      const startOffset = first.getDay(), daysInMonth = new Date(year, month + 1, 0).getDate();
+      const cells = Math.ceil((startOffset + daysInMonth) / 7) * 7;
+      html += '<div class="ts3-cal-mhead">' + year + '年' + (month + 1) + '月</div><div class="ts3-cal-grid">';
+      for (let c = 0; c < cells; c++) {
+        const dt = new Date(year, month, 1 - startOffset + c);
+        const y = dt.getFullYear(), m = dt.getMonth() + 1, d = dt.getDate(), dow = dt.getDay();
+        const key = tsDKey(y, m, d);
+        const isOut = dt.getMonth() !== month;
+        if (isOut) { html += '<div class="ts3-cal-day out" style="cursor:default;min-height:0;"></div>'; continue; }
+        const list = byDay[key] || [];
+        const hasIn = list.some(e => e.kubun === "持込"), hasOut = list.some(e => e.kubun === "引取"), hasGh = list.some(e => e.ghost);
+        list.forEach(e => { if (!e.ghost) { const n = parseFloat(e.kisuu) || 0; if (e.kubun === "持込") nIn += n; else if (e.kubun === "引取") nOut += n; } });
+        const kg = tsCal.loads[key], big = kg > TS_BIG_KG;
+        if (big) nBig++;
+        const isToday = y === today.getFullYear() && m === today.getMonth() + 1 && d === today.getDate();
+        const show = list.slice(0, 3);
+        html += '<div class="ts3-cal-day' + (hasIn ? " d-in" : "") + (hasOut ? " d-out" : "") + (!hasIn && !hasOut && hasGh ? " d-gh" : "") + (big ? " big" : "") + (isToday ? " today" : "") + '" data-date="' + key + '">' +
+          '<div class="ts3-cal-top"><span class="ts3-cal-num' + (dow === 0 ? " sun" : dow === 6 ? " sat" : "") + '">' + d + '</span>' +
+          '<span class="ts3-cal-kg' + (kg ? " has" : "") + (big ? " big" : "") + '" data-kg="' + key + '" title="当日の積載合計重量(kg)。クリックして入力">' + (kg ? fmtKg(kg) + "kg" : "kg") + '</span></div>' +
+          (big ? '<div class="ts3-cal-big">大型車両</div>' : "") +
+          show.map(e => '<span class="ts3-cal-ev ' + (e.ghost ? "gh" : e.kubun === "引取" ? "out" : "in") + '" title="' + ich2Esc(e.kubun + " " + e.genba + (e.kisuu ? " ×" + e.kisuu : "") + (e.biko ? "（" + e.biko + "）" : "")) + '">' +
+            (e.ghost ? "引?" : e.kubun === "引取" ? "引" : "持") + " " + ich2Esc(e.genba) + (e.kisuu ? " ×" + ich2Esc(e.kisuu) : "") + '</span>').join("") +
+          (list.length > show.length ? '<div class="ts3-cal-more">ほか' + (list.length - show.length) + '件</div>' : "") + '</div>';
+      }
+      html += '</div>';
     }
-    html += '</div><div class="ts3-cal-legend"><span class="ts3-cal-ev in" style="display:inline-block;margin:0;">持　持込</span><span class="ts3-cal-ev out" style="display:inline-block;margin:0;">引　引取</span><span>日付をクリックすると、その日に追加できます</span></div>';
+    html += '<div class="ts3-cal-legend"><span><i style="background:#fdecd0"></i>持込の日</span><span><i style="background:#dcefe3"></i>引取の日</span><span><i style="background:repeating-linear-gradient(135deg,#f2f9f4,#f2f9f4 3px,#dcefe3 3px,#dcefe3 5px)"></i>引取予定(持込の' + TS_PLATING_GAP + '日後)</span><span><i style="border:2px solid #c0392b"></i>' + fmtKg(TS_BIG_KG) + 'kg超=大型車両</span><span>日付の空きをクリック→予定追加 ／ 「kg」の欄をクリック→重量を入力</span></div>';
     box.innerHTML = html;
-    box.querySelectorAll(".ts3-cal-day").forEach(el => el.addEventListener("click", () => tsOpenSched(el.dataset.date)));
+    box.querySelectorAll(".ts3-cal-day[data-date]").forEach(el => el.addEventListener("click", () => tsOpenSched(el.dataset.date)));
+    box.querySelectorAll(".ts3-cal-kg").forEach(el => el.addEventListener("click", ev => { ev.stopPropagation(); tsEditLoad(el); }));
+    tsEl(p, "stat").textContent = "持込 " + nIn + "基 ／ 引取 " + nOut + "基" + (nBig ? " ／ 大型 " + nBig + "日" : "");
     tsFit();
+  }
+
+  // 当日積載合計重量(kg)をその場で入力
+  function tsEditLoad(el) {
+    if (document.querySelector(".ts3-float-input")) return;
+    const key = el.dataset.kg, cur = tsCal.loads[key] || "";
+    const rect = el.getBoundingClientRect();
+    const input = document.createElement("input");
+    input.type = "text"; input.inputMode = "decimal"; input.value = cur; input.className = "ts3-float-input"; input.placeholder = "kg";
+    input.style.cssText = "left:" + Math.min(rect.left, window.innerWidth - 100) + "px;top:" + (rect.top - 3) + "px;width:90px;height:" + (rect.height + 6) + "px;text-align:right;font-size:13px;";
+    document.body.appendChild(input); input.focus(); input.select();
+    let done = false;
+    const finish = async (save) => {
+      if (done) return; done = true;
+      const raw = input.value.normalize("NFKC").replace(/[,kg\s]/gi, ""); input.remove();
+      if (!save) return;
+      const val = raw === "" ? "" : parseFloat(raw);
+      if (raw !== "" && !(val >= 0)) { alert("数字で入力してください"); return; }
+      if ((val || "") === (cur || "")) return;
+      el.textContent = "保存中";
+      try {
+        await tsPost({ type: "setPlatingLoad", hiduke: key, kg: val });
+        if (val) tsCal.loads[key] = val; else delete tsCal.loads[key];
+      } catch (e) { alert("保存に失敗しました: " + e.message); }
+      tsRenderCalendar(TSP.sub);
+    };
+    input.addEventListener("keydown", e => { if (e.key === "Enter") { e.preventDefault(); finish(true); } else if (e.key === "Escape") { e.preventDefault(); finish(false); } });
+    input.addEventListener("blur", () => finish(true));
+  }
+
+  // ================= 塗料在庫 =================
+  const tsPaint = { rows: [], err: "" };
+  // 「4+3/4」「1/2」「2」などを数にする。「1（2kg缶）」のようなkg缶は計算できないので kg:true
+  function tsQty(v) {
+    const t = String(v == null ? "" : v).normalize("NFKC").trim();
+    if (!t) return { v: 0, kg: false, ok: true };
+    if (/kg/i.test(t)) return { v: 0, kg: true, ok: true };
+    let sum = 0;
+    for (const part of t.replace(/\s/g, "").split("+")) {
+      const f = part.match(/^(\d+)\/(\d+)$/), n = part.match(/^\d+(\.\d+)?/);
+      if (f) sum += (+f[1]) / (+f[2]); else if (n) sum += parseFloat(n[0]); else return { v: 0, kg: false, ok: false };
+    }
+    return { v: sum, kg: false, ok: true };
+  }
+  const tsTokanL = () => { const v = parseFloat(String(document.getElementById("tsPaintTokan").value).normalize("NFKC")); return v > 0 ? v : 16; };
+  const tsRound1 = n => (Math.round(n * 10) / 10).toString();
+
+  async function tsLoadPaint(p) {
+    tsEl(p, "stat").textContent = "読み込み中...";
+    try {
+      const [rows] = await ich2FetchSheetsRanges([TS_PAINT_KEY]);
+      if (p.tabKey !== TS_PAINT_KEY) return;
+      tsPaint.err = "";
+      tsPaint.rows = (rows || []).slice(1).map((r, k) => ({ rowIndex: k + 2, name: String(r[0] || "").trim(), tokan: String(r[1] || "").trim(), can4: String(r[2] || "").trim(), biko: String(r[3] || "").trim(), cov: String(r[4] || "").trim(), date: String(r[5] || "").trim() })).filter(o => o.name);
+    } catch (e) { tsPaint.rows = []; tsPaint.err = "「塗料在庫」シートがまだありません。GASで setupPaintStock を「実行」してください。"; }
+    tsRenderPaint(p);
+  }
+
+  function tsRenderPaint(p) {
+    if (p.tabKey !== TS_PAINT_KEY) return;
+    const table = tsEl(p, "table"), q = p.query.toLowerCase(), T = tsTokanL();
+    table.classList.add("compact", "ts3-paint");
+    const list = tsPaint.rows.filter(o => !q || o.name.toLowerCase().includes(q));
+    const latest = tsPaint.rows.map(o => o.date).filter(Boolean).sort().pop() || "";
+    tsEl(p, "stat").textContent = tsPaint.err ? tsPaint.err : list.length + "品目" + (latest ? " ／ 更新 " + latest : "");
+    const head = ["品名", "斗缶", "4L缶", "残量L", "㎡/L(目安)", "塗装可能㎡", "備考"];
+    table.querySelector("thead").innerHTML = "<tr>" + head.map(h => "<th>" + h + "</th>").join("") + "</tr>";
+    const tb = table.querySelector("tbody"); tb.innerHTML = "";
+    list.forEach(o => {
+      const a = tsQty(o.tokan), b = tsQty(o.can4), cov = parseFloat(String(o.cov).normalize("NFKC"));
+      const kg = a.kg || b.kg, bad = !a.ok || !b.ok;
+      const L = kg || bad ? null : a.v * T + b.v * 4;
+      const area = (L != null && cov > 0) ? Math.round(L * cov) : null;
+      const tr = document.createElement("tr");
+      const cell = (cls, text) => { const td = document.createElement("td"); td.className = cls; td.textContent = text; tr.appendChild(td); return td; };
+      const card = (field, val, w) => { const td = document.createElement("td"); td.className = "ts3-inline"; const c = document.createElement("span"); c.className = "ts3-card" + (val ? "" : " empty") + (w ? " wide" : ""); c.textContent = val || "　"; td.appendChild(c); td.addEventListener("click", () => tsPaintEdit(td, o, field)); tr.appendChild(td); };
+      const nm = cell("nm", o.name); nm.title = o.name;
+      card("斗缶", o.tokan); card("4L缶", o.can4);
+      cell("num", bad ? "?" : kg ? "kg缶" : tsRound1(L));
+      card("㎡/L", o.cov);
+      cell("num cap", area != null ? area.toLocaleString("ja-JP") + "㎡" : "—");
+      card("備考", o.biko, true);
+      tb.appendChild(tr);
+    });
+    tsSyncSelection(); tsFit();
+  }
+
+  function tsPaintEdit(td, o, field) {
+    if (document.querySelector(".ts3-float-input")) return;
+    const cur = { "斗缶": o.tokan, "4L缶": o.can4, "㎡/L": o.cov, "備考": o.biko }[field] || "";
+    const rect = (td.querySelector(".ts3-card") || td).getBoundingClientRect();
+    const input = document.createElement("input");
+    input.type = "text"; input.value = cur; input.className = "ts3-float-input";
+    const w = Math.max(rect.width, field === "備考" ? 160 : 80);
+    input.style.cssText = "left:" + Math.min(rect.left, window.innerWidth - w - 8) + "px;top:" + (rect.top - 4) + "px;width:" + w + "px;height:" + (rect.height + 8) + "px;";
+    document.body.appendChild(input); input.focus(); input.select();
+    let done = false;
+    const finish = async (save) => {
+      if (done) return; done = true;
+      const nv = input.value.normalize("NFKC").trim(); input.remove();
+      if (!save || nv === cur) return;
+      if ((field === "斗缶" || field === "4L缶") && !/kg/i.test(nv) && nv && !tsQty(nv).ok) { alert("数は「2」「1/2」「4+3/4」の形で入力してください"); return; }
+      td.innerHTML = '<span style="font-size:9px;color:var(--color-neutral-600);">更新中</span>';
+      try {
+        await tsPost({ type: "updatePaint", rowIndex: o.rowIndex, hinmei: o.name, fields: { [field]: nv } });
+        if (field === "斗缶") o.tokan = nv; else if (field === "4L缶") o.can4 = nv; else if (field === "㎡/L") o.cov = nv; else o.biko = nv;
+        const n = new Date(); o.date = n.getFullYear() + "/" + (n.getMonth() + 1) + "/" + n.getDate();
+      } catch (e) { alert("更新に失敗しました: " + e.message); }
+      tsRenderPaint(TSP.sub);
+    };
+    input.addEventListener("keydown", e => { if (e.key === "Enter") { e.preventDefault(); finish(true); } else if (e.key === "Escape") { e.preventDefault(); finish(false); } });
+    input.addEventListener("blur", () => finish(true));
+  }
+
+  function tsOpenPaint() {
+    ["ts_pt_name", "ts_pt_tokan", "ts_pt_can4", "ts_pt_cov", "ts_pt_biko"].forEach(id => { document.getElementById(id).value = ""; });
+    document.getElementById("tsPaintStatus").textContent = "";
+    const btn = document.getElementById("tsPaintSaveBtn"); btn.disabled = false; btn.textContent = "追加する";
+    document.getElementById("tsPaintOverlay").hidden = false;
+    document.getElementById("ts_pt_name").focus();
+  }
+  async function tsSavePaint() {
+    const g = id => document.getElementById(id).value.normalize("NFKC").trim();
+    const status = document.getElementById("tsPaintStatus"), btn = document.getElementById("tsPaintSaveBtn");
+    if (!g("ts_pt_name")) { status.textContent = "品名は必須です"; return; }
+    if ((g("ts_pt_tokan") && !/kg/i.test(g("ts_pt_tokan")) && !tsQty(g("ts_pt_tokan")).ok) || (g("ts_pt_can4") && !/kg/i.test(g("ts_pt_can4")) && !tsQty(g("ts_pt_can4")).ok)) { status.textContent = "数は「2」「1/2」「4+3/4」の形で入力してください"; return; }
+    btn.disabled = true; btn.textContent = "追加中..."; status.textContent = "";
+    try {
+      await tsPost({ type: "addPaint", hinmei: g("ts_pt_name"), tokan: g("ts_pt_tokan"), can4: g("ts_pt_can4"), cov: g("ts_pt_cov"), biko: g("ts_pt_biko") });
+      document.getElementById("tsPaintOverlay").hidden = true;
+      tsLoadPaint(TSP.sub);
+    } catch (e) { status.textContent = "失敗: " + e.message; btn.disabled = false; btn.textContent = "追加する"; }
   }
 
   function tsOpenSched(dateStr) {
