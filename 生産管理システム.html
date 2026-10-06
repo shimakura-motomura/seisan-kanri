@@ -344,7 +344,9 @@
      ページ全体がスクロールしてしまい、一覧のヘッダー行が固定されない(見出しが流れて消える)不具合が起きる。 */
   #ich2PaneMake, #ich2PaneBuy { display: flex; flex-direction: column; flex: 1 1 auto; min-height: 0; }
   #ich2Scroller { flex: 1; min-height: 0; overflow: auto; border-bottom: 2px solid var(--color-divider); }
-  #ich2BuyScroller { flex: 1; min-height: 0; overflow: auto; border-bottom: 2px solid var(--color-divider); }
+  #ich2BuyScroller { flex: 1; min-height: 0; overflow: auto; max-height: 58vh; border-bottom: 2px solid var(--color-divider); }
+  #ich2BuyOverlay .ich2-toolbar { padding: 10px 16px; }
+  #ich2BuyOverlay .ich2-empty { padding: 28px 20px; }
   table.ich2-list { table-layout: fixed; border-collapse: separate; border-spacing: 0; font-size: 11px; width: 100%; }
   .ich2-grp { position: sticky; top: 0; z-index: 4; padding: 1px 5px; font-size: 9px; letter-spacing: 0.08em; border-bottom: 1px solid var(--color-neutral-700); text-align: left; }
   .ich2-grp.identify { left: 0; z-index: 6; background: var(--color-neutral-900); color: var(--color-neutral-100); border-right: 2px solid var(--color-text); }
@@ -651,7 +653,6 @@
         <span class="kicker">Today</span>
         <div class="today-value">
           <span class="today-numeric" id="today-numeric"></span>
-          <span class="today-ja" id="today-ja"></span>
         </div>
       </div>
     </header>
@@ -747,7 +748,6 @@
         <a href="#" onclick="nav('tosou');return false;">塗装</a>
         <a href="#" onclick="nav('shukka');return false;">出荷</a>
       </nav>
-      <div class="ich2-today">次長 / 事務所PC</div>
     </header>
     <div class="sk-wrap">
     <div class="sk-top">
@@ -757,6 +757,7 @@
       </div>
       <input type="file" id="fileInput" accept="application/pdf" style="display:none;">
       <button type="button" id="skManualBtn" style="margin-top:8px;padding:8px 16px;background:#fff;border:1px solid var(--color-text);border-radius:0;font-size:13px;cursor:pointer;" onclick="document.getElementById('skForm').style.display='block';this.style.display='none';">PDFなしで手入力する</button>
+      <button type="button" id="bkOpenBtn" style="margin-top:8px;margin-left:8px;padding:8px 16px;background:#fff;border:1px solid var(--color-text);border-radius:0;font-size:13px;cursor:pointer;">買入品を登録する</button>
       <div id="ocrStatus">読み取り中です。少々お待ちください...</div>
     </div>
 
@@ -793,10 +794,6 @@
         </nav>
         <div class="ich2-today" id="ich2Today"></div>
       </header>
-      <div class="ich2-subtabs" id="ich2Subtabs">
-        <button data-ich2tab="make" class="active">製作品</button>
-        <button data-ich2tab="buy">買入品</button>
-      </div>
       <div class="ich2-summary" id="ich2Summary"></div>
 
       <!-- ========== 製作品タブ ========== -->
@@ -812,6 +809,9 @@
         </div>
         <div class="ich2-filter-group" id="ich2ShippedGroup">
           <button type="button" id="ich2ShowShipped" data-active="false">出荷済みも表示</button>
+        </div>
+        <div class="ich2-filter-group">
+          <button type="button" id="ich2BuyOpenBtn">買入品表示</button>
         </div>
         <label class="ich2-sort-label">
           並び順
@@ -890,8 +890,25 @@
       </div>
       </div>
 
-      <!-- ========== 買入品タブ ========== -->
-      <div id="ich2PaneBuy" hidden>
+      <div class="ich2-selbar" id="ich2Selbar">
+        <span id="ich2SelCount"></span>
+        <span id="ich2SelBreakdown" style="font-size:11px;color:var(--color-neutral-400);"></span>
+        <button type="button" class="ich2-selbar-primary" id="ich2SelbarEditBtn" onclick="ich2SelbarEditClick()">編集</button>
+        <button type="button" class="ich2-selbar-primary" id="ich2SelbarShukkaBtn" onclick="ich2GoShukka()">出荷手配へ</button>
+        <button type="button" class="ich2-selbar-clear" onclick="ich2Selected.clear(); ich2Render();">選択を解除</button>
+      </div>
+
+      <!-- ========== 買入品一覧(ポップアップ) ========== -->
+      <div class="ich2-edit-overlay" id="ich2BuyOverlay" hidden>
+        <div class="ich2-edit-panel" style="width:min(1040px,100%);">
+          <div class="ich2-edit-head">
+            <span class="ttl">買入品</span>
+            <span class="no">一覧</span>
+            <span class="sub">チェックすると、製作品と一緒に「出荷手配へ」まとめて渡せます。工場入・出荷・納品の日付はクリックして入力できます</span>
+          </div>
+          <div class="ich2-edit-body" style="padding:0;gap:0;overflow:hidden;">
+      
+      <div id="ich2PaneBuy">
       <div class="ich2-toolbar">
         <div class="ich2-search">
           <input class="input" id="ich2BuyQuery" placeholder="型式・現場名・備考・担当で検索">
@@ -939,15 +956,16 @@
         </table>
         <div class="ich2-empty" id="ich2BuyEmpty" hidden>該当する買入品がありません。検索条件を変えてください。</div>
       </div>
-      <div class="ich2-footnote">外部から仕入れる部材(バルブ・ポンプ・電気品・配管材・計装品など)の入荷〜納品状況の一覧です。</div>
-      </div>
+            </div>
 
-      <div class="ich2-selbar" id="ich2Selbar">
-        <span id="ich2SelCount"></span>
-        <span id="ich2SelBreakdown" style="font-size:11px;color:var(--color-neutral-400);"></span>
-        <button type="button" class="ich2-selbar-primary" id="ich2SelbarEditBtn" onclick="ich2SelbarEditClick()">編集</button>
-        <button type="button" class="ich2-selbar-primary" id="ich2SelbarShukkaBtn" onclick="ich2GoShukka()">出荷手配へ</button>
-        <button type="button" class="ich2-selbar-clear" onclick="ich2Selected.clear(); ich2Render();">選択を解除</button>
+
+          </div>
+          <div class="ich2-edit-foot">
+            <span class="ich2-edit-hint" id="ich2BuyModalSel">未選択</span>
+            <button type="button" class="ich2-edit-cancel" id="ich2BuyCloseBtn">閉じる</button>
+            <button type="button" class="ich2-edit-save" id="ich2BuyShukkaBtn">出荷手配へ</button>
+          </div>
+        </div>
       </div>
 
       <!-- 製造番号ごとの一括編集モーダル -->
@@ -970,6 +988,34 @@
     </div>
   </div>
 
+
+  <!-- ============ 買入品 登録(製作手配画面から) ============ -->
+  <div class="ich2-edit-overlay" id="bkOverlay" hidden>
+    <div class="ich2-edit-panel" style="width:min(900px,100%);">
+      <div class="ich2-edit-head"><span class="ttl">買入品 登録</span><span class="no">新規</span><span class="sub">図面のない買入品(バルブ・ポンプ・電気品・配管材・計装品など)を登録します</span></div>
+      <div class="ich2-edit-body" id="bkBody">
+        <div><div class="ich2-edit-grid">
+          <div class="ich2-edit-field"><label>区分</label><input type="text" id="bk_kubun" list="bk_kubun_list" placeholder="例 密閉"></div>
+          <div class="ich2-edit-field" style="grid-column:span 2;"><label>型式</label><input type="text" id="bk_model"></div>
+          <div class="ich2-edit-field"><label>数</label><input type="text" id="bk_qty"></div>
+          <div class="ich2-edit-field"><label>担当</label><input type="text" id="bk_pic"></div>
+          <div class="ich2-edit-field" style="grid-column:span 2;"><label>現場名</label><input type="text" id="bk_site"></div>
+          <div class="ich2-edit-field"><label>工場入</label><input type="text" id="bk_in" placeholder="例 10/20"></div>
+          <div class="ich2-edit-field"><label>出荷</label><input type="text" id="bk_out" placeholder="例 11/5"></div>
+          <div class="ich2-edit-field"><label>納品</label><input type="text" id="bk_done" placeholder="例 11/6"></div>
+          <div class="ich2-edit-field" style="grid-column:span 5;"><label>備考</label><input type="text" id="bk_note"></div>
+        </div></div>
+        <datalist id="bk_kubun_list"></datalist>
+      </div>
+      <div class="ich2-edit-foot">
+        <span class="ich2-edit-hint">型式と現場名は必須です。続けて登録できます</span>
+        <span class="ich2-edit-status" id="bkStatus"></span>
+        <button type="button" class="ich2-edit-cancel" id="bkCancelBtn">閉じる</button>
+        <button type="button" class="ich2-edit-save" id="bkSaveBtn">登録する</button>
+      </div>
+    </div>
+  </div>
+
   <!-- ============ 塗装 ============ -->
   <div class="screen" id="screen-tosou">
     <header class="ich2-topbar">
@@ -980,7 +1026,6 @@
         <a href="#" class="active" onclick="return false;">塗装</a>
         <a href="#" onclick="nav('shukka');return false;">出荷</a>
       </nav>
-      <div class="ich2-today">次長 / 事務所PC</div>
     </header>
     <div class="ts3-page-head">
       <h4 style="margin:12px 0 0;font-family:var(--font-heading);font-weight:800;font-size:20px;">塗装</h4>
@@ -1035,7 +1080,6 @@
         <a href="#" onclick="nav('tosou');return false;">塗装</a>
         <a href="#" class="active" onclick="return false;">出荷</a>
       </nav>
-      <div class="ich2-today">次長 / 事務所PC</div>
     </header>
 
     <div class="page-title-row no-print">
@@ -1163,7 +1207,6 @@
         <a href="#" onclick="nav('tosou');return false;">塗装</a>
         <a href="#" onclick="nav('shukka');return false;">出荷</a>
       </nav>
-      <div class="ich2-today">次長 / 事務所PC</div>
     </header>
     <h1>連絡</h1>
     <div class="box" id="rkPostForm">
@@ -1187,7 +1230,6 @@
         <a href="#" onclick="nav('tosou');return false;">塗装</a>
         <a href="#" onclick="nav('shukka');return false;">出荷</a>
       </nav>
-      <div class="ich2-today">次長 / 事務所PC</div>
     </header>
     <h1>設定</h1>
     <div class="box">
@@ -1226,9 +1268,7 @@
     const WEEKDAY = ["日","月","火","水","木","金","土"];
     const t = new Date();
     const numEl = document.getElementById("today-numeric");
-    const jaEl = document.getElementById("today-ja");
     if (numEl) numEl.textContent = t.getFullYear() + "." + String(t.getMonth()+1).padStart(2,"0") + "." + String(t.getDate()).padStart(2,"0");
-    if (jaEl) jaEl.textContent = (t.getMonth()+1) + "月" + t.getDate() + "日(" + WEEKDAY[t.getDay()] + ")";
   })();
 
   function nav(screen) {
@@ -1433,15 +1473,18 @@
       return;
     }
 
-    document.querySelectorAll("#ich2Subtabs button").forEach(btn => {
-      btn.addEventListener("click", () => {
-        ich2Tab = btn.dataset.ich2tab;
-        document.querySelectorAll("#ich2Subtabs button").forEach(b => b.classList.toggle("active", b === btn));
-        document.getElementById("ich2PaneMake").hidden = ich2Tab !== "make";
-        document.getElementById("ich2PaneBuy").hidden = ich2Tab !== "buy";
-        document.getElementById("ich2Summary").hidden = ich2Tab === "buy";   // 買入品では「全数〜他」の集計は不要
-        ich2RenderAll();
-      });
+    // 買入品の一覧は、ポップアップで開く
+    document.getElementById("ich2BuyOpenBtn").addEventListener("click", () => {
+      document.getElementById("ich2BuyOverlay").hidden = false;
+      ich2RenderAll();
+    });
+    document.getElementById("ich2BuyCloseBtn").addEventListener("click", () => {
+      document.getElementById("ich2BuyOverlay").hidden = true;
+      ich2RenderAll();
+    });
+    document.getElementById("ich2BuyShukkaBtn").addEventListener("click", () => {
+      document.getElementById("ich2BuyOverlay").hidden = true;
+      ich2GoShukka();
     });
 
     document.getElementById("ich2Query").addEventListener("input", e => { ich2State.query = e.target.value; ich2RenderAll(); });
@@ -2007,6 +2050,11 @@
       (makeKeys.length && buyCount) ? "(製作品 " + makeKeys.length + " / 買入品 " + buyCount + ")" : "";
     // 「出荷手配へ」は1件以上、「編集」は製作品をちょうど1件選択しているときだけ有効
     document.getElementById("ich2SelbarShukkaBtn").disabled = total === 0;
+    const bm = document.getElementById("ich2BuyModalSel");
+    if (bm) {
+      bm.textContent = total === 0 ? "未選択" : (total + " 件を選択中(製作品 " + makeKeys.length + " / 買入品 " + buyCount + ")");
+      document.getElementById("ich2BuyShukkaBtn").disabled = total === 0;
+    }
     document.getElementById("ich2SelbarEditBtn").disabled = makeKeys.length !== 1 || buyCount !== 0;
   }
 
@@ -2293,6 +2341,63 @@
       btn.textContent = "登録する"; btn.disabled = false;
     }
   }
+
+
+  // ================= 買入品 登録(製作手配画面のボタンから) =================
+  const BK_IDS = ["bk_kubun","bk_model","bk_qty","bk_pic","bk_site","bk_in","bk_out","bk_done","bk_note"];
+
+  async function bkOpen() {
+    BK_IDS.forEach(id => { document.getElementById(id).value = ""; });
+    document.getElementById("bkStatus").textContent = "";
+    document.getElementById("bkOverlay").hidden = false;
+    document.getElementById("bk_kubun").focus();
+    // 区分の候補:すでに登録されている区分を、プルダウンに出す
+    try {
+      const [rows] = await ich2FetchSheetsRanges(["買入品"]);
+      const iK = (rows[0] || []).indexOf("区分");
+      const set = [...new Set(rows.slice(1).map(r => (r[iK] || "").trim()).filter(Boolean))];
+      document.getElementById("bk_kubun_list").innerHTML = set.map(k => '<option value="' + ich2Esc(k) + '">').join("");
+    } catch (e) { /* 候補が出なくても自由入力で登録できる */ }
+  }
+
+  async function bkSave() {
+    const v = id => document.getElementById(id).value.trim();
+    const st = document.getElementById("bkStatus"), btn = document.getElementById("bkSaveBtn");
+    if (!v("bk_model") || !v("bk_site")) { st.textContent = "型式と現場名を入力してください"; return; }
+    btn.disabled = true; st.textContent = "登録中...";
+    try {
+      const res = await fetch(GAS_URL, { method: "POST", body: JSON.stringify({
+        type: "addBuy", kubun: v("bk_kubun"), model: v("bk_model"), qty: v("bk_qty"),
+        in: ich2NormalizeDateInput(v("bk_in")), site: v("bk_site"), out: ich2NormalizeDateInput(v("bk_out")),
+        done: ich2NormalizeDateInput(v("bk_done")), note: v("bk_note"), pic: v("bk_pic")
+      }) });
+      const data = await res.json();
+      if (data.result !== "success") throw new Error(data.message || "登録に失敗しました");
+      const modelName = v("bk_model");
+      BK_IDS.forEach(id => { document.getElementById(id).value = ""; });
+      st.textContent = "登録しました:" + modelName;
+      document.getElementById("bk_kubun").focus();
+      bkReloadList();
+    } catch (e) { st.textContent = "失敗: " + e.message; }
+    btn.disabled = false;
+  }
+
+  // 一覧を開いたことがあれば、買入品のデータを読み直す
+  async function bkReloadList() {
+    if (!initialized.ichiran) return;
+    try {
+      const [buyRows] = await ich2FetchSheetsRanges(["買入品"]);
+      ich2BuyHeader = buyRows[0] || [];
+      const iM = ich2BuyHeader.indexOf("型式"), iS = ich2BuyHeader.indexOf("現場名"), iK = ich2BuyHeader.indexOf("区分");
+      ich2BuyAll = []; ich2BuyRowNo = [];
+      buyRows.forEach((r, k) => { if (k > 0 && (r[iM] || r[iS] || r[iK])) { ich2BuyAll.push(r); ich2BuyRowNo.push(k + 1); } });
+      ich2RenderAll();
+    } catch (e) { console.error("買入品の再読み込み失敗", e); }
+  }
+
+  document.getElementById("bkOpenBtn").addEventListener("click", bkOpen);
+  document.getElementById("bkCancelBtn").addEventListener("click", () => { document.getElementById("bkOverlay").hidden = true; });
+  document.getElementById("bkSaveBtn").addEventListener("click", bkSave);
 
   // ================= 塗装 =================
   let tsCurrentTab = TOSOU_TABS[0].key;
