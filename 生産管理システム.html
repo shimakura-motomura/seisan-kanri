@@ -189,6 +189,8 @@
   td.ts3-inline { cursor: pointer; text-align: center; padding-left: 3px !important; padding-right: 3px !important; }
   td.ts3-inline:hover { background: rgba(236,48,19,0.08); }
   .ts3-card { display: inline-flex; align-items: center; justify-content: center; height: 18px; min-width: 44px; max-width: 70px; padding: 0 4px; box-sizing: border-box; font-size: 10.5px; border: 1px solid var(--color-neutral-400, #b5b0ab); background: #fff; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; vertical-align: middle; }
+  .ich2-badge.ts3-co { width: 46px; font-size: 10px; display: inline-flex; }
+  table.ts3-data th.ts3-note, table.ts3-data td.ts3-note { width: 100%; max-width: 0 !important; overflow: hidden; text-overflow: ellipsis; text-align: left; }
   .ts3-card.empty { border-style: dashed; background: transparent; color: transparent; }
   .ts3-card.wide { min-width: 62px; max-width: 90px; }
   .ts3-float-input { position: fixed; z-index: 500; font-size: 13px; padding: 4px 6px; border: 2px solid var(--color-accent); font-family: inherit; box-sizing: border-box; background: var(--color-bg); box-shadow: 0 2px 8px rgba(32,30,29,0.25); }
@@ -196,8 +198,8 @@
   .ts3-split.two .ts3-pane-main-title { display: block; }
   /* ぎゅっと表示(酸洗+研磨を左右に並べるとき) */
   table.ts3-data.compact { font-size: 10.5px; }
-  table.ts3-data.compact th { padding: 4px 4px; font-size: 10px; }
-  table.ts3-data.compact td { padding: 1px 4px; max-width: 84px; overflow: hidden; text-overflow: ellipsis; }
+  table.ts3-data.compact th { padding: 4px 3px; font-size: 10px; }
+  table.ts3-data.compact td { padding: 1px 3px; max-width: 84px; overflow: hidden; text-overflow: ellipsis; }
   table.ts3-data.compact th.ts3-chk, table.ts3-data.compact td.ts3-chk { width: 22px; min-width: 22px; padding: 1px 2px; }
   table.ts3-data.compact th.ts3-sticky.after-chk, table.ts3-data.compact td.ts3-sticky.after-chk { left: 22px; width: 62px; min-width: 62px; max-width: 62px; }
   table.ts3-data.compact th.ts3-sticky.after-no, table.ts3-data.compact td.ts3-sticky.after-no { left: 84px; }
@@ -2657,6 +2659,7 @@
       const th = document.createElement("th"); th.textContent = label;
       if (label === "製造番号") th.className = "ts3-sticky after-chk";
       if (label === "納期") th.className = "ts3-sticky after-no";
+      if (label === "備考") th.className = "ts3-note";
       trh.appendChild(th);
     });
     thead.appendChild(trh);
@@ -2689,6 +2692,7 @@
           td.textContent = tsDisplayValue(label, v);
         }
         if (label === "納期") td.className = "ts3-sticky after-no";
+        if (label === "備考") { td.className = "ts3-note"; td.title = td.textContent; }
         if (TS_INLINE[label]) {
           td.classList.add("ts3-inline");
           td.title = "クリックで入力";
@@ -2701,11 +2705,20 @@
     });
   }
 
+  const TS_CO_COLORS = [["#dde8f7","#1f4a85","#4a7bc0"],["#f0e1f5","#6a2a7d","#a363b8"],["#d9f0ed","#1b5e57","#3b9a90"],["#f7e0e0","#8a2b2b","#c46464"],["#ecebd0","#5c5a1c","#a3a04a"],["#e2e2e8","#3d3d52","#7d7da0"]];
   // 手入力できるマスは「カード」で表示(空欄は点線の枠)
   function tsSetCard(td, label, v) {
     if (TS_DATE_LABELS.includes(label)) {     // 日付は一覧の進捗と同じバッジ(済=緑 / 予定=橙 / 空欄=グレーの「—」)
       const c = ich2Cell(v);
       td.innerHTML = ich2Badge(c, String(c.text).length > 5);
+      return;
+    }
+    if (label === "社名") {     // 社名は会社ごとに色分け(同じ会社は同じ色)。空欄はグレーの「—」
+      const name = String(v == null ? "" : v).trim();
+      if (!name) { td.innerHTML = ich2Badge(ich2Cell(""), false).replace('class="ich2-badge"', 'class="ich2-badge ts3-co"'); return; }
+      let h = 0; for (const ch of name) h = (h * 31 + ch.charCodeAt(0)) >>> 0;
+      const pal = TS_CO_COLORS[h % TS_CO_COLORS.length];
+      td.innerHTML = '<span class="ich2-badge ts3-co" title="' + ich2Esc(name) + '" style="background:' + pal[0] + ';color:' + pal[1] + ';border-color:' + pal[2] + ';font-weight:500;">' + ich2Esc(name) + '</span>';
       return;
     }
     const text = String(tsDisplayValue(label, v) == null ? "" : tsDisplayValue(label, v));
