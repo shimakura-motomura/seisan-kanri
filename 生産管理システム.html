@@ -181,7 +181,20 @@
   table.ts3-data th.ts3-chk, table.ts3-data td.ts3-chk { position: sticky; left: 0; z-index: 1; background: var(--color-bg); width: 30px; min-width: 30px; text-align: center; padding: 1px 4px; }
   .ts3-chk input { margin: 0; vertical-align: middle; }
   table.ts3-data th.ts3-chk { z-index: 3; }
-  table.ts3-data th.ts3-sticky.after-chk, table.ts3-data td.ts3-sticky.after-chk { left: 30px; }
+  table.ts3-data th.ts3-sticky.after-chk, table.ts3-data td.ts3-sticky.after-chk { left: 30px; width: 84px; min-width: 84px; max-width: 84px; border-right: 0; }
+  table.ts3-data th.ts3-sticky.after-no, table.ts3-data td.ts3-sticky.after-no { left: 114px; }
+  .ts3-split { display: flex; gap: 14px; align-items: flex-start; }
+  .ts3-pane { flex: 1 1 0; min-width: 0; }
+  .ts3-pane[hidden], .ts3-pane-title[hidden] { display: none; }
+  .ts3-pane-title { font-weight: 800; font-size: 13px; margin: 0 0 4px; }
+  .ts3-split.two .ts3-pane-main-title { display: block; }
+  /* ぎゅっと表示(酸洗+研磨を左右に並べるとき) */
+  table.ts3-data.compact { font-size: 10.5px; }
+  table.ts3-data.compact th { padding: 4px 4px; font-size: 10px; }
+  table.ts3-data.compact td { padding: 1px 4px; max-width: 84px; overflow: hidden; text-overflow: ellipsis; }
+  table.ts3-data.compact th.ts3-chk, table.ts3-data.compact td.ts3-chk { width: 22px; min-width: 22px; padding: 1px 2px; }
+  table.ts3-data.compact th.ts3-sticky.after-chk, table.ts3-data.compact td.ts3-sticky.after-chk { left: 22px; width: 62px; min-width: 62px; max-width: 62px; }
+  table.ts3-data.compact th.ts3-sticky.after-no, table.ts3-data.compact td.ts3-sticky.after-no { left: 84px; }
   table.ts3-data tr.ts3-selected td { background: var(--color-accent-100); }
   .ts3-chk input { accent-color: var(--color-accent); cursor: pointer; }
   #screen-tosou { padding-bottom: 64px; }
@@ -1030,7 +1043,6 @@
     </header>
     <div class="ts3-page-head">
       <h4 style="margin:12px 0 0;font-family:var(--font-heading);font-weight:800;font-size:20px;">塗装</h4>
-      <span class="sub">工程別 案件一覧 ／ 製作手配から自動登録</span>
     </div>
     <div class="ts3-tabs" id="tsTabbar"></div>
     <div class="ts3-filter-bar">
@@ -1042,11 +1054,11 @@
       </div>
       <span class="ts3-count-label" id="tsListStatus">読み込み中...</span>
     </div>
-    <div class="ts3-list-scroll"><table class="ts3-data" id="tsListTable"><thead></thead><tbody></tbody></table></div>
-    <div class="ts3-list-note">
-      <span>← → 横スクロールで全項目を表示 ／ 製番・納期は固定列</span>
-      <span class="sum" id="tsFootnote"></span>
+    <div class="ts3-split" id="tsSplit">
+      <div class="ts3-pane" id="tsPaneMain"><div class="ts3-pane-title" id="tsMainTitle" hidden>酸洗</div><div class="ts3-list-scroll"><table class="ts3-data" id="tsListTable"><thead></thead><tbody></tbody></table></div></div>
+      <div class="ts3-pane" id="tsPaneSub" hidden><div class="ts3-pane-title" id="tsSubTitle">研磨</div><div class="ts3-list-scroll"><table class="ts3-data" id="tsListTable2"><thead></thead><tbody></tbody></table></div></div>
     </div>
+    <span id="tsFootnote" hidden></span>
     <div class="ts3-add-panel" id="tsFormBox" style="display:none;"></div>
 
     <div class="ich2-selbar" id="tsSelbar">
@@ -2521,6 +2533,7 @@
     tsRenderTabbar();
     tsSel.clear();
     document.getElementById("tsFormBox").style.display = "none";
+    if (tsCurrentTab !== "酸洗") document.getElementById("tsPaneSub").hidden = true;
     if (tsCurrentTab === TS_SCHEDULE_KEY) { tsRenderScheduleForm(); tsLoadScheduleList(); tsSyncSelection(); }
     else { const tab = TOSOU_TABS.find(t => t.key === tsCurrentTab); tsLoadList(tab); }
   }
@@ -2543,65 +2556,104 @@
   let tsHeaderCur = [];
   let tsEditing = null;       // null=手動追加 / {rowIndex,...}=編集
 
+  // 終了済みの現場(納品の入力がなくても「完了」として扱う)
+  const TS_FINISHED_SITES = ["丸の内3-2"];
+  function tsNorm(x) { return String(x || "").normalize("NFKC").replace(/[‐-―−ーｰ]/g, "-").replace(/\s/g, ""); }
+  function tsIsDone(o) {
+    if (o.get("完成納品")) return true;
+    const site = tsNorm(o.get("現場名"));
+    return TS_FINISHED_SITES.some(k => site.includes(tsNorm(k)));
+  }
+
+  // 1つの塗装シートを読み込み、絞り込み後の行を返す
+  async function tsFetchRows(tab) {
+    const [rows] = await ich2FetchSheetsRanges(["塗装_" + tab.key]);
+    const header = rows[0] || [];
+    const iSeizou = header.indexOf("製造番号"), iGenba = header.indexOf("現場名"), iHinmei = header.indexOf("品名");
+    let list = [];
+    rows.forEach((r, k) => {
+      if (k === 0) return;
+      if (!(r[iGenba] && r[iHinmei] && r[iSeizou] !== header[iSeizou])) return;
+      if (/^[（(]?記入例/.test(String(r[header.indexOf("備考")] || ""))) return;   // シート2行目の「記入例」行は除く
+      list.push({ rowIndex: k + 1, get: name => {
+        let c = header.indexOf(name);
+        if (c === -1 && name === "完成納品") c = header.findIndex(h => String(h).includes("納品"));   // シートの見出しが「完成/納品日」でも読めるように
+        return c === -1 ? "" : (r[c] == null ? "" : r[c]);
+      } });
+    });
+    const q = tsQuery.toLowerCase();
+    if (q) list = list.filter(o => ((o.get("製造番号"))+(o.get("現場名"))+(o.get("品名"))).toLowerCase().includes(q));
+    if (tsStatus === "open") list = list.filter(o => !tsIsDone(o));
+    if (tsStatus === "done") list = list.filter(o => tsIsDone(o));
+    list.reverse();
+    return { header, list };
+  }
+
   async function tsLoadList(tab) {
     const statusEl = document.getElementById("tsListStatus");
     const table = document.getElementById("tsListTable");
+    const table2 = document.getElementById("tsListTable2");
+    const pane2 = document.getElementById("tsPaneSub");
+    const withSub = tab.key === "酸洗";     // 酸洗は右半分に研磨を並べて表示
     statusEl.textContent = "読み込み中...";
     table.querySelector("thead").innerHTML = ""; table.querySelector("tbody").innerHTML = "";
+    table2.querySelector("thead").innerHTML = ""; table2.querySelector("tbody").innerHTML = "";
+    pane2.hidden = !withSub;
+    document.getElementById("tsMainTitle").hidden = !withSub;
     try {
-      const [rows] = await ich2FetchSheetsRanges(["塗装_" + tab.key]);
-      const header = rows[0] || [];
-      tsHeaderCur = header;
-      const iSeizou = header.indexOf("製造番号"), iGenba = header.indexOf("現場名"), iHinmei = header.indexOf("品名");
-      let list = [];
-      rows.forEach((r, k) => {
-        if (k === 0) return;
-        if (!(r[iGenba] && r[iHinmei] && r[iSeizou] !== header[iSeizou])) return;
-        if (/^[（(]?記入例/.test(String(r[header.indexOf("備考")] || ""))) return;   // シート2行目の「記入例」行は除く
-        list.push({ rowIndex: k + 1, get: name => {
-          let c = header.indexOf(name);
-          if (c === -1 && name === "完成納品") c = header.findIndex(h => String(h).includes("納品"));   // シートの見出しが「完成/納品日」でも読めるように
-          return c === -1 ? "" : (r[c] == null ? "" : r[c]);
-        } });
-      });
-      const q = tsQuery.toLowerCase();
-      if (q) list = list.filter(o => ((o.get("製造番号"))+(o.get("現場名"))+(o.get("品名"))).toLowerCase().includes(q));
-      if (tsStatus === "open") list = list.filter(o => !o.get("完成納品"));
-      if (tsStatus === "done") list = list.filter(o => !!o.get("完成納品"));
-      list.reverse();
-      tsRowsCur = list;
-      statusEl.textContent = list.length + "件";
-      tsRenderTosouTable(tab);
+      const main = await tsFetchRows(tab);
+      tsHeaderCur = main.header;
+      tsRowsCur = main.list;
+      statusEl.textContent = main.list.length + "件";
+      document.getElementById("tsMainTitle").textContent = "酸洗　" + main.list.length + "件";
+      tsRenderTosouTable(table, tab, main.list, { compact: withSub, selectable: true });
+      if (withSub) {
+        const tab2 = TOSOU_TABS.find(t => t.key === "研磨");
+        document.getElementById("tsSubTitle").textContent = "研磨";
+        try {
+          const sub = await tsFetchRows(tab2);
+          document.getElementById("tsSubTitle").textContent = "研磨　" + sub.list.length + "件";
+          tsRenderTosouTable(table2, tab2, sub.list, { compact: true, selectable: false });
+        } catch (e2) { document.getElementById("tsSubTitle").textContent = "研磨(読み込み失敗)"; }
+      }
+      tsSyncSelection();
     } catch (e) { statusEl.textContent = "読み込みに失敗しました: " + e.message; }
   }
 
-  function tsRenderTosouTable(tab) {
-    const table = document.getElementById("tsListTable");
+  function tsRenderTosouTable(table, tab, rowsList, opt) {
+    const compact = !!opt.compact, selectable = !!opt.selectable;
     const cols = TS_COLS[tab.key];
     const thead = table.querySelector("thead"), tbody = table.querySelector("tbody");
+    table.classList.toggle("compact", compact);
     thead.innerHTML = ""; tbody.innerHTML = "";
     const trh = document.createElement("tr");
     const thc = document.createElement("th"); thc.className = "ts3-chk";
-    const allCb = document.createElement("input"); allCb.type = "checkbox"; allCb.id = "tsCheckAll"; allCb.title = "表示中をすべて選択";
-    allCb.addEventListener("change", () => {
-      tsRowsCur.forEach(o => { if (allCb.checked) tsSel.add(o.rowIndex); else tsSel.delete(o.rowIndex); });
-      tsSyncSelection();
-    });
-    thc.appendChild(allCb); trh.appendChild(thc);
+    if (selectable) {
+      const allCb = document.createElement("input"); allCb.type = "checkbox"; allCb.id = "tsCheckAll"; allCb.title = "表示中をすべて選択";
+      allCb.addEventListener("change", () => {
+        tsRowsCur.forEach(o => { if (allCb.checked) tsSel.add(o.rowIndex); else tsSel.delete(o.rowIndex); });
+        tsSyncSelection();
+      });
+      thc.appendChild(allCb);
+    }
+    trh.appendChild(thc);
     cols.forEach(([label]) => {
       const th = document.createElement("th"); th.textContent = label;
       if (label === "製造番号") th.className = "ts3-sticky after-chk";
+      if (label === "納期") th.className = "ts3-sticky after-no";
       trh.appendChild(th);
     });
     thead.appendChild(trh);
-    let sum = 0, sumLabel = "";
-    tsRowsCur.forEach(o => {
+    rowsList.forEach(o => {
       const tr = document.createElement("tr");
-      tr.dataset.row = o.rowIndex;
+      if (selectable) tr.dataset.row = o.rowIndex;
       const tdc = document.createElement("td"); tdc.className = "ts3-chk";
-      const cb = document.createElement("input"); cb.type = "checkbox"; cb.dataset.row = o.rowIndex;
-      cb.addEventListener("change", () => { if (cb.checked) tsSel.add(o.rowIndex); else tsSel.delete(o.rowIndex); tsSyncSelection(); });
-      tdc.appendChild(cb); tr.appendChild(tdc);
+      if (selectable) {
+        const cb = document.createElement("input"); cb.type = "checkbox"; cb.dataset.row = o.rowIndex;
+        cb.addEventListener("change", () => { if (cb.checked) tsSel.add(o.rowIndex); else tsSel.delete(o.rowIndex); tsSyncSelection(); });
+        tdc.appendChild(cb);
+      }
+      tr.appendChild(tdc);
       const seizou = o.get("製造番号");
       const prod = tsProductMap[seizou] || {};
       cols.forEach(([label, src, auto]) => {
@@ -2616,20 +2668,19 @@
         } else if (label === "製作") {
           td.textContent = ich2SeisakuLabel(v);
         } else if (label === "価格" || label === "工数㎡") {
-          const pure = /^[¥￥\s]*[\d,]+(\.\d+)?\s*円?$/.test(String(v));   // 数字だけの価格だけ合計・桁区切り(「真砂」「?」などの書き込みはそのまま)
+          const pure = /^[¥￥\s]*[\d,]+(\.\d+)?\s*円?$/.test(String(v));   // 数字だけの価格だけ桁区切り(「真砂」「?」などの書き込みはそのまま)
           const n = pure ? parseFloat(String(v).replace(/[^0-9.]/g, "")) : NaN;
-          if (!isNaN(n)) { sum += n; sumLabel = label; }
           td.textContent = isNaN(n) ? v : n.toLocaleString();
           td.style.textAlign = "right";
         } else if (TS_DATE_LABELS.includes(label)) {
           td.textContent = formatDateShort(v);
         } else td.textContent = v;
+        if (label === "納期") td.className = "ts3-sticky after-no";
+        if (compact && label !== "製造番号") td.title = td.textContent;
         tr.appendChild(td);
       });
       tbody.appendChild(tr);
     });
-    document.getElementById("tsFootnote").textContent = sumLabel === "価格" ? ("合計 ¥" + sum.toLocaleString()) : (sumLabel ? ("合計 " + sum.toLocaleString() + " ㎡") : "");
-    tsSyncSelection();
   }
 
   // 選択状態を、チェック・行の色・下部バーに反映
@@ -2808,8 +2859,6 @@
       });
       tbody.appendChild(tr);
     });
-    const footnote = document.getElementById("tsFootnote");
-    footnote.textContent = idxPrice >= 0 ? ("合計 ¥" + priceSum.toLocaleString()) : "";
   }
 
   function tsRenderScheduleForm() {
