@@ -186,6 +186,8 @@
   .ts3-split { display: flex; gap: 14px; align-items: flex-start; }
   .ts3-pane { flex: 1 1 0; min-width: 0; }
   .ts3-pane[hidden], .ts3-pane-title[hidden] { display: none; }
+  td.ts3-inline { cursor: pointer; }
+  td.ts3-inline:hover { background: rgba(255,90,40,0.10); }
   .ts3-pane-title { font-weight: 800; font-size: 13px; margin: 0 0 4px; }
   .ts3-split.two .ts3-pane-main-title { display: block; }
   /* ぎゅっと表示(酸洗+研磨を左右に並べるとき) */
@@ -1041,9 +1043,6 @@
         <a href="#" onclick="nav('shukka');return false;">出荷</a>
       </nav>
     </header>
-    <div class="ts3-page-head">
-      <h4 style="margin:12px 0 0;font-family:var(--font-heading);font-weight:800;font-size:20px;">塗装</h4>
-    </div>
     <div class="ts3-tabs" id="tsTabbar"></div>
     <div class="ts3-filter-bar">
       <input type="text" id="tsSearch" class="ts3-filter-input" placeholder="製造番号・現場名・品名で絞り込み">
@@ -2520,10 +2519,12 @@
   function tsRenderTabbar() {
     const bar = document.getElementById("tsTabbar");
     bar.innerHTML = "";
-    [...TOSOU_TABS.map(t => t.key), TS_SCHEDULE_KEY].forEach(key => {
+    [...TOSOU_TABS.map(t => t.key).filter(k => k !== "研磨"), TS_SCHEDULE_KEY].forEach(key => {
       const btn = document.createElement("button");
       btn.className = "ts3-tab-btn" + (key === tsCurrentTab ? " active" : "");
-      btn.innerHTML = key + '<span class="ts3-tab-sub">' + (TS_TAB_SUB[key] || "") + '</span><span class="ts3-tab-underline"></span>';
+      const label = key === "酸洗" ? "酸洗/研磨" : key;     // 研磨は酸洗の右側に並べて表示
+      const sub = key === "酸洗" ? "PICKLING / POLISH" : (TS_TAB_SUB[key] || "");
+      btn.innerHTML = label + '<span class="ts3-tab-sub">' + sub + '</span><span class="ts3-tab-underline"></span>';
       btn.addEventListener("click", () => { tsCurrentTab = key; tsRender(); });
       bar.appendChild(btn);
     });
@@ -2552,6 +2553,7 @@
   const TS_DATE_LABELS = ["納期","受・完","予定","持込","完成","納品"];
   let tsStatus = "open";
   let tsSel = new Set();      // 選択中の行(シートの行番号)
+  let tsRowsSub = [];         // 右側(研磨)に表示中の行
   let tsRowsCur = [];         // 表示中の行 {rowIndex, get(列名)}
   let tsHeaderCur = [];
   let tsEditing = null;       // null=手動追加 / {rowIndex,...}=編集
@@ -2575,7 +2577,9 @@
       if (k === 0) return;
       if (!(r[iGenba] && r[iHinmei] && r[iSeizou] !== header[iSeizou])) return;
       if (/^[（(]?記入例/.test(String(r[header.indexOf("備考")] || ""))) return;   // シート2行目の「記入例」行は除く
-      list.push({ rowIndex: k + 1, get: name => {
+      const over = {};
+      list.push({ rowIndex: k + 1, tab: tab.key, key: tab.key + ":" + (k + 1), set: (n, v) => { over[n] = v; }, get: name => {
+        if (name in over) return over[name];
         let c = header.indexOf(name);
         if (c === -1 && name === "完成納品") c = header.findIndex(h => String(h).includes("納品"));   // シートの見出しが「完成/納品日」でも読めるように
         return c === -1 ? "" : (r[c] == null ? "" : r[c]);
@@ -2585,7 +2589,9 @@
     if (q) list = list.filter(o => ((o.get("製造番号"))+(o.get("現場名"))+(o.get("品名"))).toLowerCase().includes(q));
     if (tsStatus === "open") list = list.filter(o => !tsIsDone(o));
     if (tsStatus === "done") list = list.filter(o => tsIsDone(o));
-    list.reverse();
+    // 納期順(早い順。納期が空欄のものは最後)
+    const dv = o => { const m = String(formatDateOnly(o.get("納期")) || "").match(/^(\d{4})\/(\d{1,2})\/(\d{1,2})/); return m ? (+m[1]) * 10000 + (+m[2]) * 100 + (+m[3]) : 99999999; };
+    list.sort((a, b) => dv(a) - dv(b) || a.rowIndex - b.rowIndex);
     return { header, list };
   }
 
@@ -2603,40 +2609,46 @@
     try {
       const main = await tsFetchRows(tab);
       tsHeaderCur = main.header;
-      tsRowsCur = main.list;
+      tsRowsCur = main.list.slice(); tsRowsSub = [];
       statusEl.textContent = main.list.length + "件";
       document.getElementById("tsMainTitle").textContent = "酸洗　" + main.list.length + "件";
-      tsRenderTosouTable(table, tab, main.list, { compact: withSub, selectable: true });
+      tsRenderTosouTable(table, tab, main.list, { compact: withSub, selectable: true, pane: "main" });
       if (withSub) {
         const tab2 = TOSOU_TABS.find(t => t.key === "研磨");
         document.getElementById("tsSubTitle").textContent = "研磨";
         try {
           const sub = await tsFetchRows(tab2);
           document.getElementById("tsSubTitle").textContent = "研磨　" + sub.list.length + "件";
-          tsRenderTosouTable(table2, tab2, sub.list, { compact: true, selectable: false });
+          tsRowsSub = sub.list;
+          tsRenderTosouTable(table2, tab2, sub.list, { compact: true, selectable: true, pane: "sub" });
         } catch (e2) { document.getElementById("tsSubTitle").textContent = "研磨(読み込み失敗)"; }
       }
       tsSyncSelection();
     } catch (e) { statusEl.textContent = "読み込みに失敗しました: " + e.message; }
   }
 
+  // 表の中で直接書き換えられる項目(表の見出し → シートの列名)
+  const TS_INLINE = { "予定": "搬入予定", "納品": "完成納品", "社名": "業者" };
+  function tsDisplayValue(label, v) {
+    if (label === "材質") return String(v == null ? "" : v).replace(/^\s*SUS\s*/i, "");   // 「SUS」は省いて 304 / 444 などだけ表示
+    if (TS_DATE_LABELS.includes(label)) return formatDateShort(v);
+    return v == null ? "" : v;
+  }
+
   function tsRenderTosouTable(table, tab, rowsList, opt) {
-    const compact = !!opt.compact, selectable = !!opt.selectable;
+    const compact = !!opt.compact, pane = opt.pane || "main";
     const cols = TS_COLS[tab.key];
     const thead = table.querySelector("thead"), tbody = table.querySelector("tbody");
     table.classList.toggle("compact", compact);
     thead.innerHTML = ""; tbody.innerHTML = "";
     const trh = document.createElement("tr");
     const thc = document.createElement("th"); thc.className = "ts3-chk";
-    if (selectable) {
-      const allCb = document.createElement("input"); allCb.type = "checkbox"; allCb.id = "tsCheckAll"; allCb.title = "表示中をすべて選択";
-      allCb.addEventListener("change", () => {
-        tsRowsCur.forEach(o => { if (allCb.checked) tsSel.add(o.rowIndex); else tsSel.delete(o.rowIndex); });
-        tsSyncSelection();
-      });
-      thc.appendChild(allCb);
-    }
-    trh.appendChild(thc);
+    const allCb = document.createElement("input"); allCb.type = "checkbox"; allCb.className = "ts3-checkall"; allCb.dataset.pane = pane; allCb.title = "表示中をすべて選択";
+    allCb.addEventListener("change", () => {
+      rowsList.forEach(o => { if (allCb.checked) tsSel.add(o.key); else tsSel.delete(o.key); });
+      tsSyncSelection();
+    });
+    thc.appendChild(allCb); trh.appendChild(thc);
     cols.forEach(([label]) => {
       const th = document.createElement("th"); th.textContent = label;
       if (label === "製造番号") th.className = "ts3-sticky after-chk";
@@ -2646,14 +2658,11 @@
     thead.appendChild(trh);
     rowsList.forEach(o => {
       const tr = document.createElement("tr");
-      if (selectable) tr.dataset.row = o.rowIndex;
+      tr.dataset.key = o.key;
       const tdc = document.createElement("td"); tdc.className = "ts3-chk";
-      if (selectable) {
-        const cb = document.createElement("input"); cb.type = "checkbox"; cb.dataset.row = o.rowIndex;
-        cb.addEventListener("change", () => { if (cb.checked) tsSel.add(o.rowIndex); else tsSel.delete(o.rowIndex); tsSyncSelection(); });
-        tdc.appendChild(cb);
-      }
-      tr.appendChild(tdc);
+      const cb = document.createElement("input"); cb.type = "checkbox";
+      cb.addEventListener("change", () => { if (cb.checked) tsSel.add(o.key); else tsSel.delete(o.key); tsSyncSelection(); });
+      tdc.appendChild(cb); tr.appendChild(tdc);
       const seizou = o.get("製造番号");
       const prod = tsProductMap[seizou] || {};
       cols.forEach(([label, src, auto]) => {
@@ -2672,27 +2681,65 @@
           const n = pure ? parseFloat(String(v).replace(/[^0-9.]/g, "")) : NaN;
           td.textContent = isNaN(n) ? v : n.toLocaleString();
           td.style.textAlign = "right";
-        } else if (TS_DATE_LABELS.includes(label)) {
-          td.textContent = formatDateShort(v);
-        } else td.textContent = v;
+        } else {
+          td.textContent = tsDisplayValue(label, v);
+        }
         if (label === "納期") td.className = "ts3-sticky after-no";
-        if (compact && label !== "製造番号") td.title = td.textContent;
+        if (TS_INLINE[label]) {
+          td.classList.add("ts3-inline");
+          td.title = "クリックで入力";
+          td.addEventListener("click", () => tsStartInline(td, o, label));
+        } else if (compact && label !== "製造番号") td.title = td.textContent;
         tr.appendChild(td);
       });
       tbody.appendChild(tr);
     });
   }
 
+  // 「予定」「納品」「社名」を、表の上でそのまま入力
+  function tsStartInline(td, o, label) {
+    if (td.querySelector("input")) return;
+    const src = TS_INLINE[label];
+    const isDate = TS_DATE_LABELS.includes(label);
+    const raw = o.get(src);
+    const current = isDate ? ich2EditableDateValue(raw) : String(raw == null ? "" : raw);
+    const original = td.textContent;
+    td.textContent = "";
+    const input = document.createElement("input");
+    input.type = "text"; input.value = current; input.placeholder = isDate ? "例: 10/20" : "";
+    input.style.cssText = "width:" + (isDate ? 74 : 90) + "px;font-size:12px;padding:2px 4px;border:2px solid var(--color-accent);font-family:inherit;box-sizing:border-box;";
+    td.appendChild(input); input.focus(); input.select();
+    let done = false;
+    const finish = async (save) => {
+      if (done) return; done = true;
+      const newVal = isDate ? ich2NormalizeDateInput(input.value.trim()) : input.value.trim();
+      if (!save || newVal === current) { td.textContent = original; return; }
+      td.textContent = "更新中";
+      try {
+        await tsPost({ type: "updateTosou", tab: o.tab, rowIndex: o.rowIndex, seizouBangou: o.get("製造番号"), fields: { [src]: newVal } });
+        o.set(src, newVal);
+        td.textContent = tsDisplayValue(label, newVal);
+      } catch (e) { alert("更新に失敗しました: " + e.message); td.textContent = original; }
+    };
+    input.addEventListener("keydown", e => {
+      if (e.key === "Enter") { e.preventDefault(); finish(true); }
+      else if (e.key === "Escape") { e.preventDefault(); finish(false); }
+    });
+    input.addEventListener("blur", () => finish(true));
+  }
+
   // 選択状態を、チェック・行の色・下部バーに反映
   function tsSyncSelection() {
     const isSched = tsCurrentTab === TS_SCHEDULE_KEY;
-    document.querySelectorAll("#tsListTable tbody tr[data-row]").forEach(tr => {
-      const on = tsSel.has(Number(tr.dataset.row));
+    document.querySelectorAll("#tsSplit tbody tr[data-key]").forEach(tr => {
+      const on = tsSel.has(tr.dataset.key);
       tr.classList.toggle("ts3-selected", on);
       const cb = tr.querySelector("input[type=checkbox]"); if (cb) cb.checked = on;
     });
-    const all = document.getElementById("tsCheckAll");
-    if (all) all.checked = tsRowsCur.length > 0 && tsRowsCur.every(o => tsSel.has(o.rowIndex));
+    document.querySelectorAll(".ts3-checkall").forEach(all => {
+      const rows = all.dataset.pane === "sub" ? tsRowsSub : tsRowsCur;
+      all.checked = rows.length > 0 && rows.every(o => tsSel.has(o.key));
+    });
     const n = tsSel.size;
     document.getElementById("tsSelCount").textContent = isSched ? "メッキスケ" : (n === 0 ? "未選択" : n + " 件を選択中");
     document.getElementById("tsBtnEdit").disabled = isSched || n !== 1;
@@ -2700,10 +2747,10 @@
     document.getElementById("tsBtnAdd").disabled = false;
   }
 
+  function tsFindRow(key) { return tsRowsCur.concat(tsRowsSub).find(x => x.key === key); }
   function tsEditClick() {
     if (tsSel.size !== 1) { alert("編集は1件だけ選択してください。"); return; }
-    const rowIndex = [...tsSel][0];
-    const o = tsRowsCur.find(x => x.rowIndex === rowIndex);
+    const o = tsFindRow([...tsSel][0]);
     if (o) tsOpenModal(o);
   }
   function tsAddClick() {
@@ -2732,7 +2779,7 @@
   }
 
   function tsOpenModal(o) {
-    const tab = TOSOU_TABS.find(t => t.key === tsCurrentTab);
+    const tab = TOSOU_TABS.find(t => t.key === (o ? o.tab : tsCurrentTab));
     tsEditing = o;
     document.getElementById("tsEditTtl").textContent = o ? "塗装 編集" : "塗装 手動追加";
     document.getElementById("tsEditNo").textContent = o ? o.get("製造番号") : "新規";
@@ -2750,7 +2797,9 @@
     }).join("") + '</div></div>' +
     '<datalist id="ts_bui_list">' + tsBuiList.map(b => '<option value="' + ich2Esc(b) + '">').join("") + '</datalist>' +
     '<datalist id="ts_naiyou_list">' + tab.naiyou.map(n => '<option value="' + ich2Esc(n) + '">').join("") + '</datalist>';
-    document.getElementById("tsEditBody").innerHTML = html;
+    const kouteiSel = (!o && tsCurrentTab === "酸洗")
+      ? '<div class="ich2-edit-field" style="margin-bottom:10px;"><label>工程</label><select id="tsAddTabSel" class="ich2-edit-input" style="padding:6px;font-size:14px;"><option value="酸洗">酸洗</option><option value="研磨">研磨</option></select></div>' : "";
+    document.getElementById("tsEditBody").innerHTML = kouteiSel + html;
     if (!o) {
       const inp = document.querySelector('#tsEditBody [data-col="製造番号"]');
       inp.addEventListener("blur", () => {
@@ -2774,7 +2823,8 @@
   }
 
   async function tsSaveModal() {
-    const tab = TOSOU_TABS.find(t => t.key === tsCurrentTab);
+    const addSel = document.getElementById("tsAddTabSel");
+    const tab = TOSOU_TABS.find(t => t.key === (tsEditing ? tsEditing.tab : (addSel ? addSel.value : tsCurrentTab)));
     const status = document.getElementById("tsEditStatus"), btn = document.getElementById("tsEditSaveBtn");
     const inputs = [...document.querySelectorAll("#tsEditBody input[data-col]")];
     const val = {}; inputs.forEach(i => { val[i.dataset.col] = i.value.trim(); });
@@ -2795,7 +2845,7 @@
           kanseiBi: val["完成日"] || "", kousuu: val["工数㎡"] || "",
         });
       }
-      tsCloseModal(); tsSel.clear(); tsLoadList(tab);
+      tsCloseModal(); tsSel.clear(); tsLoadList(TOSOU_TABS.find(t => t.key === tsCurrentTab));
     } catch (e) { status.textContent = "失敗: " + e.message; btn.disabled = false; }
   }
 
@@ -2804,12 +2854,12 @@
     if (!tab || tsSel.size === 0) return;
     const now = new Date();
     const today = now.getFullYear() + "/" + (now.getMonth() + 1) + "/" + now.getDate();
-    const targets = tsRowsCur.filter(o => tsSel.has(o.rowIndex));
+    const targets = tsRowsCur.concat(tsRowsSub).filter(o => tsSel.has(o.key));
     if (!confirm(targets.length + "件の「納品」を " + today + " にして、完了にします。よろしいですか？")) return;
     const btn = document.getElementById("tsBtnDone"); btn.disabled = true; btn.textContent = "処理中...";
     let fail = 0, lastErr = "";
     for (const o of targets) {
-      try { await tsPost({ type: "updateTosou", tab: tab.key, rowIndex: o.rowIndex, seizouBangou: o.get("製造番号"), fields: { "完成納品": today } }); }
+      try { await tsPost({ type: "updateTosou", tab: o.tab, rowIndex: o.rowIndex, seizouBangou: o.get("製造番号"), fields: { "完成納品": today } }); }
       catch (e) { fail++; lastErr = e.message; }
     }
     btn.textContent = "完了にする";
