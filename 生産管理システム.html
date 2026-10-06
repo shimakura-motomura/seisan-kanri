@@ -2703,6 +2703,11 @@
 
   // 手入力できるマスは「カード」で表示(空欄は点線の枠)
   function tsSetCard(td, label, v) {
+    if (TS_DATE_LABELS.includes(label)) {     // 日付は一覧の進捗と同じバッジ(済=緑 / 予定=橙 / 空欄=グレーの「—」)
+      const c = ich2Cell(v);
+      td.innerHTML = ich2Badge(c, String(c.text).length > 5);
+      return;
+    }
     const text = String(tsDisplayValue(label, v) == null ? "" : tsDisplayValue(label, v));
     td.innerHTML = "";
     const c = document.createElement("span");
@@ -2718,12 +2723,13 @@
     const isDate = TS_DATE_LABELS.includes(label);
     const raw = o.get(src);
     const current = isDate ? ich2EditableDateValue(raw) : String(raw == null ? "" : raw);
-    const card = td.querySelector(".ts3-card") || td;
+    const card = td.querySelector(".ts3-card, .ich2-badge") || td;
     const rect = card.getBoundingClientRect();
     const input = document.createElement("input");
     input.type = "text"; input.value = current; input.className = "ts3-float-input"; input.placeholder = isDate ? "例: 10/20" : "";
-    const w = Math.max(rect.width, isDate ? 84 : 110);
-    input.style.cssText = "left:" + Math.min(rect.left, window.innerWidth - w - 8) + "px;top:" + (rect.top - 4) + "px;width:" + w + "px;height:" + (rect.height + 8) + "px;";
+    const w = Math.max(rect.width, isDate ? 90 : 110);
+    if (isDate) input.style.textAlign = "center";
+    input.style.cssText = "left:" + Math.min(rect.left, window.innerWidth - w - 8) + "px;top:" + (rect.top - 4) + "px;width:" + w + "px;height:" + (rect.height + 8) + "px;" + (isDate ? "text-align:center;font-size:14px;" : "");
     document.body.appendChild(input); input.focus(); input.select();
     let done = false;
     const finish = async (save) => {
@@ -2731,7 +2737,7 @@
       const newVal = isDate ? ich2NormalizeDateInput(input.value.trim()) : input.value.trim();
       input.remove();
       if (!save || newVal === current) return;
-      card.textContent = "更新中";
+      td.innerHTML = '<span style="font-size:9px;color:var(--color-neutral-600);">更新中</span>';
       try {
         await tsPost({ type: "updateTosou", tab: o.tab, rowIndex: o.rowIndex, seizouBangou: o.get("製造番号"), fields: { [src]: newVal } });
         o.set(src, newVal);
