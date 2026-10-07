@@ -1462,8 +1462,36 @@
   }
 
   // 進捗1マスの色分け(空欄=グレー/未来日=オレンジ/当日以前=緑)
-  function ich2Cell(raw) {
+  // 「9/19-9/30」「5/8-5/21」「9/10-10/10」のような期間(年なし)の終わりの日を返す。
+  // 年は、その行の一番早い日付(ref)の年を基準にして決める(基準より3か月以上前になる日付は翌年とみなす)
+  function ich2RangeEnd(s, ref) {
+    const m = String(s).normalize("NFKC").match(/^(\d{1,2})\/(\d{1,2})\s*[-~〜～－ー]\s*(?:(\d{1,2})\/)?(\d{1,2})$/);
+    if (!m) return null;
+    const m1 = +m[1], d1 = +m[2], m2 = m[3] ? +m[3] : m1, d2 = +m[4];
+    const today = new Date(); today.setHours(0, 0, 0, 0);
+    let y = ref ? ref.getFullYear() : today.getFullYear();
+    let start = new Date(y, m1 - 1, d1);
+    if (ref) { if (start < new Date(ref.getTime() - 90 * 86400000)) start = new Date(++y, m1 - 1, d1); }
+    else if (start > new Date(today.getTime() + 180 * 86400000)) start = new Date(--y, m1 - 1, d1);
+    let end = new Date(start.getFullYear(), m2 - 1, d2);
+    if (end < start) end = new Date(start.getFullYear() + 1, m2 - 1, d2);
+    return end;
+  }
+  // その行の進捗の中で一番早い日付(年つきのもの)
+  function ich2RowRef(r, idxs) {
+    let ref = null;
+    idxs.forEach(ci => { const v = String(r[ci] || "").trim(); if (/^\d{4}[\/-]\d{1,2}[\/-]\d{1,2}/.test(v)) { const d = new Date(v); if (!isNaN(d.getTime()) && (!ref || d < ref)) ref = d; } });
+    return ref;
+  }
+  function ich2Cell(raw, ref) {
     const s = (raw || "").toString().trim();
+    const re = s ? ich2RangeEnd(s, ref) : null;
+    if (re) {
+      const past = re.getTime() <= new Date().setHours(0, 0, 0, 0);
+      return past
+        ? { text: s, bg: "#dfeee4", fg: "#1e5c37", bd: "#2f7d4f", dot: "#2f7d4f", fw: "500" }
+        : { text: s, bg: "#fbe8cc", fg: "#7a4a05", bd: "#c87a12", dot: "#c87a12", fw: "700" };
+    }
     if (!s) return { text: "—", bg: "var(--color-neutral-200)", fg: "var(--color-neutral-500)", bd: "var(--color-neutral-300)", dot: "var(--color-neutral-400)", fw: "400" };
     if (s === "***") return { text: "―", bg: "#dfeee4", fg: "#1e5c37", bd: "#2f7d4f", dot: "#2f7d4f", fw: "400" };
     const d = new Date(s);
@@ -1807,7 +1835,7 @@
           const raw = r[ci] || "";
           const colName = H[ci];
           const wide = (ci === iNaiso || ci === iGaiso);
-          return '<td class="center ich2-prog-cell" data-seizou="'+ich2Esc(no)+'" data-col="'+ich2Esc(colName)+'" data-val="'+ich2Esc(ich2EditableDateValue(raw))+'" title="クリックして編集">'+ich2Badge(ich2Cell(raw), wide)+'</td>';
+          return '<td class="center ich2-prog-cell" data-seizou="'+ich2Esc(no)+'" data-col="'+ich2Esc(colName)+'" data-val="'+ich2Esc(ich2EditableDateValue(raw))+'" title="クリックして編集">'+ich2Badge(ich2Cell(raw, ich2RowRef(r, progIdx)), wide)+'</td>';
         }).join("") +
         '<td class="ich2-nowrap">'+ich2Esc(r[iTantou])+'</td>' +
         '<td class="ich2-nowrap ich2-ellipsis ich2-tabular ich2-muted" title="'+ich2Esc(r[iMsunpou])+'">'+ich2Esc(r[iMsunpou])+'</td>' +
