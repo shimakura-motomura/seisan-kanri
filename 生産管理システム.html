@@ -240,6 +240,8 @@
   .ts3-cal-kg { font-size: 9.5px; line-height: 13px; padding: 0 3px; border: 1px dashed var(--color-neutral-400, #b5b0ab); color: var(--color-neutral-600); background: rgba(255,255,255,0.7); cursor: text; white-space: nowrap; }
   .ts3-cal-kg.has { border-style: solid; color: var(--color-text); font-weight: 700; }
   .ts3-cal-kg.big { background: #c0392b; border-color: #c0392b; color: #fff; }
+  .ts3-cal-hol { font-size: 9px; line-height: 11px; color: #c0392b; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .ts3-cal-day.hol { background-image: linear-gradient(rgba(192,57,43,0.07), rgba(192,57,43,0.07)); }
   .ts3-cal-big { font-size: 9.5px; font-weight: 800; color: #c0392b; line-height: 12px; text-align: right; }
   .ts3-cal-ev.gh { background: #fff; color: #1e5c37; border-style: dashed; border-color: #2f7d4f; }
   .ts3-cal-legend { flex-wrap: wrap; row-gap: 4px; }
@@ -2803,6 +2805,7 @@
         if (name in over) return over[name];
         let c = header.indexOf(name);
         if (c === -1 && name === "完成納品") c = header.findIndex(h => String(h).includes("納品"));   // シートの見出しが「完成/納品日」でも読めるように
+        if (c === -1 && name === "搬入予定") c = header.findIndex(h => String(h).includes("予定"));   // 見出しが「搬込予定」など(字が違う)でも読めるように
         return c === -1 ? "" : (r[c] == null ? "" : r[c]);
       } });
     });
@@ -3182,15 +3185,16 @@
         const isOut = dt.getMonth() !== month;
         if (isOut) { html += '<div class="ts3-cal-day out" style="cursor:default;min-height:0;"></div>'; continue; }
         const list = byDay[key] || [];
-        const yoko = tsCal.yoko.has(key);
+        const yoko = tsCal.yoko.has(key), hol = tsHolName(y, m, d);
         list.forEach(e => { if (!e.ghost) { const n = parseFloat(e.kisuu) || 0; if (e.kubun === "持込") nIn += n; else if (e.kubun === "引取") nOut += n; } });
         const kg = tsCal.loads[key], big = kg > TS_BIG_KG;
         if (big) nBig++;
         const isToday = y === today.getFullYear() && m === today.getMonth() + 1 && d === today.getDate();
         const show = list.slice(0, 3);
-        html += '<div class="ts3-cal-day' + (yoko ? " yoko" : "") + (big ? " big" : "") + (isToday ? " today" : "") + '" data-date="' + key + '">' +
-          '<div class="ts3-cal-top"><span class="ts3-cal-num' + (dow === 0 ? " sun" : dow === 6 ? " sat" : "") + '">' + d + '</span>' +
+        html += '<div class="ts3-cal-day' + (yoko ? " yoko" : "") + (hol ? " hol" : "") + (big ? " big" : "") + (isToday ? " today" : "") + '" data-date="' + key + '">' +
+          '<div class="ts3-cal-top"><span class="ts3-cal-num' + (dow === 0 || hol ? " sun" : dow === 6 ? " sat" : "") + '">' + d + '</span>' +
           '<span class="ts3-cal-kg' + (kg ? " has" : "") + (big ? " big" : "") + '" data-kg="' + key + '" title="当日の積載合計重量(kg)。クリックして入力">' + (kg ? fmtKg(kg) + "kg" : "kg") + '</span></div>' +
+          (hol ? '<div class="ts3-cal-hol" title="' + hol + '">' + hol + '</div>' : "") +
           (big ? '<div class="ts3-cal-big">大型車両</div>' : "") +
           show.map(e => '<span class="ts3-cal-ev ' + (e.kubun === "引取" ? "out" : "in") + '" title="' + ich2Esc(e.kubun + " " + e.genba + (e.kisuu ? " ×" + e.kisuu : "") + (e.biko ? "（" + e.biko + "）" : "")) + '">' +
             (e.kubun === "引取" ? "引" : "持") + " " + ich2Esc(e.genba) + (e.kisuu ? " ×" + ich2Esc(e.kisuu) : "") + '</span>').join("") +
@@ -3198,13 +3202,38 @@
       }
       html += '</div>';
     }
-    html += '<div class="ts3-cal-legend"><span><i style="background:#fdecd0"></i>横持日</span><span><i style="border:2px solid #c0392b"></i>' + fmtKg(TS_BIG_KG) + 'kg超=大型車両</span><span>日付の空きをクリック→予定追加 ／ 「kg」の欄をクリック→重量を入力</span></div>';
+    html += '<div class="ts3-cal-legend"><span><i style="background:#fdecd0"></i>横持日</span><span><i style="background:#f5dedb"></i>祝日</span><span><i style="border:2px solid #c0392b"></i>' + fmtKg(TS_BIG_KG) + 'kg超=大型車両</span><span>日付の空きをクリック→予定追加 ／ 「kg」の欄をクリック→重量を入力</span></div>';
     box.innerHTML = html;
     box.querySelectorAll(".ts3-cal-day[data-date]").forEach(el => el.addEventListener("click", () => tsOpenSched(el.dataset.date)));
     box.querySelectorAll(".ts3-cal-kg").forEach(el => el.addEventListener("click", ev => { ev.stopPropagation(); tsEditLoad(el); }));
     tsEl(p, "stat").textContent = "持込 " + nIn + "基 ／ 引取 " + nOut + "基" + (nBig ? " ／ 大型 " + nBig + "日" : "");
     tsFit();
   }
+
+  // 日本の祝日(振替休日・国民の休日を含む)。年ごとに計算して覚えておく
+  const tsHolCache = {};
+  function tsHolidays(y) {
+    if (tsHolCache[y]) return tsHolCache[y];
+    const H = {}, put = (m, d, n) => { H[tsDKey(y, m, d)] = n; };
+    const nthMon = (m, n) => { const f = new Date(y, m - 1, 1).getDay(); return 1 + ((8 - f) % 7) + 7 * (n - 1); };
+    const k = y - 1980, spring = Math.floor(20.8431 + 0.242194 * k - Math.floor(k / 4)), autumn = Math.floor(23.2488 + 0.242194 * k - Math.floor(k / 4));
+    put(1, 1, "元日"); put(1, nthMon(1, 2), "成人の日"); put(2, 11, "建国記念の日"); if (y >= 2020) put(2, 23, "天皇誕生日");
+    put(3, spring, "春分の日"); put(4, 29, "昭和の日"); put(5, 3, "憲法記念日"); put(5, 4, "みどりの日"); put(5, 5, "こどもの日");
+    put(7, nthMon(7, 3), "海の日"); put(8, 11, "山の日"); put(9, nthMon(9, 3), "敬老の日"); put(9, autumn, "秋分の日");
+    put(10, nthMon(10, 2), "スポーツの日"); put(11, 3, "文化の日"); put(11, 23, "勤労感謝の日");
+    const dt = (m, d) => new Date(y, m - 1, d), has = (m, d) => !!H[tsDKey(y, m, d)];
+    Object.keys(H).forEach(key => {                                  // 日曜が祝日 → 次の平日が振替休日
+      const [, m, d] = key.split("/").map(Number);
+      if (dt(m, d).getDay() === 0) { let t = new Date(y, m - 1, d + 1); while (H[tsDKey(t.getFullYear(), t.getMonth() + 1, t.getDate())]) t = new Date(t.getFullYear(), t.getMonth(), t.getDate() + 1); if (t.getFullYear() === y) H[tsDKey(y, t.getMonth() + 1, t.getDate())] = "振替休日"; }
+    });
+    for (let m = 1; m <= 12; m++) for (let d = 2; d < 31; d++) {      // 祝日にはさまれた平日は国民の休日
+      const t = dt(m, d); if (t.getMonth() !== m - 1 || H[tsDKey(y, m, d)] || t.getDay() === 0) continue;
+      const a = new Date(y, m - 1, d - 1), b = new Date(y, m - 1, d + 1);
+      if (H[tsDKey(y, a.getMonth() + 1, a.getDate())] && H[tsDKey(y, b.getMonth() + 1, b.getDate())]) H[tsDKey(y, m, d)] = "国民の休日";
+    }
+    return (tsHolCache[y] = H);
+  }
+  const tsHolName = (y, m, d) => tsHolidays(y)[tsDKey(y, m, d)] || "";
 
   // 当日積載合計重量(kg)をその場で入力
   function tsEditLoad(el) {
