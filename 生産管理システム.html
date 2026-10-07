@@ -449,7 +449,7 @@
   td.right { text-align: right; }
   .ich2-list .grp-end { border-right: 2px solid var(--color-text); }
   /* 塗装7列: 太い罫線で囲む + 列の間に縦線 + 1列おきに薄い背景 */
-  .ich2-grp.tosou { background: var(--color-text); color: var(--color-bg); text-align: center; font-weight: 700; border-left: 3px solid var(--color-text); border-right: 3px solid var(--color-text); }
+  .ich2-grp.tosou { background: var(--color-text); color: var(--color-bg); text-align: left; font-weight: 700; border-left: 3px solid var(--color-text); border-right: 3px solid var(--color-text); }
   .ich2-list .tz { border-left: 1px solid var(--color-divider); }
   /* 塗装セルは1行表示(収まらない分は…で省略。全文はマウスを乗せると表示) */
   table.ich2-list tbody td.tz-txt { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; font-size: 10px; padding: 1px 3px; text-align: left; }
@@ -469,6 +469,7 @@
   .ich2-badge { display: inline-flex; align-items: center; justify-content: center; gap: 3px; height: 16px; width: 36px; font-size: 10px; font-variant-numeric: tabular-nums; border: 1px solid transparent; box-sizing: border-box; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
   .ich2-badge.ich2-badge-wide { width: 65px; }
   .ich2-prog-cell { cursor: pointer; padding-left: 0px !important; padding-right: 0px !important; }
+  .ich2-prog-cell.banyu .ich2-badge { width: 35px; }
   .ich2-prog-cell:hover { background: rgba(236,48,19,0.08); }
   .ich2-badge .dot { width: 4px; height: 4px; flex: none; }
   .ich2-footnote { padding: 6px 4px; font-size: 11px; color: var(--color-neutral-700); flex: none; }
@@ -921,8 +922,8 @@
           <colgroup>
             <col style="width:24px"><col style="width:60px"><col style="width:38px"><col style="width:96px"><col style="width:66px">
             <col style="width:92px"><col style="width:40px"><col style="width:36px"><col style="width:24px"><col style="width:40px">
-            <col style="width:40px"><col style="width:40px"><col style="width:40px"><col style="width:40px"><col style="width:40px"><col style="width:112px"><col style="width:80px">
-            <col style="width:36px"><col style="width:36px"><col style="width:36px"><col style="width:65px"><col style="width:65px"><col style="width:36px">
+            <col style="width:35px"><col style="width:35px"><col style="width:35px"><col style="width:35px"><col style="width:35px"><col style="width:107px"><col style="width:75px">
+            <col style="width:36px"><col style="width:36px"><col style="width:36px"><col style="width:65px"><col style="width:65px"><col style="width:36px"><col style="width:35px">
             <col style="width:32px"><col style="width:82px"><col style="width:34px"><col style="width:52px"><col style="width:38px"><col style="width:104px">
           </colgroup>
           <thead>
@@ -930,7 +931,7 @@
               <th class="ich2-grp identify" colspan="5">識別(固定表示)</th>
               <th class="ich2-grp dim" colspan="5">寸法・製作</th>
               <th class="ich2-grp tosou" colspan="7">塗装</th>
-              <th class="ich2-grp progress" colspan="6">進捗</th>
+              <th class="ich2-grp progress" colspan="7">進捗</th>
               <th class="ich2-grp pic" colspan="6">担当・詳細</th>
             </tr>
             <tr>
@@ -960,7 +961,8 @@
               <th class="ich2-colh center">完</th>
               <th class="ich2-colh center">内</th>
               <th class="ich2-colh center">外</th>
-              <th class="ich2-colh center grp-end">出</th>
+              <th class="ich2-colh center">出</th>
+              <th class="ich2-colh center grp-end" title="搬入が確定した日">搬入</th>
 
               <th id="ich2-col-c" class="ich2-colh">担当</th>
               <th class="ich2-colh">m寸法</th>
@@ -1734,7 +1736,7 @@
     const iSeizou = idx("製造番号"), iNouki = idx("納期"), iGenba = idx("現場名"), iHinmei = idx("品名"),
       iSunpou = idx("寸法"), iZairyou = idx("材質"), iJuken = idx("受・完"), iKu = idx("区"), iSeisaku = idx("製"), iCoiluse = idx("コイル使用"),
       iTosouSanArai = idx("酸洗"), iTosouKenma = idx("研磨"), iTosouEpo = idx("エポ"), iTosouFrp = idx("FRP"), iTosouMekki = idx("メッキ"), iTosouGaisou = idx("外装"), iTosouSonota = idx("その他") !== -1 ? idx("その他") : idx("判定不能"),
-      iJuchu = idx("受注日"), iSeisakuDay = idx("製作日"), iKansei = idx("完成日"), iNaiso = idx("内装日"), iGaiso = idx("外装日"), iShukka = idx("出荷日"),
+      iJuchu = idx("受注日"), iSeisakuDay = idx("製作日"), iKansei = idx("完成日"), iNaiso = idx("内装日"), iGaiso = idx("外装日"), iShukka = idx("出荷日"), iBanyu = idx("搬入日"),
       iTantou = idx("担当者"), iMsunpou = idx("m寸法"), iShitsuryou = idx("質量"), iKatabangou = idx("型番"), iBaika = idx("売価(千円)"), iBiko = idx("備考"), iZumen = idx("図");
 
     // コイル判定などで使う、塗装仕様7列をまとめた文字列(元の単一「塗装仕様」列の代わり)
@@ -1804,7 +1806,7 @@
     document.getElementById("ich2Empty").hidden = rows.length !== 0;
 
     document.getElementById("ich2Tbody").innerHTML = rows.map(r => {
-      const progIdx = [iJuchu, iSeisakuDay, iKansei, iNaiso, iGaiso, iShukka];
+      const progIdx = [iJuchu, iSeisakuDay, iKansei, iNaiso, iGaiso, iShukka, iBanyu];   // 搬入日の列がまだシートに無いときは iBanyu=-1(最初に入力したときに作られる)
       const zumen = r[iZumen] || "";
       const no = r[iSeizou];
       const key = "make:" + no;
@@ -1832,10 +1834,10 @@
         '<td class="tz-txt tz" title="'+ich2Esc(r[iTosouGaisou])+'">'+ich2Esc(ich2TosouCell(r[iTosouGaisou], '外装'))+'</td>' +
         '<td class="tz-txt tz tz-shade tz-last" title="'+ich2Esc(r[iTosouSonota])+'">'+ich2Esc(ich2TosouCell(r[iTosouSonota], 'その他'))+'</td>' +
         progIdx.map(ci => {
-          const raw = r[ci] || "";
-          const colName = H[ci];
+          const raw = (ci >= 0 ? r[ci] : "") || "";
+          const colName = ci >= 0 ? H[ci] : "搬入日";
           const wide = (ci === iNaiso || ci === iGaiso);
-          return '<td class="center ich2-prog-cell" data-seizou="'+ich2Esc(no)+'" data-col="'+ich2Esc(colName)+'" data-val="'+ich2Esc(ich2EditableDateValue(raw))+'" title="クリックして編集">'+ich2Badge(ich2Cell(raw, ich2RowRef(r, progIdx)), wide)+'</td>';
+          return '<td class="center ich2-prog-cell' + (colName === "搬入日" ? " banyu" : "") + '" data-seizou="'+ich2Esc(no)+'" data-col="'+ich2Esc(colName)+'" data-val="'+ich2Esc(ich2EditableDateValue(raw))+'" title="クリックして編集">'+ich2Badge(ich2Cell(raw, ich2RowRef(r, progIdx)), wide)+'</td>';
         }).join("") +
         '<td class="ich2-nowrap">'+ich2Esc(r[iTantou])+'</td>' +
         '<td class="ich2-nowrap ich2-ellipsis ich2-tabular ich2-muted" title="'+ich2Esc(r[iMsunpou])+'">'+ich2Esc(r[iMsunpou])+'</td>' +
@@ -2057,7 +2059,11 @@
       const data = await res.json();
       if (data.result !== "success") throw new Error(data.message || "更新に失敗しました");
       const idxSeizou = ich2Header.indexOf("製造番号");
-      const idxCol = ich2Header.indexOf(columnName);
+      let idxCol = ich2Header.indexOf(columnName);
+      if (idxCol === -1 && columnName === "搬入日") {      // シートに「搬入日」の列が新しくできた
+        ich2Header.push("搬入日"); idxCol = ich2Header.length - 1;
+        ich2All.forEach(r => { while (r.length < idxCol) r.push(""); });
+      }
       const row = ich2All.find(r => r[idxSeizou] === seizouBangou);
       if (row && idxCol !== -1) row[idxCol] = value;
       ich2RenderAll();
