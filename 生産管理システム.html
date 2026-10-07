@@ -233,10 +233,7 @@
   .ts3-cal-dowrow .ts3-cal-dow { position: static; box-shadow: none; }
   .ts3-cal-mhead { font-size: 12px; font-weight: 800; padding: 5px 6px; background: var(--color-neutral-100); border-bottom: 1px solid var(--color-divider); }
   .ts3-cal-day { min-height: 66px; }
-  .ts3-cal-day.d-in { background: #fdecd0; }
-  .ts3-cal-day.d-out { background: #dcefe3; }
-  .ts3-cal-day.d-in.d-out { background: linear-gradient(135deg, #fdecd0 50%, #dcefe3 50%); }
-  .ts3-cal-day.d-gh { background: repeating-linear-gradient(135deg, #f2f9f4, #f2f9f4 5px, #dcefe3 5px, #dcefe3 7px); }
+  .ts3-cal-day.yoko { background: #fdecd0; }
   .ts3-cal-day.out { opacity: 0.45; }
   .ts3-cal-day.big { box-shadow: inset 0 0 0 2px #c0392b; }
   .ts3-cal-top { display: flex; justify-content: space-between; align-items: center; gap: 2px; }
@@ -248,10 +245,13 @@
   .ts3-cal-legend { flex-wrap: wrap; row-gap: 4px; }
   .ts3-cal-legend i { display: inline-block; width: 12px; height: 12px; border: 1px solid var(--color-neutral-600); vertical-align: middle; margin-right: 3px; }
   /* 塗料在庫 */
-  table.ts3-data.ts3-paint td.nm { max-width: 135px; text-align: left; }
-  table.ts3-data.ts3-paint td.ts3-note { text-align: left; }
-  table.ts3-data.ts3-paint td.ts3-note .ts3-card { display: flex; justify-content: flex-start; width: 100%; max-width: none; min-width: 0; }
-  table.ts3-data.ts3-paint td.ts3-inline:not(.ts3-note) .ts3-card { min-width: 34px; }
+  table.ts3-data.ts3-paint td.nm { max-width: 230px; text-align: left; }
+  table.ts3-data.ts3-paint td.ts3-note { text-align: left; cursor: pointer; }
+  table.ts3-data.ts3-paint td.ts3-note:hover { background: rgba(236,48,19,0.08); }
+  table.ts3-data.ts3-paint th.c { text-align: center; }
+  table.ts3-data.ts3-paint th.r { text-align: right; }
+  table.ts3-data.ts3-paint td.ts3-inline:not(.ts3-note) { text-align: center; }
+  .ich2-badge.ts3-qty { width: auto; min-width: 36px; padding: 0 5px; }
   table.ts3-data.ts3-paint td.num { text-align: right; }
   table.ts3-data.ts3-paint td.cap { font-weight: 800; }
   .ts3-paint-cfg { font-size: 11px; display: inline-flex; align-items: center; gap: 3px; }
@@ -2628,13 +2628,14 @@
   const TS_PAINT_KEY = "塗料在庫";
   const TS_PAIR = { "酸洗": "研磨", "エポ": "FRP", "メッキ": TS_SCHEDULE_KEY, "外装": TS_PAINT_KEY };
   // 左の一覧の幅(%)。書いていないタブは半々
-  const TS_RATIO = { "メッキ": 65, "外装": 65 };
+  const TS_RATIO = { "メッキ": 65, "外装": 62 };
   const TS_NOTE_COL = { "メッキ": "内容" };
   const TS_PLATING_GAP = 4;       // 持込から引取までの日数(中3日 = 4日後が引取)
   const TS_BIG_KG = 3000;         // この重量を超えたら大型車両
   const TS_PAIR_SUBS = Object.values(TS_PAIR);
-  const TS_TAB_LABEL = { "酸洗": "酸洗/研磨", "エポ": "エポ/FRP", "メッキ": "メッキ/スケ", "外装": "外装/塗料在庫" };
-  const TS_TAB_SUB2 = { "酸洗": "PICKLING / POLISH", "エポ": "EPOXY / FRP", "メッキ": "PLATING / SCHEDULE", "外装": "EXTERIOR / PAINT STOCK" };
+  const TS_TAB_LABEL = { "酸洗": "酸洗/研磨", "エポ": "エポ/FRP", "外装": "外装/塗料在庫" };
+  const TS_SUB_LABEL = { "メッキスケ": "スケジュール" };
+  const TS_TAB_SUB2 = { "酸洗": "PICKLING / POLISH", "エポ": "EPOXY / FRP", "外装": "EXTERIOR / PAINT STOCK" };
   let tsBuiList = [];
   let tsProductMap = {};
   const TS_IDS = {
@@ -2719,7 +2720,7 @@
     $("tsPaneSub").hidden = !two; $("tsBarSub").hidden = !two;
     $("tsMainTitle").hidden = !two; $("tsBarLbl").hidden = !two;
     $("tsMainTitle").textContent = tsCurrentTab; $("tsBarLbl").textContent = tsCurrentTab;
-    $("tsSubTitle").textContent = subKey || ""; $("tsBarLbl2").textContent = subKey || "";
+    $("tsSubTitle").textContent = TS_SUB_LABEL[subKey] || subKey || ""; $("tsBarLbl2").textContent = TS_SUB_LABEL[subKey] || subKey || "";
     // 右側がカレンダー(メッキスケ)のときは、一覧用の部品を隠してカレンダー用の部品を出す
     $("tsListTable2").hidden = calMode; $("tsCalBox").hidden = !calMode; $("tsCalNav").hidden = !calMode;
     $("tsPaintCfg").hidden = !paintMode;
@@ -2773,11 +2774,13 @@
 
   // 終了済みの現場(納品の入力がなくても「完了」として扱う)
   const TS_FINISHED_SITES = ["丸の内3-2"];
+  // タブごとに「終わっている現場」(納品や塗装が入力されていなくても完了として扱う)
+  const TS_FINISHED_BY_TAB = { "外装": ["アステラファーマ", "小田原市庁舎"], "メッキ": ["全薬工業", "小田原庁舎", "小田原市庁舎"] };
   function tsNorm(x) { return String(x || "").normalize("NFKC").replace(/[‐-―−ーｰ]/g, "-").replace(/\s/g, ""); }
   function tsIsDone(o) {
     if (o.get("完成納品")) return true;
     const site = tsNorm(o.get("現場名"));
-    return TS_FINISHED_SITES.some(k => site.includes(tsNorm(k)));
+    return TS_FINISHED_SITES.concat(TS_FINISHED_BY_TAB[o.tab] || []).some(k => site.includes(tsNorm(k)));
   }
 
   // 1つの塗装シートを読み込み、絞り込み後の行を返す
@@ -2786,9 +2789,14 @@
     const header = rows[0] || [];
     const iSeizou = header.indexOf("製造番号"), iGenba = header.indexOf("現場名"), iHinmei = header.indexOf("品名");
     let list = [];
+    const seenRows = new Set();
     rows.forEach((r, k) => {
       if (k === 0) return;
       if (!(r[iGenba] && r[iHinmei] && r[iSeizou] !== header[iSeizou])) return;
+      if (tab.key === "外装") {      // 外装は、全項目が同じ行(二重登録)を1行にまとめる
+        const sig = r.map(x => String(x == null ? "" : x).trim()).join("\u0001");
+        if (seenRows.has(sig)) return; seenRows.add(sig);
+      }
       if (/^[（(]?記入例/.test(String(r[header.indexOf("備考")] || ""))) return;   // シート2行目の「記入例」行は除く
       const over = {};
       list.push({ rowIndex: k + 1, tab: tab.key, key: tab.key + ":" + (k + 1), set: (n, v) => { over[n] = v; }, get: name => {
@@ -3112,7 +3120,7 @@
   }
 
   // ================= メッキスケ(カレンダー・3か月) =================
-  const tsCal = { year: new Date().getFullYear(), month: new Date().getMonth(), events: [], loads: {} };
+  const tsCal = { year: new Date().getFullYear(), month: new Date().getMonth(), events: [], loads: {}, yoko: new Set() };
   const tsDKey = (y, m, d) => y + "/" + m + "/" + d;
 
   // シートの日付(「2026/9/24」「9/24」など)を年・月・日に直す
@@ -3127,6 +3135,7 @@
     const stat = tsEl(p, "stat");
     stat.textContent = "読み込み中...";
     const loadP = ich2FetchSheetsRanges(["メッキ積載"]).catch(() => null);     // 積載重量は同時に読み込む(シートが無くてもOK)
+    const yokoP = ich2FetchSheetsRanges(["メッキ横持日"]).catch(() => null);   // 横持日(決まっている日)も同時に
     try {
       const [rows] = await ich2FetchSheetsRanges(["塗装_" + TS_SCHEDULE_KEY]);
       if (p.tabKey !== TS_SCHEDULE_KEY) return;
@@ -3138,6 +3147,11 @@
     try {
       const lrr = await loadP, lr = lrr && lrr[0];
       (lr || []).slice(1).forEach(r => { const d = tsCalDate(r[0]), kg = parseFloat(String(r[1] || "").replace(/,/g, "")); if (d && kg) tsCal.loads[tsDKey(d.y, d.m, d.d)] = kg; });
+    } catch (e) { /* シート未作成 */ }
+    tsCal.yoko = new Set();
+    try {
+      const yy = await yokoP;
+      ((yy && yy[0]) || []).forEach(r => { const d = tsCalDate(r[0]); if (d) tsCal.yoko.add(tsDKey(d.y, d.m, d.d)); });
     } catch (e) { /* シート未作成 */ }
     if (p.tabKey === TS_SCHEDULE_KEY) tsRenderCalendar(p);
   }
@@ -3152,13 +3166,6 @@
     const byDay = {};
     const put = (k, e) => { (byDay[k] = byDay[k] || []).push(e); };
     evs.forEach(e => put(tsDKey(e.date.y, e.date.m, e.date.d), e));
-    // 引取予定(持込の4日後)。同じ現場の引取がすでに入っていれば出さない
-    const ds = e => new Date(e.date.y, e.date.m - 1, e.date.d).getTime();
-    evs.filter(e => e.kubun === "持込").forEach(e => {
-      if (evs.some(o => o.kubun === "引取" && o.genba === e.genba && ds(o) >= ds(e))) return;
-      const g = new Date(e.date.y, e.date.m - 1, e.date.d + TS_PLATING_GAP);
-      put(tsDKey(g.getFullYear(), g.getMonth() + 1, g.getDate()), { kubun: "引取予定", ghost: true, genba: e.genba, kisuu: e.kisuu, biko: "持込の" + TS_PLATING_GAP + "日後(中" + (TS_PLATING_GAP - 1) + "日)" });
-    });
     const today = new Date();
     const fmtKg = n => Number(n).toLocaleString("ja-JP");
     let nIn = 0, nOut = 0, nBig = 0;
@@ -3175,23 +3182,23 @@
         const isOut = dt.getMonth() !== month;
         if (isOut) { html += '<div class="ts3-cal-day out" style="cursor:default;min-height:0;"></div>'; continue; }
         const list = byDay[key] || [];
-        const hasIn = list.some(e => e.kubun === "持込"), hasOut = list.some(e => e.kubun === "引取"), hasGh = list.some(e => e.ghost);
+        const yoko = tsCal.yoko.has(key);
         list.forEach(e => { if (!e.ghost) { const n = parseFloat(e.kisuu) || 0; if (e.kubun === "持込") nIn += n; else if (e.kubun === "引取") nOut += n; } });
         const kg = tsCal.loads[key], big = kg > TS_BIG_KG;
         if (big) nBig++;
         const isToday = y === today.getFullYear() && m === today.getMonth() + 1 && d === today.getDate();
         const show = list.slice(0, 3);
-        html += '<div class="ts3-cal-day' + (hasIn ? " d-in" : "") + (hasOut ? " d-out" : "") + (!hasIn && !hasOut && hasGh ? " d-gh" : "") + (big ? " big" : "") + (isToday ? " today" : "") + '" data-date="' + key + '">' +
+        html += '<div class="ts3-cal-day' + (yoko ? " yoko" : "") + (big ? " big" : "") + (isToday ? " today" : "") + '" data-date="' + key + '">' +
           '<div class="ts3-cal-top"><span class="ts3-cal-num' + (dow === 0 ? " sun" : dow === 6 ? " sat" : "") + '">' + d + '</span>' +
           '<span class="ts3-cal-kg' + (kg ? " has" : "") + (big ? " big" : "") + '" data-kg="' + key + '" title="当日の積載合計重量(kg)。クリックして入力">' + (kg ? fmtKg(kg) + "kg" : "kg") + '</span></div>' +
           (big ? '<div class="ts3-cal-big">大型車両</div>' : "") +
-          show.map(e => '<span class="ts3-cal-ev ' + (e.ghost ? "gh" : e.kubun === "引取" ? "out" : "in") + '" title="' + ich2Esc(e.kubun + " " + e.genba + (e.kisuu ? " ×" + e.kisuu : "") + (e.biko ? "（" + e.biko + "）" : "")) + '">' +
-            (e.ghost ? "引?" : e.kubun === "引取" ? "引" : "持") + " " + ich2Esc(e.genba) + (e.kisuu ? " ×" + ich2Esc(e.kisuu) : "") + '</span>').join("") +
+          show.map(e => '<span class="ts3-cal-ev ' + (e.kubun === "引取" ? "out" : "in") + '" title="' + ich2Esc(e.kubun + " " + e.genba + (e.kisuu ? " ×" + e.kisuu : "") + (e.biko ? "（" + e.biko + "）" : "")) + '">' +
+            (e.kubun === "引取" ? "引" : "持") + " " + ich2Esc(e.genba) + (e.kisuu ? " ×" + ich2Esc(e.kisuu) : "") + '</span>').join("") +
           (list.length > show.length ? '<div class="ts3-cal-more">ほか' + (list.length - show.length) + '件</div>' : "") + '</div>';
       }
       html += '</div>';
     }
-    html += '<div class="ts3-cal-legend"><span><i style="background:#fdecd0"></i>持込の日</span><span><i style="background:#dcefe3"></i>引取の日</span><span><i style="background:repeating-linear-gradient(135deg,#f2f9f4,#f2f9f4 3px,#dcefe3 3px,#dcefe3 5px)"></i>引取予定(持込の' + TS_PLATING_GAP + '日後)</span><span><i style="border:2px solid #c0392b"></i>' + fmtKg(TS_BIG_KG) + 'kg超=大型車両</span><span>日付の空きをクリック→予定追加 ／ 「kg」の欄をクリック→重量を入力</span></div>';
+    html += '<div class="ts3-cal-legend"><span><i style="background:#fdecd0"></i>横持日</span><span><i style="border:2px solid #c0392b"></i>' + fmtKg(TS_BIG_KG) + 'kg超=大型車両</span><span>日付の空きをクリック→予定追加 ／ 「kg」の欄をクリック→重量を入力</span></div>';
     box.innerHTML = html;
     box.querySelectorAll(".ts3-cal-day[data-date]").forEach(el => el.addEventListener("click", () => tsOpenSched(el.dataset.date)));
     box.querySelectorAll(".ts3-cal-kg").forEach(el => el.addEventListener("click", ev => { ev.stopPropagation(); tsEditLoad(el); }));
@@ -3262,8 +3269,9 @@
     const list = tsPaint.rows.filter(o => !q || o.name.toLowerCase().includes(q));
     const latest = tsPaint.rows.map(o => o.date).filter(Boolean).sort().pop() || "";
     tsEl(p, "stat").textContent = tsPaint.err ? tsPaint.err : list.length + "品目" + (latest ? " ／ 更新 " + latest : "");
-    const head = ["品名", "斗缶", "4L缶", "残量L", "㎡/L(目安)", "塗装可能㎡", "備考"];
-    table.querySelector("thead").innerHTML = "<tr>" + head.map(h => "<th" + (h === "備考" ? ' class="ts3-note"' : "") + ">" + h + "</th>").join("") + "</tr>";
+    const head = ["品名", "斗缶", "4L缶", "残量L", "㎡/L(目安)", "塗装㎡", "備考"];
+    const hcls = { "斗缶": "c", "4L缶": "c", "㎡/L(目安)": "c", "残量L": "r", "塗装㎡": "r", "備考": "ts3-note" };
+    table.querySelector("thead").innerHTML = "<tr>" + head.map(h => "<th" + (hcls[h] ? ' class="' + hcls[h] + '"' : "") + ">" + h + "</th>").join("") + "</tr>";
     const tb = table.querySelector("tbody"); tb.innerHTML = "";
     list.forEach(o => {
       const a = tsQty(o.tokan), b = tsQty(o.can4), cov = parseFloat(String(o.cov).normalize("NFKC"));
@@ -3272,13 +3280,22 @@
       const area = (L != null && cov > 0) ? Math.round(L * cov) : null;
       const tr = document.createElement("tr");
       const cell = (cls, text) => { const td = document.createElement("td"); td.className = cls; td.textContent = text; tr.appendChild(td); return td; };
-      const card = (field, val, w) => { const td = document.createElement("td"); td.className = "ts3-inline" + (field === "備考" ? " ts3-note" : ""); const c = document.createElement("span"); c.className = "ts3-card" + (val ? "" : " empty") + (w ? " wide" : ""); c.textContent = val || "　"; td.appendChild(c); td.addEventListener("click", () => tsPaintEdit(td, o, field)); tr.appendChild(td); };
+      // 手入力できるマスは、他の画面(予定・納品など)と同じバッジ表示。空欄はグレーの「—」
+      const card = (field, val) => {
+        const td = document.createElement("td"); td.className = "ts3-inline"; td.title = "クリックで入力";
+        if (field === "備考") { td.className += " ts3-note"; td.textContent = val; }
+        else {
+          const c = val ? { text: val, bg: "#dde8f7", fg: "#1f4a85", bd: "#4a7bc0", fw: "500" } : ich2Cell("");
+          td.innerHTML = ich2Badge(c, false).replace('class="ich2-badge"', 'class="ich2-badge ts3-qty"');
+        }
+        td.addEventListener("click", () => tsPaintEdit(td, o, field)); tr.appendChild(td);
+      };
       const nm = cell("nm", o.name); nm.title = o.name;
       card("斗缶", o.tokan); card("4L缶", o.can4);
       cell("num", bad ? "?" : kg ? "kg缶" : tsRound1(L));
       card("㎡/L", o.cov);
-      cell("num cap", area != null ? area.toLocaleString("ja-JP") + "㎡" : "—");
-      card("備考", o.biko, true);
+      cell("num cap", area != null ? area.toLocaleString("ja-JP") : "—");
+      card("備考", o.biko);
       tb.appendChild(tr);
     });
     tsSyncSelection(); tsFit();
@@ -3287,7 +3304,7 @@
   function tsPaintEdit(td, o, field) {
     if (document.querySelector(".ts3-float-input")) return;
     const cur = { "斗缶": o.tokan, "4L缶": o.can4, "㎡/L": o.cov, "備考": o.biko }[field] || "";
-    const rect = (td.querySelector(".ts3-card") || td).getBoundingClientRect();
+    const rect = (td.querySelector(".ich2-badge, .ts3-card") || td).getBoundingClientRect();
     const input = document.createElement("input");
     input.type = "text"; input.value = cur; input.className = "ts3-float-input";
     const w = Math.max(rect.width, field === "備考" ? 160 : 80);
