@@ -169,7 +169,7 @@
     border-bottom: 0; box-shadow: inset 0 -2px 0 var(--color-divider); white-space: nowrap;   /* 見出し下の線は、スクロールしても見出しと一緒に固定 */
   }
   table.ts3-data td { padding: 1px 8px; line-height: 20px; height: 22px; border-bottom: 1px solid var(--color-divider); white-space: nowrap; }
-  table.ts3-data tbody tr:hover td { background: rgba(32,30,29,0.04); }
+  table.ts3-data tbody tr:hover td { background: rgba(32,30,29,0.09); }
   table.ts3-data th.ts3-sticky, table.ts3-data td.ts3-sticky {
     position: sticky; left: 0; z-index: 1; background: var(--color-bg); border-right: 2px solid var(--color-divider);
   }
@@ -458,6 +458,9 @@
   .ich2-list .tz-shade { background-image: linear-gradient(rgba(32,30,29,0.08), rgba(32,30,29,0.08)); }
   table.ich2-list tbody td { padding: 1px 3px; border-bottom: 1px solid var(--color-divider); }
   .ich2-sticky-col { position: sticky; z-index: 2; background: var(--rowbg); }
+  /* マウスを乗せた行の色(固定列・塗装の縞・色付き行の上にも重ねて濃くする) */
+  table.ich2-list tbody tr:hover td { box-shadow: inset 0 0 0 9999px rgba(32,30,29,0.09); }
+  table.ich2-list tbody tr:hover td.ich2-prog-cell { box-shadow: inset 0 0 0 9999px rgba(236,48,19,0.10); }
   .ich2-nowrap { white-space: nowrap; }
   .ich2-ellipsis { overflow: hidden; text-overflow: ellipsis; }
   .ich2-tabular { font-variant-numeric: tabular-nums; }
