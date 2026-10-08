@@ -2802,7 +2802,7 @@
     "研磨": [...TS_HEAD_BASE, ["vol","vol"],["材質","材質"],["価格","価格"],["予定","搬入予定"],["納品","完成納品"],["社名","業者"],["備考","備考"]],
     "エポ": [...TS_HEAD_BASE, ["vol","vol"],["材質","材質"],["内容","内容"],["価格","価格"],["持込","搬入予定"],["完成","完成日"],["納品","完成納品"],["業者","業者"],["備考","備考"]],
     "FRP":  [...TS_HEAD_BASE, ["vol","vol"],["材質","材質"],["内容","内容"],["価格","価格"],["持込","搬入予定"],["完成","完成日"],["納品","完成納品"],["業者","業者"],["備考","備考"]],
-    "メッキ": [...TS_HEAD_BASE, ["vol","vol"],["価格","価格"],["材質","材質"],["内容","内容"],["持込","搬入予定"],["完成","完成日"],["納品","完成納品"],["業者","業者"],["備考","備考"]],
+    "メッキ": [...TS_HEAD_BASE, ["vol","vol"],["価格","価格"],["内容","内容"],["持込","搬入予定"],["完成","完成日"],["納品","完成納品"],["業者","業者"],["備考","備考"]],
     "外装": [...TS_HEAD_BASE, ["vol","vol"],["材質","材質"],["内容","内容"],["工数㎡","工数㎡"],["予定","搬入予定"],["納品","完成納品"],["業者","業者"],["備考","備考"]],
   };
   const TS_DATE_LABELS = ["納期","受・完","予定","持込","完成","納品"];
@@ -2811,11 +2811,11 @@
   // 終了済みの現場(納品の入力がなくても「完了」として扱う)
   const TS_FINISHED_SITES = ["丸の内3-2"];
   // タブごとに「終わっている現場」(納品や塗装が入力されていなくても完了として扱う)
-  const TS_FINISHED_BY_TAB = { "外装": ["アステラファーマ", "小田原市庁舎"], "メッキ": ["全薬工業", "小田原庁舎", "小田原市庁舎"] };
+  const TS_FINISHED_BY_TAB = { "外装": ["アステラファーマ", "アステラ", "小田原市庁舎", "巣鴨"], "メッキ": ["全薬工業", "小田原庁舎", "小田原市庁舎"] };
   function tsNorm(x) { return String(x || "").normalize("NFKC").replace(/[‐-―−ーｰ]/g, "-").replace(/\s/g, ""); }
   function tsIsDone(o) {
     if (o.get("完成納品")) return true;
-    const site = tsNorm(o.get("現場名"));
+    const site = tsNorm(o.get("現場名")) + "|" + tsNorm(o.get("品名"));
     return TS_FINISHED_SITES.concat(TS_FINISHED_BY_TAB[o.tab] || []).some(k => site.includes(tsNorm(k)));
   }
 
@@ -2952,7 +2952,7 @@
         }
         if (label === "納期") td.className = "ts3-sticky after-no";
         if (label === noteLabel) { td.className = "ts3-note"; td.title = td.textContent; }
-        else if (label === "備考") { td.style.maxWidth = "110px"; td.style.textAlign = "left"; td.title = td.textContent; }
+        else if (label === "備考") { td.style.maxWidth = (tab.key === "メッキ" ? "165px" : "110px"); td.style.textAlign = "left"; td.title = td.textContent; }
         if (TS_INLINE[label]) {
           td.classList.add("ts3-inline");
           td.title = "クリックで入力";
