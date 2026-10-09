@@ -183,7 +183,7 @@ function kubunToDept(seisaku, ku) {
   if (v === "S" || v.includes("SUS")) return "SUS工場";
   return "他";
 }
-const DEPTS = ["第3工場", "第1工場", "SUS工場", "コイル", "他"];
+const DEPTS = ["第1工場", "コイル", "SUS工場", "第3工場", "他"];
 const DEPT_LABELS = { "すべて": "全", "第3工場": "第3", "第1工場": "第1", "SUS工場": "SUS", "コイル": "コイル", "他": "他" };
 
 // 「製造」タブ・「連絡」タブの読み込みは、どちらもGoogle Sheets APIを直接呼び出す(GASのWebアプリを経由しない分、速く安定する)。
@@ -200,7 +200,7 @@ async function loadJobs() {
   const header = rows[0];
   const idx = name => header.indexOf(name);
   const iSeizou = idx("製造番号"), iGenba = idx("現場名"), iNouki = idx("納期"), iHinmei = idx("品名"),
-    iSunpou = idx("寸法"), iJuken = idx("受・完"), iKu = idx("区"), iSeisaku = idx("製"), iTosouCols = ["酸洗","研磨","エポ","FRP","メッキ","外装","その他"].map(n => { const k = idx(n); return (k === -1 && n === "その他") ? idx("判定不能") : k; }),
+    iSunpou = idx("寸法"), iJuken = idx("受・完"), iKu = idx("区"), iSeisaku = idx("製"), iCoiluse = idx("コイル使用"), iTosouCols = ["酸洗","研磨","エポ","FRP","メッキ","外装","その他"].map(n => { const k = idx(n); return (k === -1 && n === "その他") ? idx("判定不能") : k; }),
     iZumen = idx("図"), iToroku = idx("登録日"),
     iJuchu = idx("受注日"), iSeisakuDay = idx("製作日"), iKansei = idx("完成日"),
     iNaiso = idx("内装日"), iGaiso = idx("外装日"), iShukka = idx("出荷日");
@@ -316,6 +316,11 @@ async function loadJobs() {
         due: r[iNouki] || "",
         juken: r[iJuken] || "",
         dept: kubunToDept(r[iSeisaku], r[iKu]),
+        // コイル関連(PCの一覧と同じ判定):製作部署がコイル/コイル使用チェック/品名に熱交換器/塗装仕様に熱源
+        isCoil: kubunToDept(r[iSeisaku], r[iKu]) === "コイル"
+          || String(iCoiluse >= 0 ? r[iCoiluse] || "" : "").trim().toUpperCase() === "TRUE"
+          || String(r[iHinmei] || "").includes("熱交換器")
+          || iTosouCols.some(ci => ci >= 0 && String(r[ci] || "").includes("熱源")),
         isDai3: isDatePassed(r[iKansei]),
         shipped: isDatePassed(r[iShukka]) || /^[?？]$|取消/.test((r[iShukka]||"").toString().trim()),
         item: r[iHinmei] || "",
@@ -364,7 +369,7 @@ function visibleJobs() {
   const q = state.query.trim();
   let jobs = state.jobs
     .filter(j => state.showShipped || !j.shipped)
-    .filter(j => state.dept === "すべて" || (state.dept === "第3工場" ? j.isDai3 : j.dept === state.dept))
+    .filter(j => state.dept === "すべて" || (state.dept === "第3工場" ? j.isDai3 : state.dept === "コイル" ? j.isCoil : j.dept === state.dept))
     .filter(j => !q || j.no.includes(q) || j.site.includes(q));
   jobs = jobs.slice().sort((a, b) => {
     if (state.sort === "due") {
@@ -421,7 +426,7 @@ function renderJobsToolbar() {
     <div class="dept-row">
       ${deptOptions.map(d => {
         const pool = state.showShipped ? state.jobs : state.jobs.filter(j => !j.shipped);
-        const n = d === "すべて" ? pool.length : d === "第3工場" ? pool.filter(j => j.isDai3).length : pool.filter(j => j.dept === d).length;
+        const n = d === "すべて" ? pool.length : d === "第3工場" ? pool.filter(j => j.isDai3).length : d === "コイル" ? pool.filter(j => j.isCoil).length : pool.filter(j => j.dept === d).length;
         return `<button class="dept-btn${state.dept === d ? " is-active" : ""}" data-action="dept" data-dept="${escapeHtml(d)}"><span>${escapeHtml(DEPT_LABELS[d] || d)}</span><span class="dept-btn-n">${n}</span></button>`;
       }).join("")}
     </div>

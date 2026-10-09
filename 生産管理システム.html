@@ -1796,7 +1796,7 @@
       if (ich2IsDai3(r[iKansei])) counts.dai3++;
     });
     document.getElementById("ich2Summary").innerHTML = [
-      ["全数", counts.total], ["第1工場", counts.dai1], ["SUS工場", counts.sus], ["コイル", counts.coil], ["第3工場", counts.dai3], ["他", counts.other]
+      ["全数", counts.total], ["第1工場", counts.dai1], ["コイル", counts.coil], ["SUS工場", counts.sus], ["第3工場", counts.dai3], ["他", counts.other]
     ].map(([label,val]) =>
       '<button type="button" class="cell ich2-summary-btn' + (ich2State.dept === label ? ' active' : '') + '" data-dept="' + ich2Esc(label) + '">' +
       '<div class="label">'+label+'</div><div class="value">'+val+'<span>件</span></div></button>'
