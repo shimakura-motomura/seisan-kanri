@@ -3671,7 +3671,7 @@
           '<div style="display:flex;align-items:center;justify-content:space-between;padding:10px 14px;border-bottom:2px solid var(--color-divider,#ccc);">' +
             '<span style="font-weight:800;font-family:var(--font-heading, inherit);">図面プレビュー</span>' +
             '<div>' +
-              '<a id="zumenOpenNewTab" href="#" target="_blank" rel="noopener" style="font-size:12px;margin-right:14px;">新しいタブで開く</a>' +
+              '<button type="button" id="zumenPrintBtn" style="border:1px solid #ccc;background:#fff;padding:5px 12px;font-size:12px;cursor:pointer;margin-right:12px;" title="図面を用紙いっぱいに全部入れて印刷します">印刷</button><a id="zumenOpenNewTab" href="#" target="_blank" rel="noopener" style="font-size:12px;margin-right:14px;">新しいタブで開く</a>' +
               '<button type="button" onclick="document.getElementById(\'zumenPreviewModal\').remove()" style="border:1px solid #ccc;background:#fff;padding:5px 12px;font-size:12px;cursor:pointer;">閉じる</button>' +
             '</div>' +
           '</div>' +
@@ -3682,6 +3682,83 @@
     }
     document.getElementById("zumenIframe").src = src;
     document.getElementById("zumenOpenNewTab").href = url;
+    const pb = document.getElementById("zumenPrintBtn");
+    pb.onclick = () => zumenPrint(fileId, pb);
+    pb.style.display = fileId ? "" : "none";
+  }
+
+  // ---- 図面の印刷:PDFを自分で読み込み、用紙(A4/A3どちらでも)に全部入るように印刷画面を出す ----
+  const PDFJS_BASE = "https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/";
+  let pdfjsReady = null;
+  function loadPdfJs() {
+    if (pdfjsReady) return pdfjsReady;
+    pdfjsReady = new Promise((resolve, reject) => {
+      const sc = document.createElement("script");
+      sc.src = PDFJS_BASE + "pdf.min.js";
+      sc.onload = async () => {
+        try {
+          const wr = await fetch(PDFJS_BASE + "pdf.worker.min.js");
+          const blob = new Blob([await wr.text()], { type: "text/javascript" });
+          window.pdfjsLib.GlobalWorkerOptions.workerSrc = URL.createObjectURL(blob);
+          resolve(window.pdfjsLib);
+        } catch (e) { reject(e); }
+      };
+      sc.onerror = () => reject(new Error("PDF表示の部品を読み込めませんでした"));
+      document.head.appendChild(sc);
+    });
+    pdfjsReady.catch(() => { pdfjsReady = null; });
+    return pdfjsReady;
+  }
+  async function zumenPrint(fileId, btn) {
+    if (!fileId || btn.disabled) return;
+    const label = btn.textContent;
+    btn.disabled = true; btn.textContent = "準備中...";
+    try {
+      const [pdfjs, res] = await Promise.all([
+        loadPdfJs(),
+        fetch(GAS_URL, { method: "POST", body: JSON.stringify({ type: "getZumenPdf", fileId }) })
+      ]);
+      const data = await res.json();
+      if (data.result !== "success") throw new Error(data.message || "図面を取得できませんでした");
+      const bin = atob(data.data); const bytes = new Uint8Array(bin.length);
+      for (let i = 0; i < bin.length; i++) bytes[i] = bin.charCodeAt(i);
+      const pdf = await pdfjs.getDocument({ data: bytes }).promise;
+      const imgs = []; let landscape = true;
+      for (let n = 1; n <= pdf.numPages; n++) {
+        const page = await pdf.getPage(n);
+        const v1 = page.getViewport({ scale: 1 });
+        if (n === 1) landscape = v1.width >= v1.height;
+        const scale = Math.min(4500 / Math.max(v1.width, v1.height), 6);   // 長辺 約4500px(A3でも細かい線がつぶれない)
+        const vp = page.getViewport({ scale });
+        const cv = document.createElement("canvas"); cv.width = Math.round(vp.width); cv.height = Math.round(vp.height);
+        const cx = cv.getContext("2d"); cx.fillStyle = "#fff"; cx.fillRect(0, 0, cv.width, cv.height);
+        await page.render({ canvasContext: cx, viewport: vp }).promise;
+        imgs.push(cv.toDataURL("image/jpeg", 0.92));
+      }
+      const old = document.getElementById("zumenPrintFrame"); if (old) old.remove();
+      const fr = document.createElement("iframe");
+      fr.id = "zumenPrintFrame"; fr.style.cssText = "position:fixed;left:-9999px;top:0;width:10px;height:10px;border:0;";
+      document.body.appendChild(fr);
+      const d = fr.contentWindow.document;
+      d.open();
+      d.write('<!doctype html><html><head><meta charset="utf-8"><title>図面</title><style>' +
+        '@page{size:' + (landscape ? "landscape" : "portrait") + ';margin:6mm}' +
+        'html,body{margin:0;padding:0;background:#fff}' +
+        '.pg{width:100%;height:100vh;display:flex;align-items:center;justify-content:center;page-break-after:always;break-after:page;overflow:hidden}' +
+        '.pg:last-child{page-break-after:auto;break-after:auto}' +
+        '.pg img{max-width:100%;max-height:100%;object-fit:contain;display:block}' +
+        '</style></head><body>' + imgs.map(u => '<div class="pg"><img src="' + u + '"></div>').join("") + '</body></html>');
+      d.close();
+      const imgEls = Array.from(d.images);
+      await Promise.all(imgEls.map(im => im.complete ? 0 : new Promise(r => { im.onload = im.onerror = r; })));
+      fr.contentWindow.focus();
+      fr.contentWindow.print();
+      setTimeout(() => fr.remove(), 120000);
+    } catch (e) {
+      alert("印刷の準備に失敗しました: " + e.message + "\n\n右上の「新しいタブで開く」から印刷してください。");
+    } finally {
+      btn.disabled = false; btn.textContent = label;
+    }
   }
 
   function formatDateOnly(v) {
