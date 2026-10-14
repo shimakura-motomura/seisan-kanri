@@ -913,6 +913,7 @@
           並び順
           <select class="input" id="ich2Sort">
             <option value="due">納期順</option>
+            <option value="juken">受・完順</option>
             <option value="no" selected>製造番号順</option>
           </select>
         </label>
@@ -1137,7 +1138,7 @@
             <button type="button" data-status="done">完了</button>
           </div>
           <select class="ts3-sort" id="tsSort" title="並び順">
-            <option value="nouki">納期順</option><option value="seiban">製造番号順</option><option value="genba">現場名順</option><option value="yotei">予定順</option><option value="gyousha">業者順</option>
+            <option value="nouki">納期順</option><option value="seiban">製造番号順</option><option value="genba">現場名順</option><option value="yotei">予定順</option><option value="juken">受・完順</option><option value="gyousha">業者順</option>
           </select>
           <span class="ts3-count-label" id="tsListStatus">読み込み中...</span>
         </div>
@@ -1153,7 +1154,7 @@
             <button type="button" data-status="done">完了</button>
           </div>
           <select class="ts3-sort" id="tsSort2" title="並び順">
-            <option value="nouki">納期順</option><option value="seiban">製造番号順</option><option value="genba">現場名順</option><option value="yotei">予定順</option><option value="gyousha">業者順</option>
+            <option value="nouki">納期順</option><option value="seiban">製造番号順</option><option value="genba">現場名順</option><option value="yotei">予定順</option><option value="juken">受・完順</option><option value="gyousha">業者順</option>
           </select>
           <span class="ts3-paint-cfg" id="tsPaintCfg" hidden title="斗缶1缶あたりのリットル数(容量の仮定)">斗缶＝<input type="text" id="tsPaintTokan" value="16" inputmode="decimal">L</span>
           <span class="ts3-cal-nav" id="tsCalNav" hidden>
@@ -1780,7 +1781,11 @@
     });
 
     rows = rows.slice();
-    if (ich2State.sort === "due") {
+    if (ich2State.sort === "juken") {   // 受・完の日付が早い順(空欄は最後)。同じ日は製造番号順
+      const jv = r => { const t = r[iJuken] ? new Date(r[iJuken]).getTime() : NaN; return isNaN(t) ? Infinity : t; };
+      const nn = r => parseInt(String(r[iSeizou]||"").match(/(\d+)/)?.[1] || "0", 10);
+      rows.sort((a,b) => { const da = jv(a), db = jv(b); return da === db ? nn(a) - nn(b) : (da < db ? -1 : 1); });
+    } else if (ich2State.sort === "due") {
       rows.sort((a,b) => {
         const da = a[iNouki] ? new Date(a[iNouki]).getTime() : Infinity;
         const db = b[iNouki] ? new Date(b[iNouki]).getTime() : Infinity;
@@ -2900,6 +2905,11 @@
       if (p.sort === "seiban") d = cmpTxt(a.get("製造番号"), b.get("製造番号"));
       else if (p.sort === "genba") d = cmpTxt(a.get("現場名"), b.get("現場名"));
       else if (p.sort === "yotei") d = tsDateVal(a.get("搬入予定")) - tsDateVal(b.get("搬入予定"));
+      else if (p.sort === "juken") {   // 受・完の日付が早い順(空欄は最後)。同じ日は納期順
+        const jv = o => { const t = new Date(String((tsProductMap[o.get("製造番号")] || {}).juken || "")).getTime(); return isNaN(t) ? Infinity : t; };
+        const ja = jv(a), jb = jv(b);
+        d = ja === jb ? (tsDateVal(a.get("納期")) - tsDateVal(b.get("納期"))) : (ja < jb ? -1 : 1);
+      }
       else if (p.sort === "gyousha") {   // 業者名の順(空欄は最後)。同じ業者の中は納期順
         const ga = String(a.get("業者") || "").trim(), gb = String(b.get("業者") || "").trim();
         d = (ga ? 0 : 1) - (gb ? 0 : 1) || cmpTxt(ga, gb) || (tsDateVal(a.get("納期")) - tsDateVal(b.get("納期")));
