@@ -1980,7 +1980,7 @@
     const isWideProgCol = (columnName === "内装日" || columnName === "外装日");
     td.innerHTML =
       '<span style="position:absolute;top:50%;left:0;transform:translateY(-50%);display:inline-flex;gap:2px;align-items:center;background:var(--color-bg);padding:2px;box-shadow:0 2px 8px rgba(32,30,29,0.25);z-index:50;">' +
-      '<input type="text" class="ich2-prog-input" value="'+current.replace(/"/g,"&quot;")+'" placeholder="例: 9/10" style="width:'+(isWideProgCol?160:80)+'px;font-size:14px;padding:5px 6px;border:2px solid var(--color-accent);text-align:center;font-family:inherit;box-sizing:border-box;">' +
+      '<input type="text" class="ich2-prog-input" value="'+current.replace(/"/g,"&quot;")+'" style="width:'+(isWideProgCol?160:80)+'px;font-size:14px;padding:5px 6px;border:2px solid var(--color-accent);text-align:center;font-family:inherit;box-sizing:border-box;">' +
       '<button type="button" class="ich2-prog-na-btn" title="対象外にする" style="font-size:14px;padding:5px 9px;border:1px solid var(--color-neutral-400);background:var(--color-neutral-200);color:var(--color-neutral-700);cursor:pointer;white-space:nowrap;">―</button>' +
       '</span>';
     const input = td.querySelector("input");
@@ -2021,7 +2021,7 @@
     const original = td.innerHTML;
     td.style.position = "relative"; td.style.zIndex = "50";
     td.innerHTML = '<span style="position:absolute;top:50%;left:0;transform:translateY(-50%);display:inline-flex;gap:2px;align-items:center;background:var(--color-bg);padding:2px;box-shadow:0 2px 8px rgba(32,30,29,0.25);z-index:50;">' +
-      '<input type="text" class="ich2-prog-input" value="' + ich2Esc(current) + '" placeholder="例: 9/10" style="width:90px;font-size:14px;padding:5px 6px;border:2px solid var(--color-accent);text-align:center;font-family:inherit;box-sizing:border-box;">' +
+      '<input type="text" class="ich2-prog-input" value="' + ich2Esc(current) + '" style="width:90px;font-size:14px;padding:5px 6px;border:2px solid var(--color-accent);text-align:center;font-family:inherit;box-sizing:border-box;">' +
       '</span>';
     const input = td.querySelector("input");
     input.focus(); input.select();
@@ -2148,7 +2148,7 @@
       const hasNa = col !== "納期"; // 納期には「対象外」は無い
       return '<div class="ich2-edit-field"><label for="'+id+'">'+ich2Esc(label)+'</label>' +
         '<div class="ich2-edit-prog">' +
-        '<input type="text" id="'+id+'" data-col="'+ich2Esc(col)+'" placeholder="例: 9/10" value="'+ich2Esc(val)+'" '+(isNa?"disabled":"")+'>' +
+        '<input type="text" id="'+id+'" data-col="'+ich2Esc(col)+'" value="'+ich2Esc(val)+'" '+(isNa?"disabled":"")+'>' +
         (hasNa ? '<label class="na" title="対象外"><input type="checkbox" id="'+naId+'" '+(isNa?"checked":"")+' onchange="document.getElementById(\''+id+'\').disabled=this.checked;">―</label>' : '') +
         '</div></div>';
     }).join("");
@@ -3014,7 +3014,7 @@
     const card = td.querySelector(".ts3-card, .ich2-badge") || td;
     const rect = card.getBoundingClientRect();
     const input = document.createElement("input");
-    input.type = "text"; input.value = current; input.className = "ts3-float-input"; input.placeholder = isDate ? "例: 10/20" : "";
+    input.type = "text"; input.value = current; input.className = "ts3-float-input"; input.placeholder = "";
     const w = Math.max(rect.width, isDate ? 90 : 110);
     if (isDate) input.style.textAlign = "center";
     input.style.cssText = "left:" + Math.min(rect.left, window.innerWidth - w - 8) + "px;top:" + (rect.top - 4) + "px;width:" + w + "px;height:" + (rect.height + 8) + "px;" + (isDate ? "text-align:center;font-size:14px;" : "");
