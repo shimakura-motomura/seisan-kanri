@@ -861,7 +861,7 @@
       <div class="ich2-edit-head"><span class="ttl">製作手配 登録</span><span class="no">新規</span><span class="sub">緑色の項目は図面からの仮入力です。内容を確認してください</span></div>
       <div class="ich2-edit-body">
         <div><div class="ich2-edit-sec-h"><b>基本情報</b><label style="font-size:11px;display:flex;align-items:center;gap:4px;cursor:pointer;"><input type="checkbox" id="f_coiluse" style="accent-color:var(--color-accent);">コイル使用(コイル成形を含む場合)</label><i></i></div>
-          <div class="ich2-edit-grid sk-grid5"><div class="ich2-edit-field"><label for="f_seizouBangou">製造番号</label><input type="text" id="f_seizouBangou"></div><div class="ich2-edit-field"><label for="f_nouki">納期</label><input type="text" id="f_nouki"></div><div class="ich2-edit-field"><label for="f_genbaMei">現場名<span style="color:var(--color-accent);font-weight:700;margin-left:6px;font-size:11px;">略称で入力</span></label><input type="text" id="f_genbaMei"></div><div class="ich2-edit-field"><label for="f_hinmei">品名</label><input type="text" id="f_hinmei"></div><div class="ich2-edit-field"><label for="f_sunpou">寸法</label><input type="text" id="f_sunpou"></div><div class="ich2-edit-field"><label for="f_zairyou">材質</label><input type="text" id="f_zairyou" placeholder="例 444"></div><div class="ich2-edit-field"><label for="f_jukenKansei">受・完</label><input type="text" id="f_jukenKansei" placeholder="例 2026/10/15"></div><div class="ich2-edit-field"><label for="f_kubun">区</label><select id="f_kubun"><option value=""></option><option value="外">外(適用外)</option><option value="一">一(一圧)</option><option value="二">二(二圧)</option><option value="小">小(小型圧力容器)</option><option value="消">消(消防検査)</option></select></div><div class="ich2-edit-field"><label for="f_seisakuKubun">製作</label><select id="f_seisakuKubun"><option value=""></option><option value="1">1(第一工場)</option><option value="S">S(SUS工場)</option><option value="杉">杉(杉原)</option><option value="コ">コ(コイル)</option></select></div><div class="ich2-edit-field"><label for="f_tantou">担当者</label><input type="text" id="f_tantou"></div><div class="ich2-edit-field"><label for="f_mSunpou">m寸法</label><input type="text" id="f_mSunpou"></div><div class="ich2-edit-field"><label for="f_shitsuryou">質量</label><input type="text" id="f_shitsuryou"></div><div class="ich2-edit-field"><label for="f_katabangou">型番</label><input type="text" id="f_katabangou"></div><div class="ich2-edit-field"><label for="f_baika">売価(千円)</label><input type="text" id="f_baika"></div><div class="ich2-edit-field"><label for="f_zumenLink">図面リンク(自動)</label><input type="text" id="f_zumenLink" readonly></div></div></div>
+          <div class="ich2-edit-grid sk-grid5"><div class="ich2-edit-field"><label for="f_seizouBangou">製造番号</label><input type="text" id="f_seizouBangou"></div><div class="ich2-edit-field"><label for="f_nouki">納期</label><input type="text" id="f_nouki"></div><div class="ich2-edit-field"><label for="f_genbaMei">現場名<span style="color:var(--color-accent);font-weight:700;margin-left:6px;font-size:11px;">略称で入力</span></label><input type="text" id="f_genbaMei"></div><div class="ich2-edit-field"><label for="f_hinmei">品名</label><input type="text" id="f_hinmei"></div><div class="ich2-edit-field"><label for="f_sunpou">寸法</label><input type="text" id="f_sunpou"></div><div class="ich2-edit-field"><label for="f_zairyou">材質</label><input type="text" id="f_zairyou" placeholder="例 444"></div><div class="ich2-edit-field"><label for="f_jukenKansei">検完</label><input type="text" id="f_jukenKansei" placeholder="例 2026/10/15"></div><div class="ich2-edit-field"><label for="f_kubun">区</label><select id="f_kubun"><option value=""></option><option value="外">外(適用外)</option><option value="一">一(一圧)</option><option value="二">二(二圧)</option><option value="小">小(小型圧力容器)</option><option value="消">消(消防検査)</option></select></div><div class="ich2-edit-field"><label for="f_seisakuKubun">製作</label><select id="f_seisakuKubun"><option value=""></option><option value="1">1(第一工場)</option><option value="S">S(SUS工場)</option><option value="杉">杉(杉原)</option><option value="コ">コ(コイル)</option></select></div><div class="ich2-edit-field"><label for="f_tantou">担当者</label><input type="text" id="f_tantou"></div><div class="ich2-edit-field"><label for="f_mSunpou">m寸法</label><input type="text" id="f_mSunpou"></div><div class="ich2-edit-field"><label for="f_shitsuryou">質量</label><input type="text" id="f_shitsuryou"></div><div class="ich2-edit-field"><label for="f_katabangou">型番</label><input type="text" id="f_katabangou"></div><div class="ich2-edit-field"><label for="f_baika">売価(千円)</label><input type="text" id="f_baika"></div><div class="ich2-edit-field"><label for="f_zumenLink">図面リンク(自動)</label><input type="text" id="f_zumenLink" readonly></div></div></div>
         <div><div class="ich2-edit-sec-h"><b>塗装仕様</b><span>工程ごとに「部位・内容・vol」を入力 / 複数ある場合は「＋行を追加」</span><i></i></div>
           <div class="sk-tosou" id="skTosouBlocks"></div><datalist id="sk_bui_list"></datalist><datalist id="sk_gy_list"></datalist></div>
         <div><div class="ich2-edit-sec-h"><b>備考</b><i></i></div>
@@ -913,7 +913,7 @@
           並び順
           <select class="input" id="ich2Sort">
             <option value="due">納期順</option>
-            <option value="juken">受・完順</option>
+            <option value="juken">検完順</option>
             <option value="no" selected>製造番号順</option>
           </select>
         </label>
@@ -955,7 +955,7 @@
 
               <th id="ich2-col-a" class="ich2-colh">寸法</th>
               <th class="ich2-colh">材質</th>
-              <th class="ich2-colh">受・完</th>
+              <th class="ich2-colh">検完</th>
               <th class="ich2-colh center">区</th>
               <th class="ich2-colh">製作</th>
               <th class="ich2-colh center tz tz-first tz-shade" title="酸洗">酸洗</th>
@@ -1138,7 +1138,7 @@
             <button type="button" data-status="done">完了</button>
           </div>
           <select class="ts3-sort" id="tsSort" title="並び順">
-            <option value="nouki">納期順</option><option value="seiban">製造番号順</option><option value="genba">現場名順</option><option value="yotei">予定順</option><option value="juken">受・完順</option><option value="gyousha">業者順</option>
+            <option value="nouki">納期順</option><option value="seiban">製造番号順</option><option value="genba">現場名順</option><option value="yotei">予定順</option><option value="juken">検完順</option><option value="gyousha">業者順</option>
           </select>
           <span class="ts3-count-label" id="tsListStatus">読み込み中...</span>
         </div>
@@ -1154,7 +1154,7 @@
             <button type="button" data-status="done">完了</button>
           </div>
           <select class="ts3-sort" id="tsSort2" title="並び順">
-            <option value="nouki">納期順</option><option value="seiban">製造番号順</option><option value="genba">現場名順</option><option value="yotei">予定順</option><option value="juken">受・完順</option><option value="gyousha">業者順</option>
+            <option value="nouki">納期順</option><option value="seiban">製造番号順</option><option value="genba">現場名順</option><option value="yotei">予定順</option><option value="juken">検完順</option><option value="gyousha">業者順</option>
           </select>
           <span class="ts3-paint-cfg" id="tsPaintCfg" hidden title="斗缶1缶あたりのリットル数(容量の仮定)">斗缶＝<input type="text" id="tsPaintTokan" value="16" inputmode="decimal">L</span>
           <span class="ts3-cal-nav" id="tsCalNav" hidden>
@@ -1664,7 +1664,7 @@
     try {
       const valueRanges = await ich2FetchViaSheetsApi();
       const rows = (valueRanges[0] && valueRanges[0].values) || [];
-      ich2Header = rows[0] || [];
+      ich2Header = (rows[0] || []).map(h => String(h).trim() === "受・完" ? "検完" : h);   // シートの見出しが「受・完」でも「検完」でも動く
       const idxGenba = ich2Header.indexOf("現場名");
       ich2All = rows.slice(1).filter(r => r[0] && r[idxGenba]);
 
@@ -1747,7 +1747,7 @@
     const H = ich2Header;
     const idx = name => H.indexOf(name);
     const iSeizou = idx("製造番号"), iNouki = idx("納期"), iGenba = idx("現場名"), iHinmei = idx("品名"),
-      iSunpou = idx("寸法"), iZairyou = idx("材質"), iJuken = idx("受・完"), iKu = idx("区"), iSeisaku = idx("製"), iCoiluse = idx("コイル使用"),
+      iSunpou = idx("寸法"), iZairyou = idx("材質"), iJuken = idx("検完") !== -1 ? idx("検完") : idx("受・完"), iKu = idx("区"), iSeisaku = idx("製"), iCoiluse = idx("コイル使用"),
       iTosouSanArai = idx("酸洗"), iTosouKenma = idx("研磨"), iTosouEpo = idx("エポ"), iTosouFrp = idx("FRP"), iTosouMekki = idx("メッキ"), iTosouGaisou = idx("外装"), iTosouSonota = idx("その他") !== -1 ? idx("その他") : idx("判定不能"),
       iJuchu = idx("受注日"), iSeisakuDay = idx("製作日"), iKansei = idx("完成日"), iNaiso = idx("内装日"), iGaiso = idx("外装日"), iShukka = idx("出荷日"), iBanyu = idx("搬入日"),
       iTantou = idx("担当者"), iMsunpou = idx("m寸法"), iShitsuryou = idx("質量"), iKatabangou = idx("型番"), iBaika = idx("売価(千円)"), iBiko = idx("備考"), iZumen = idx("図");
@@ -1781,7 +1781,7 @@
     });
 
     rows = rows.slice();
-    if (ich2State.sort === "juken") {   // 受・完の日付が早い順(空欄は最後)。同じ日は製造番号順
+    if (ich2State.sort === "juken") {   // 検完の日付が早い順(空欄は最後)。同じ日は製造番号順
       const jv = r => { const t = r[iJuken] ? new Date(r[iJuken]).getTime() : NaN; return isNaN(t) ? Infinity : t; };
       const nn = r => parseInt(String(r[iSeizou]||"").match(/(\d+)/)?.[1] || "0", 10);
       rows.sort((a,b) => { const da = jv(a), db = jv(b); return da === db ? nn(a) - nn(b) : (da < db ? -1 : 1); });
@@ -2124,7 +2124,7 @@
   ];
   // 進捗の日付項目(対象外「***」チェック付き)。[列見出し, 表示ラベル]
   const ICH2_EDIT_DATE_FIELDS = [
-    ["納期","納期"], ["受注日","受注日"], ["製作日","製作日"], ["完成日","完成日"],
+    ["納期","納期"], ["検完","検完"], ["受注日","受注日"], ["製作日","製作日"], ["完成日","完成日"],
     ["内装日","内装日"], ["外装日","外装日"], ["出荷日","出荷日"]
   ];
 
@@ -2763,7 +2763,7 @@
       tsBuiList = buiRows.slice(1).map(r => r[0]).filter(Boolean);
       const header = prodRows[0];
       const idxSeizou = header.indexOf("製造番号"), idxGenba = header.indexOf("現場名"), idxHinmei = header.indexOf("品名"), idxSunpou = header.indexOf("寸法"), idxZumen = header.indexOf("図");
-      const idxJuken = header.indexOf("受・完"), idxKu = header.indexOf("区"), idxSei = header.indexOf("製");
+      const idxJuken = header.indexOf("検完") !== -1 ? header.indexOf("検完") : header.indexOf("受・完"), idxKu = header.indexOf("区"), idxSei = header.indexOf("製");
       prodRows.slice(1).forEach(r => {
         if (r[idxSeizou]) tsProductMap[r[idxSeizou]] = { genbaMei: r[idxGenba] || "", hinmei: r[idxHinmei] || "", sunpou: r[idxSunpou] || "", zumen: r[idxZumen] || "", juken: r[idxJuken] || "", ku: r[idxKu] || "", seisaku: r[idxSei] || "" };
       });
@@ -2836,7 +2836,7 @@
 
   // ---- 塗装タブ別の表示列(添付Excelの見出しと同じ) ----
   // [見出し, シートの列名 | null, 一覧から自動表示する項目]
-  const TS_HEAD_BASE = [["製造番号","製造番号"],["納期","納期"],["現場名","現場名"],["品名","品名"],["寸法","寸法"],["受・完",null,"juken"],["区",null,"ku"],["製作",null,"seisaku"]];
+  const TS_HEAD_BASE = [["製造番号","製造番号"],["納期","納期"],["現場名","現場名"],["品名","品名"],["寸法","寸法"],["検完",null,"juken"],["区",null,"ku"],["製作",null,"seisaku"]];
   const TS_COLS = {
     "酸洗": [...TS_HEAD_BASE, ["vol","vol"],["材質","材質"],["価格","価格"],["予定","搬入予定"],["納品","完成納品"],["社名","業者"],["備考","備考"]],
     "研磨": [...TS_HEAD_BASE, ["vol","vol"],["材質","材質"],["価格","価格"],["予定","搬入予定"],["納品","完成納品"],["社名","業者"],["備考","備考"]],
@@ -2845,7 +2845,7 @@
     "メッキ": [...TS_HEAD_BASE, ["vol","vol"],["価格","価格"],["内容","内容"],["持込","搬入予定"],["完成","完成日"],["納品","完成納品"],["業者","業者"],["備考","備考"]],
     "外装": [...TS_HEAD_BASE, ["vol","vol"],["材質","材質"],["内容","内容"],["工数㎡","工数㎡"],["予定","搬入予定"],["納品","完成納品"],["業者","業者"],["備考","備考"]],
   };
-  const TS_DATE_LABELS = ["納期","受・完","予定","持込","完成","納品"];
+  const TS_DATE_LABELS = ["納期","検完","予定","持込","完成","納品"];
   let tsEditing = null;       // null=手動追加 / {rowIndex,...}=編集
 
   // 終了済みの現場(納品の入力がなくても「完了」として扱う)
@@ -2905,7 +2905,7 @@
       if (p.sort === "seiban") d = cmpTxt(a.get("製造番号"), b.get("製造番号"));
       else if (p.sort === "genba") d = cmpTxt(a.get("現場名"), b.get("現場名"));
       else if (p.sort === "yotei") d = tsDateVal(a.get("搬入予定")) - tsDateVal(b.get("搬入予定"));
-      else if (p.sort === "juken") {   // 受・完の日付が早い順(空欄は最後)。同じ日は納期順
+      else if (p.sort === "juken") {   // 検完の日付が早い順(空欄は最後)。同じ日は納期順
         const jv = o => { const t = new Date(String((tsProductMap[o.get("製造番号")] || {}).juken || "")).getTime(); return isNaN(t) ? Infinity : t; };
         const ja = jv(a), jb = jv(b);
         d = ja === jb ? (tsDateVal(a.get("納期")) - tsDateVal(b.get("納期"))) : (ja < jb ? -1 : 1);

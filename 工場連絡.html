@@ -202,7 +202,7 @@ async function loadJobs() {
   const header = rows[0];
   const idx = name => header.indexOf(name);
   const iSeizou = idx("製造番号"), iGenba = idx("現場名"), iNouki = idx("納期"), iHinmei = idx("品名"),
-    iSunpou = idx("寸法"), iJuken = idx("受・完"), iKu = idx("区"), iSeisaku = idx("製"), iCoiluse = idx("コイル使用"), iTosouCols = ["酸洗","研磨","エポ","FRP","メッキ","外装","その他"].map(n => { const k = idx(n); return (k === -1 && n === "その他") ? idx("判定不能") : k; }),
+    iSunpou = idx("寸法"), iJuken = idx("検完") !== -1 ? idx("検完") : idx("受・完"), iKu = idx("区"), iSeisaku = idx("製"), iCoiluse = idx("コイル使用"), iTosouCols = ["酸洗","研磨","エポ","FRP","メッキ","外装","その他"].map(n => { const k = idx(n); return (k === -1 && n === "その他") ? idx("判定不能") : k; }),
     iZumen = idx("図"), iToroku = idx("登録日"),
     iJuchu = idx("受注日"), iSeisakuDay = idx("製作日"), iKansei = idx("完成日"),
     iNaiso = idx("内装日"), iGaiso = idx("外装日"), iShukka = idx("出荷日");
@@ -466,7 +466,7 @@ function jobBody(j) {
       <span class="job-site">${escapeHtml(j.site)}</span>
       <span class="job-no">${escapeHtml(j.no)}</span>
     </div>
-    <div class="job-line1">納期 ${md(j.due)}<span class="sep"> │ </span>受・完 ${md(j.juken)}<span class="sep"> │ </span>${escapeHtml(j.item)}<span class="sep"> │ </span>${escapeHtml(j.dims)}</div>
+    <div class="job-line1">納期 ${md(j.due)}<span class="sep"> │ </span>検完 ${md(j.juken)}<span class="sep"> │ </span>${escapeHtml(j.item)}<span class="sep"> │ </span>${escapeHtml(j.dims)}</div>
     <div class="job-line2">${escapeHtml(j.paint || "塗装仕様 未入力")}</div>
     <div class="job-progress">
       ${(j.progress || []).map(st => `<div class="job-progress-seg${st === "done" ? " is-done" : st === "na" ? " is-na" : ""}"></div>`).join("")}
