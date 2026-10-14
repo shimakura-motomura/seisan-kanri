@@ -2905,11 +2905,6 @@
   const TS_INLINE = { "予定": "搬入予定", "持込": "搬入予定", "完成": "完成日", "納品": "完成納品", "社名": "業者", "業者": "業者" };
   function tsDisplayValue(label, v) {
     if (label === "材質") return String(v == null ? "" : v).replace(/^\s*SUS\s*/i, "");   // 「SUS」は省いて 304 / 444 などだけ表示
-    if (label === "納期") {   // 納期は「01/29」のように月日を2桁にそろえる(登録時の「1/29」も同じ見た目に)
-      const t = formatDateShort(v);
-      const m = String(t == null ? "" : t).match(/^(\d{1,2})\/(\d{1,2})$/);
-      return m ? m[1].padStart(2, "0") + "/" + m[2].padStart(2, "0") : t;
-    }
     if (TS_DATE_LABELS.includes(label)) return formatDateShort(v);
     return v == null ? "" : v;
   }
@@ -3785,7 +3780,7 @@
     if (!v) return v;
     const full = formatDateOnly(v);
     const m = full.match(/^\d{4}\/(\d{1,2}\/\d{1,2})$/);
-    return m ? m[1] : full;
+    return m ? m[1].replace(/^0(?=\d)/, "").replace(/\/0(?=\d)/, "/") : full;   // 月日の頭の0は省く(01/29 → 1/29)
   }
   // クリック編集を開いた時、入力欄に入れる値。生のISO文字列などではなく「yyyy/m/d」の分かりやすい形式にする(***や空欄はそのまま)
   function ich2EditableDateValue(raw) {
