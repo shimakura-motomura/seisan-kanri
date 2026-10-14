@@ -90,9 +90,12 @@
   .skt-block { display: grid; grid-template-columns: 38px minmax(0, 1fr); gap: 6px; align-items: start; }
   .skt-title { font-weight: 800; font-size: 12px; line-height: 28px; }
   .skt-title small { display: block; font-weight: 400; font-size: 9px; line-height: 1; margin-top: -6px; color: var(--color-neutral-700); }
-  .skt-row { display: grid; grid-template-columns: minmax(0,1.1fr) minmax(0,1.2fr) 60px 18px 24px; gap: 4px; align-items: center; margin-bottom: 3px; }
-  .skt-block[data-proc="メッキ"] .skt-row { grid-template-columns: minmax(0,0.7fr) minmax(0,2.3fr) 60px 18px 24px; }
-  .skt-row.noNai { grid-template-columns: minmax(0,2.3fr) 60px 18px 24px; }
+  .skt-row { display: grid; grid-template-columns: minmax(0,1.1fr) minmax(0,1.2fr) minmax(0,0.7fr) 60px 18px 24px; gap: 4px; align-items: center; margin-bottom: 3px; }
+  .skt-block[data-proc="メッキ"] .skt-row { grid-template-columns: minmax(0,0.6fr) minmax(0,1.8fr) minmax(0,0.7fr) 60px 18px 24px; }
+  .skt-block[data-proc="メッキ"] .skt-row.noGy { grid-template-columns: minmax(0,0.7fr) minmax(0,2.3fr) 60px 18px 24px; }
+  .skt-row.noNai { grid-template-columns: minmax(0,1.6fr) minmax(0,0.7fr) 60px 18px 24px; }
+  .skt-row.noGy { grid-template-columns: minmax(0,1.1fr) minmax(0,1.2fr) 60px 18px 24px; }
+  .skt-row.noNai.noGy { grid-template-columns: minmax(0,2.3fr) 60px 18px 24px; }
   .skt-row input { font: inherit; font-size: 12px; height: 28px; padding: 0 6px; border: 1px solid var(--color-neutral-400); border-radius: 0; width: 100%; box-sizing: border-box; background: var(--color-bg); }
   .skt-row input:focus { border-color: var(--color-accent); outline: none; }
   .skt-row .u { font-size: 10px; color: var(--color-neutral-700); }
@@ -192,6 +195,8 @@
   td.ts3-inline { cursor: pointer; text-align: center; padding-left: 3px !important; padding-right: 3px !important; }
   td.ts3-inline:hover { background: rgba(236,48,19,0.08); }
   .ts3-card { display: inline-flex; align-items: center; justify-content: center; height: 18px; min-width: 44px; max-width: 70px; padding: 0 4px; box-sizing: border-box; font-size: 10.5px; border: 1px solid var(--color-neutral-400, #b5b0ab); background: #fff; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; vertical-align: middle; }
+  .ts3-plain { font-size: 12px; color: var(--color-neutral-900, #201e1d); display: inline-block; min-width: 36px; text-align: center; }
+  .ts3-plain.empty { color: var(--color-neutral-500); }
   .ich2-badge.ts3-co { width: 36px; font-size: 10px; display: inline-flex; }
   table.ts3-data th.ts3-note, table.ts3-data td.ts3-note { width: 100%; max-width: 0 !important; overflow: hidden; text-overflow: ellipsis; text-align: left; }
   .ts3-card.empty { border-style: dashed; background: transparent; color: transparent; }
@@ -858,7 +863,7 @@
         <div><div class="ich2-edit-sec-h"><b>基本情報</b><label style="font-size:11px;display:flex;align-items:center;gap:4px;cursor:pointer;"><input type="checkbox" id="f_coiluse" style="accent-color:var(--color-accent);">コイル使用(コイル成形を含む場合)</label><i></i></div>
           <div class="ich2-edit-grid sk-grid5"><div class="ich2-edit-field"><label for="f_seizouBangou">製造番号</label><input type="text" id="f_seizouBangou"></div><div class="ich2-edit-field"><label for="f_nouki">納期</label><input type="text" id="f_nouki"></div><div class="ich2-edit-field"><label for="f_genbaMei">現場名<span style="color:var(--color-accent);font-weight:700;margin-left:6px;font-size:11px;">略称で入力</span></label><input type="text" id="f_genbaMei"></div><div class="ich2-edit-field"><label for="f_hinmei">品名</label><input type="text" id="f_hinmei"></div><div class="ich2-edit-field"><label for="f_sunpou">寸法</label><input type="text" id="f_sunpou"></div><div class="ich2-edit-field"><label for="f_zairyou">材質</label><input type="text" id="f_zairyou" placeholder="例 444"></div><div class="ich2-edit-field"><label for="f_jukenKansei">受・完</label><input type="text" id="f_jukenKansei" placeholder="例 2026/10/15"></div><div class="ich2-edit-field"><label for="f_kubun">区</label><select id="f_kubun"><option value=""></option><option value="外">外(適用外)</option><option value="一">一(一圧)</option><option value="二">二(二圧)</option><option value="小">小(小型圧力容器)</option><option value="消">消(消防検査)</option></select></div><div class="ich2-edit-field"><label for="f_seisakuKubun">製作</label><select id="f_seisakuKubun"><option value=""></option><option value="1">1(第一工場)</option><option value="S">S(SUS工場)</option><option value="杉">杉(杉原)</option><option value="コ">コ(コイル)</option></select></div><div class="ich2-edit-field"><label for="f_tantou">担当者</label><input type="text" id="f_tantou"></div><div class="ich2-edit-field"><label for="f_mSunpou">m寸法</label><input type="text" id="f_mSunpou"></div><div class="ich2-edit-field"><label for="f_shitsuryou">質量</label><input type="text" id="f_shitsuryou"></div><div class="ich2-edit-field"><label for="f_katabangou">型番</label><input type="text" id="f_katabangou"></div><div class="ich2-edit-field"><label for="f_baika">売価(千円)</label><input type="text" id="f_baika"></div><div class="ich2-edit-field"><label for="f_zumenLink">図面リンク(自動)</label><input type="text" id="f_zumenLink" readonly></div></div></div>
         <div><div class="ich2-edit-sec-h"><b>塗装仕様</b><span>工程ごとに「部位・内容・vol」を入力 / 複数ある場合は「＋行を追加」</span><i></i></div>
-          <div class="sk-tosou" id="skTosouBlocks"></div><datalist id="sk_bui_list"></datalist></div>
+          <div class="sk-tosou" id="skTosouBlocks"></div><datalist id="sk_bui_list"></datalist><datalist id="sk_gy_list"></datalist></div>
         <div><div class="ich2-edit-sec-h"><b>備考</b><i></i></div>
           <div class="ich2-edit-field"><textarea id="f_tokkiShiyou" style="width:100%;box-sizing:border-box;height:36px;padding:6px 8px;font:inherit;font-size:13px;border:1px solid var(--color-neutral-400);border-radius:0;resize:vertical;"></textarea></div></div>
         <div><div class="ich2-edit-sec-h"><b>不要な工程</b><span>チェック = 対象外「―」</span><i></i></div><div class="sk-na"><label><input type="checkbox" id="f_na_juchu" style="accent-color:var(--color-accent);">受注</label><label><input type="checkbox" id="f_na_seisaku" style="accent-color:var(--color-accent);">製作</label><label><input type="checkbox" id="f_na_kansei" style="accent-color:var(--color-accent);">完成</label><label><input type="checkbox" id="f_na_naiso" style="accent-color:var(--color-accent);">内装</label><label><input type="checkbox" id="f_na_gaiso" style="accent-color:var(--color-accent);">外装</label><label><input type="checkbox" id="f_na_shukka" style="accent-color:var(--color-accent);">出荷</label></div></div>
@@ -1132,7 +1137,7 @@
             <button type="button" data-status="done">完了</button>
           </div>
           <select class="ts3-sort" id="tsSort" title="並び順">
-            <option value="nouki">納期順</option><option value="seiban">製造番号順</option><option value="genba">現場名順</option><option value="yotei">予定順</option>
+            <option value="nouki">納期順</option><option value="seiban">製造番号順</option><option value="genba">現場名順</option><option value="yotei">予定順</option><option value="gyousha">業者順</option>
           </select>
           <span class="ts3-count-label" id="tsListStatus">読み込み中...</span>
         </div>
@@ -1148,7 +1153,7 @@
             <button type="button" data-status="done">完了</button>
           </div>
           <select class="ts3-sort" id="tsSort2" title="並び順">
-            <option value="nouki">納期順</option><option value="seiban">製造番号順</option><option value="genba">現場名順</option><option value="yotei">予定順</option>
+            <option value="nouki">納期順</option><option value="seiban">製造番号順</option><option value="genba">現場名順</option><option value="yotei">予定順</option><option value="gyousha">業者順</option>
           </select>
           <span class="ts3-paint-cfg" id="tsPaintCfg" hidden title="斗缶1缶あたりのリットル数(容量の仮定)">斗缶＝<input type="text" id="tsPaintTokan" value="16" inputmode="decimal">L</span>
           <span class="ts3-cal-nav" id="tsCalNav" hidden>
@@ -2345,6 +2350,11 @@
 
   function skBuildBlocks() {
     const box = document.getElementById("skTosouBlocks");
+    try {   // 業者名の候補:すでに塗装画面に読み込まれている行の業者名
+      const names = new Set();
+      [TSP.main, TSP.sub].forEach(p => (p.all || []).forEach(o => { const g = String(o.get("業者") || "").trim(); if (g) names.add(g); }));
+      document.getElementById("sk_gy_list").innerHTML = [...names].map(n => '<option value="' + ich2Esc(n) + '">').join("");
+    } catch (e) { /* 候補が出なくても自由入力できる */ }
     box.innerHTML = "";
     SK_PROCS.forEach(pr => {
       const blk = document.createElement("div");
@@ -2360,9 +2370,10 @@
 
   function skAddRow(pr, rowsEl) {
     const row = document.createElement("div");
-    row.className = "skt-row" + (pr.useNaiyou ? "" : " noNai");
+    row.className = "skt-row" + (pr.useNaiyou ? "" : " noNai") + (pr.sheet ? "" : " noGy");
     row.innerHTML = '<input class="sk-bui" list="sk_bui_list" placeholder="部位">' +
       (pr.useNaiyou ? '<input class="sk-nai" list="sk_nai_' + pr.key + '" placeholder="内容">' : "") +
+      (pr.sheet ? '<input class="sk-gy" list="sk_gy_list" placeholder="業者">' : "") +
       '<input class="sk-vol" type="number" step="0.1" placeholder="vol"><span class="u">' + ich2Esc(pr.unit) + '</span>' +
       '<button type="button" title="この行を削除">✕</button>';
     row.querySelector("button").addEventListener("click", () => {
@@ -2386,6 +2397,7 @@
         const naiEl = row.querySelector(".sk-nai");
         const nai = pr.key === "メッキ" ? (naiEl ? naiEl.value : "").trim() : (naiEl ? naiEl.value : "").replace(/[（(][^）)]*[）)]?/g, "").trim();
         const vol = row.querySelector(".sk-vol").value.trim();
+        const gyEl = row.querySelector(".sk-gy"); const gy = gyEl ? gyEl.value.trim() : "";
         if (!bui && !nai) return;
         rawParts.push(bui);
         const b = ich2PartAbbr(bui);
@@ -2394,7 +2406,7 @@
         else if (pr.key === "メッキ") frag = b;
         else frag = b ? (nai ? b + "(" + nai + ")" : b) : nai;
         if (frag) frags.push(frag);
-        if (pr.sheet && b) items.push({ tab: pr.key, bui: b, naiyou: pr.useNaiyou ? nai : pr.key, vol: vol, zairyou: (pr.key === "酸洗" || pr.key === "研磨") ? zairyou : "" });
+        if (pr.sheet && b) items.push({ tab: pr.key, bui: b, naiyou: pr.useNaiyou ? nai : pr.key, vol: vol, gyousha: gy, zairyou: (pr.key === "酸洗" || pr.key === "研磨") ? zairyou : "" });
       });
       cells[pr.key] = frags.join((pr.key === "酸洗" || pr.key === "研磨" || pr.key === "メッキ") ? "・" : " ");
     });
@@ -2410,7 +2422,6 @@
   }
 
   function skCancel() {
-    if (!confirm("入力した内容を消して、閉じますか?")) return;
     skResetForm();
     document.getElementById("skForm").style.display = "none";
     document.getElementById("dropZone").style.display = "block";
@@ -2535,7 +2546,7 @@
               type: "addTosou", tab: item.tab, seizouBangou,
               nouki: payload.nouki, genbaMei: payload.genbaMei, hinmei: payload.hinmei, sunpou: payload.sunpou,
               bui: item.bui, naiyou: item.naiyou, vol: item.vol || "",
-              zairyou: item.zairyou || "", kakaku: "", gyousha: "", hankomiYotei: "", kanseiNouhin: "", biko: "",
+              zairyou: item.zairyou || "", kakaku: "", gyousha: item.gyousha || "", hankomiYotei: "", kanseiNouhin: "", biko: "",
             }),
           });
           if (!r2.ok) tosouFail++;
@@ -2877,6 +2888,10 @@
       if (p.sort === "seiban") d = cmpTxt(a.get("製造番号"), b.get("製造番号"));
       else if (p.sort === "genba") d = cmpTxt(a.get("現場名"), b.get("現場名"));
       else if (p.sort === "yotei") d = tsDateVal(a.get("搬入予定")) - tsDateVal(b.get("搬入予定"));
+      else if (p.sort === "gyousha") {   // 業者名の順(空欄は最後)。同じ業者の中は納期順
+        const ga = String(a.get("業者") || "").trim(), gb = String(b.get("業者") || "").trim();
+        d = (ga ? 0 : 1) - (gb ? 0 : 1) || cmpTxt(ga, gb) || (tsDateVal(a.get("納期")) - tsDateVal(b.get("納期")));
+      }
       else d = tsDateVal(a.get("納期")) - tsDateVal(b.get("納期"));
       return d || a.rowIndex - b.rowIndex;
     });
@@ -2985,12 +3000,11 @@
       td.innerHTML = ich2Badge(c, String(c.text).length > 5);
       return;
     }
-    if (label === "社名" || label === "業者") {     // 社名・業者は会社ごとに色分け(同じ会社は同じ色)。空欄はグレーの「—」
+    if (label === "社名" || label === "業者") {     // 社名・業者は、カードにせず文字だけで表示(空欄はグレーの「—」)
       const name = String(v == null ? "" : v).trim();
-      if (!name) { td.innerHTML = ich2Badge(ich2Cell(""), false).replace('class="ich2-badge"', 'class="ich2-badge ts3-co"'); return; }
-      let h = 0; for (const ch of name) h = (h * 31 + ch.charCodeAt(0)) >>> 0;
-      const pal = TS_CO_COLORS[h % TS_CO_COLORS.length];
-      td.innerHTML = '<span class="ich2-badge ts3-co" title="' + ich2Esc(name) + '" style="background:' + pal[0] + ';color:' + pal[1] + ';border-color:' + pal[2] + ';font-weight:500;">' + ich2Esc(name) + '</span>';
+      td.innerHTML = name
+        ? '<span class="ts3-plain" title="' + ich2Esc(name) + '">' + ich2Esc(name) + '</span>'
+        : '<span class="ts3-plain empty">—</span>';
       return;
     }
     const text = String(tsDisplayValue(label, v) == null ? "" : tsDisplayValue(label, v));
