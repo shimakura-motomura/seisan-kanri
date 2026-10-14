@@ -91,6 +91,7 @@
   .skt-title { font-weight: 800; font-size: 12px; line-height: 28px; }
   .skt-title small { display: block; font-weight: 400; font-size: 9px; line-height: 1; margin-top: -6px; color: var(--color-neutral-700); }
   .skt-row { display: grid; grid-template-columns: minmax(0,1.1fr) minmax(0,1.2fr) 60px 18px 24px; gap: 4px; align-items: center; margin-bottom: 3px; }
+  .skt-block[data-proc="メッキ"] .skt-row { grid-template-columns: minmax(0,0.7fr) minmax(0,2.3fr) 60px 18px 24px; }
   .skt-row.noNai { grid-template-columns: minmax(0,2.3fr) 60px 18px 24px; }
   .skt-row input { font: inherit; font-size: 12px; height: 28px; padding: 0 6px; border: 1px solid var(--color-neutral-400); border-radius: 0; width: 100%; box-sizing: border-box; background: var(--color-bg); }
   .skt-row input:focus { border-color: var(--color-accent); outline: none; }
@@ -2338,7 +2339,8 @@
   }
 
   // ---- 塗装仕様の入力(工程ごとに「部位・内容・vol」を複数行) ----
-  const SK_PROCS = TOSOU_TABS.map(t => ({ key: t.key, unit: t.unit, naiyou: t.naiyou, useNaiyou: ["エポ","FRP","外装"].includes(t.key), sheet: true }))
+  const SK_PROCS = TOSOU_TABS.map(t => ({ key: t.key, unit: t.unit, naiyou: t.naiyou, useNaiyou: ["エポ","FRP","外装","メッキ"].includes(t.key), sheet: true }))
+    .map(pr => pr.key === "メッキ" ? Object.assign({}, pr, { naiyou: [] }) : pr)
     .concat([{ key: "その他", unit: "", naiyou: ["BP","OC"], useNaiyou: true, sheet: false }]);
 
   function skBuildBlocks() {
@@ -2382,7 +2384,7 @@
       blk.querySelectorAll(".skt-row").forEach(row => {
         const bui = row.querySelector(".sk-bui").value.trim();
         const naiEl = row.querySelector(".sk-nai");
-        const nai = (naiEl ? naiEl.value : "").replace(/[（(][^）)]*[）)]?/g, "").trim();
+        const nai = pr.key === "メッキ" ? (naiEl ? naiEl.value : "").trim() : (naiEl ? naiEl.value : "").replace(/[（(][^）)]*[）)]?/g, "").trim();
         const vol = row.querySelector(".sk-vol").value.trim();
         if (!bui && !nai) return;
         rawParts.push(bui);
