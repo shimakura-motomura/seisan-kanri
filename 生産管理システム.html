@@ -2039,40 +2039,44 @@
   }
 
   async function ich2SaveBuyCell(rowIndex, columnName, value, td, original) {
-    td.innerHTML = '<span style="font-size:9px;color:var(--color-neutral-600);">更新中</span>';
+    const iModel = ich2BuyHeader.indexOf("型式");
+    const row = ich2BuyAll[ich2BuyRowNo.indexOf(rowIndex)];
+    const iCol = ich2BuyHeader.indexOf(columnName);
+    const oldVal = row && iCol !== -1 ? row[iCol] : undefined;
+    if (row && iCol !== -1) row[iCol] = value;
+    ich2RenderAll();
     try {
-      const iModel = ich2BuyHeader.indexOf("型式");
-      const row = ich2BuyAll[ich2BuyRowNo.indexOf(rowIndex)];
       const res = await fetch(GAS_URL, { method: "POST", body: JSON.stringify({ type: "updateBuyCell", rowIndex, columnName, value, model: row ? row[iModel] : "" }) });
       const data = await res.json();
       if (data.result !== "success") throw new Error(data.message || "更新に失敗しました");
-      const iCol = ich2BuyHeader.indexOf(columnName);
-      if (row && iCol !== -1) row[iCol] = value;
-      ich2RenderAll();
     } catch (e) {
-      alert("更新に失敗しました: " + e.message);
-      td.innerHTML = original; td.style.position = ""; td.style.zIndex = "";
+      if (row && iCol !== -1) row[iCol] = oldVal === undefined ? "" : oldVal;
+      ich2RenderAll();
+      alert("保存に失敗したため、元の表示に戻しました: " + e.message);
     }
   }
 
+  // 先に画面を変えて、保存は裏で行う(失敗したときだけ元に戻す)
   async function ich2SaveProgress(seizouBangou, columnName, value, td, original) {
-    td.innerHTML = '<span style="font-size:9px;color:var(--color-neutral-600);">更新中</span>';
+    const idxSeizou = ich2Header.indexOf("製造番号");
+    let idxCol = ich2Header.indexOf(columnName);
+    let addedCol = false;
+    if (idxCol === -1 && columnName === "搬入日") {      // シートに「搬入日」の列が新しくできる
+      ich2Header.push("搬入日"); idxCol = ich2Header.length - 1; addedCol = true;
+      ich2All.forEach(r => { while (r.length < idxCol) r.push(""); });
+    }
+    const row = ich2All.find(r => r[idxSeizou] === seizouBangou);
+    const oldVal = row && idxCol !== -1 ? row[idxCol] : undefined;
+    if (row && idxCol !== -1) row[idxCol] = value;
+    ich2RenderAll();
     try {
       const res = await fetch(GAS_URL, { method: "POST", body: JSON.stringify({ type: "updateProgress", seizouBangou, columnName, value }) });
       const data = await res.json();
       if (data.result !== "success") throw new Error(data.message || "更新に失敗しました");
-      const idxSeizou = ich2Header.indexOf("製造番号");
-      let idxCol = ich2Header.indexOf(columnName);
-      if (idxCol === -1 && columnName === "搬入日") {      // シートに「搬入日」の列が新しくできた
-        ich2Header.push("搬入日"); idxCol = ich2Header.length - 1;
-        ich2All.forEach(r => { while (r.length < idxCol) r.push(""); });
-      }
-      const row = ich2All.find(r => r[idxSeizou] === seizouBangou);
-      if (row && idxCol !== -1) row[idxCol] = value;
-      ich2RenderAll();
     } catch (e) {
-      alert("更新に失敗しました: " + e.message);
-      td.innerHTML = original;
+      if (row && idxCol !== -1) row[idxCol] = oldVal === undefined ? "" : oldVal;
+      ich2RenderAll();
+      alert("保存に失敗したため、元の表示に戻しました(" + seizouBangou + " の " + columnName + "): " + e.message);
     }
   }
 
@@ -3018,12 +3022,12 @@
       const newVal = isDate ? ich2NormalizeDateInput(input.value.trim()) : input.value.trim();
       input.remove();
       if (!save || newVal === current) return;
-      td.innerHTML = '<span style="font-size:9px;color:var(--color-neutral-600);">更新中</span>';
+      // 先に画面を変えて、保存は裏で行う(失敗したときだけ元に戻す)
+      o.set(src, newVal);
+      tsSetCard(td, label, newVal);
       try {
         await tsPost({ type: "updateTosou", tab: o.tab, rowIndex: o.rowIndex, seizouBangou: o.get("製造番号"), fields: { [src]: newVal } });
-        o.set(src, newVal);
-        tsSetCard(td, label, newVal);
-      } catch (e) { alert("更新に失敗しました: " + e.message); tsSetCard(td, label, raw); }
+      } catch (e) { o.set(src, raw); tsSetCard(td, label, raw); alert("保存に失敗したため、元の表示に戻しました: " + e.message); }
     };
     input.addEventListener("keydown", e => {
       if (e.key === "Enter") { e.preventDefault(); finish(true); }
