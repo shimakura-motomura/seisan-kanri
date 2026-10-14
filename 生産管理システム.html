@@ -1445,6 +1445,9 @@
     document.getElementById("screen-" + screen).classList.add("active");
     if (screen === "seisaku" && !initialized.seisaku) { initSeisaku(); initialized.seisaku = true; }
     if (screen === "tosou" && !initialized.tosou) { initTosou(); initialized.tosou = true; }
+    else if (screen === "tosou" && typeof tsApply === "function") {   // 塗装に戻ってきたとき、納品を入れた行を「未完」から外す(再読み込みはしない)
+      [TSP.main, TSP.sub].forEach(p => { if (p.all && p.all.length && p.tabKey && p.tabKey !== TS_SCHEDULE_KEY && p.tabKey !== TS_PAINT_KEY) tsApply(p); });
+    }
     if (screen === "shukka" && !initialized.shukka) { initShukka(); initialized.shukka = true; }
     if (screen === "renraku" && !initialized.renraku) { initRenraku(); initialized.renraku = true; }
     if (screen === "ichiran" && !initialized.ichiran) { initIchiran(); initialized.ichiran = true; }
