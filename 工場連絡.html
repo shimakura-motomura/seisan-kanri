@@ -55,6 +55,7 @@ input:focus-visible, textarea:focus-visible, button:focus-visible { outline: 2px
 .sort-btn.is-active { background: var(--ink); color: var(--bg); }
 
 .dept-row { display: flex; border-top: 1px solid var(--divider-25); overflow-x: auto; }
+.dept-btn small { font-size: 9px; font-weight: 700; margin-left: 3px; color: var(--accent, #c8341a); }
 .dept-btn { flex: 0 0 auto; height: 40px; padding: 0 12px; border-left: 1px solid var(--divider-25); font-size: 13px; font-weight: 700; white-space: nowrap; display: flex; align-items: center; gap: 5px; background: transparent; color: var(--ink); }
 .dept-btn.is-active { background: var(--ink); color: var(--bg); }
 .dept-btn-n { font-size: 10px; font-weight: 700; opacity: 0.7; }
@@ -142,6 +143,7 @@ input:focus-visible, textarea:focus-visible, button:focus-visible { outline: 2px
 const GAS_URL = "https://script.google.com/macros/s/AKfycbxsFKa97XhdXtugAVSXMp0Vz64-fR-XrcmkF2U_W_A_Dl9PvCds6KfdtHhjXX7GxjYA6Q/exec";
 
 const state = {
+  deptOpen: false,
   tab: "製造",
   query: "",
   sort: "no",
@@ -370,6 +372,7 @@ function visibleJobs() {
   let jobs = state.jobs
     .filter(j => state.showShipped || !j.shipped)
     .filter(j => state.dept === "すべて" || (state.dept === "第3工場" ? j.isDai3 : state.dept === "コイル" ? j.isCoil : j.dept === state.dept))
+    .filter(j => !(state.deptOpen && ["第1工場","コイル","SUS工場","他"].includes(state.dept)) || !j.isDai3)   // 2度押し:完成品を除く
     .filter(j => !q || j.no.includes(q) || j.site.includes(q));
   jobs = jobs.slice().sort((a, b) => {
     if (state.sort === "due") {
@@ -426,8 +429,10 @@ function renderJobsToolbar() {
     <div class="dept-row">
       ${deptOptions.map(d => {
         const pool = state.showShipped ? state.jobs : state.jobs.filter(j => !j.shipped);
-        const n = d === "すべて" ? pool.length : d === "第3工場" ? pool.filter(j => j.isDai3).length : d === "コイル" ? pool.filter(j => j.isCoil).length : pool.filter(j => j.dept === d).length;
-        return `<button class="dept-btn${state.dept === d ? " is-active" : ""}" data-action="dept" data-dept="${escapeHtml(d)}"><span>${escapeHtml(DEPT_LABELS[d] || d)}</span><span class="dept-btn-n">${n}</span></button>`;
+        const inDept = d === "すべて" ? pool : d === "第3工場" ? pool.filter(j => j.isDai3) : d === "コイル" ? pool.filter(j => j.isCoil) : pool.filter(j => j.dept === d);
+        const isOpen = state.dept === d && state.deptOpen && ["第1工場","コイル","SUS工場","他"].includes(d);
+        const n = isOpen ? inDept.filter(j => !j.isDai3).length : inDept.length;
+        return `<button class="dept-btn${state.dept === d ? " is-active" : ""}" data-action="dept" data-dept="${escapeHtml(d)}"><span>${escapeHtml(DEPT_LABELS[d] || d)}${isOpen ? "<small>完成除</small>" : ""}</span><span class="dept-btn-n">${n}</span></button>`;
       }).join("")}
     </div>
   `;
@@ -602,7 +607,12 @@ app.addEventListener("click", async e => {
   if (action === "query-clear") { state.query = ""; render(); }
   else if (action === "sort") { state.sort = target.dataset.sort; render(); }
   else if (action === "toggle-shipped") { state.showShipped = !state.showShipped; render(); }
-  else if (action === "dept") { state.dept = target.dataset.dept; render(); }
+  else if (action === "dept") {
+    const d = target.dataset.dept;
+    if (d === state.dept && ["第1工場","コイル","SUS工場","他"].includes(d)) state.deptOpen = !state.deptOpen;   // 同じ部署をもう一度押すと「完成品を除く」⇔「全部」
+    else { state.dept = d; state.deptOpen = false; }
+    render();
+  }
   else if (action === "tab") { state.tab = target.dataset.tab; render(); }
   else if (action === "job-history") { state.sheet = target.dataset.no; render(); }
   else if (action === "sheet-close") { state.sheet = null; render(); }

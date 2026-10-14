@@ -1463,7 +1463,7 @@
   // ================= 一覧(Claude Code版デザイン + 実データ接続) =================
   let ich2All = [];
   let ich2Header = [];
-  const ich2State = { query: "", filter: "all", sort: "no", dept: "全数", showShipped: false };
+  const ich2State = { query: "", filter: "all", sort: "no", dept: "全数", deptOpen: false, showShipped: false };   // deptOpen = 部署ボタンを2度押し(完成品を除く)
   const ich2Selected = new Set();
   let ich2Tab = "make";
   let ich2BuyAll = [];
@@ -1766,6 +1766,8 @@
         } else if (ich2Kubun(r[iSeisaku], r[iKu]) !== ich2State.dept) {
           return false;
         }
+        // 2度押し:完成日が今日以前に入っているもの(完成品)を除く(第3工場は対象外)
+        if (ich2State.deptOpen && ich2State.dept !== "第3工場" && ich2IsDai3(r[iKansei])) return false;
       }
       if (ich2State.filter === "soon") {
         const v = r[iShukka]; if (!v) return false;
@@ -1796,22 +1798,32 @@
     // 区分別サマリー(コイル・第3工場は部署をまたぐ横断集計。第1・SUS・他は純粋な部署のみで集計。出荷済み表示チェックに連動)
     const summaryBase = ich2State.showShipped ? ich2All : ich2All.filter(r => !ich2IsShipped(r[iShukka]));
     const counts = { total: summaryBase.length, dai1: 0, sus: 0, coil: 0, dai3: 0, other: 0 };
+    const openCounts = { dai1: 0, sus: 0, coil: 0, other: 0 };   // 完成品を除いた件数(2度押し用)
     summaryBase.forEach(r => {
       const k = ich2Kubun(r[iSeisaku], r[iKu]);
       if (k === "第1工場") counts.dai1++;
       else if (k === "SUS工場") counts.sus++;
       else if (k !== "コイル") counts.other++;
-      if (ich2IsCoilRelated(r[iSeisaku], r[iKu], r[iCoiluse], r[iHinmei], tosouAll(r))) counts.coil++;
+      const notDone = !ich2IsDai3(r[iKansei]);
+      if (notDone) { if (k === "第1工場") openCounts.dai1++; else if (k === "SUS工場") openCounts.sus++; else if (k !== "コイル") openCounts.other++; }
+      if (ich2IsCoilRelated(r[iSeisaku], r[iKu], r[iCoiluse], r[iHinmei], tosouAll(r))) { counts.coil++; if (notDone) openCounts.coil++; }
       if (ich2IsDai3(r[iKansei])) counts.dai3++;
     });
+    const openOf = { "第1工場": openCounts.dai1, "SUS工場": openCounts.sus, "コイル": openCounts.coil, "他": openCounts.other };
     document.getElementById("ich2Summary").innerHTML = [
       ["全数", counts.total], ["第1工場", counts.dai1], ["コイル", counts.coil], ["SUS工場", counts.sus], ["第3工場", counts.dai3], ["他", counts.other]
-    ].map(([label,val]) =>
-      '<button type="button" class="cell ich2-summary-btn' + (ich2State.dept === label ? ' active' : '') + '" data-dept="' + ich2Esc(label) + '">' +
-      '<div class="label">'+label+'</div><div class="value">'+val+'<span>件</span></div></button>'
-    ).join("");
+    ].map(([label,val]) => {
+      const isOpen = ich2State.dept === label && ich2State.deptOpen && openOf[label] !== undefined;
+      return '<button type="button" class="cell ich2-summary-btn' + (ich2State.dept === label ? ' active' : '') + '" data-dept="' + ich2Esc(label) + '">' +
+      '<div class="label">'+label+(isOpen ? ' <span style="color:var(--color-accent-700);font-weight:700;">完成除く</span>' : '')+'</div><div class="value">'+(isOpen ? openOf[label] : val)+'<span>件</span></div></button>';
+    }).join("");
     document.querySelectorAll(".ich2-summary-btn").forEach(btn => {
-      btn.addEventListener("click", () => { ich2State.dept = btn.dataset.dept; ich2RenderAll(); });
+      btn.addEventListener("click", () => {
+        const d = btn.dataset.dept;
+        if (d === ich2State.dept && ["第1工場","コイル","SUS工場","他"].includes(d)) ich2State.deptOpen = !ich2State.deptOpen;   // 同じ部署をもう一度押すと「完成品を除く」⇔「全部」
+        else { ich2State.dept = d; ich2State.deptOpen = false; }
+        ich2RenderAll();
+      });
     });
 
     document.getElementById("ich2Count").textContent = rows.length + " / " + ich2All.length + " 件";
