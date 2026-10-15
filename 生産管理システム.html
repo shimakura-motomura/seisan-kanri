@@ -506,6 +506,10 @@
   .ich2-edit-overlay { position: fixed; inset: 0; background: rgba(32,30,29,0.55); z-index: 500; display: flex; align-items: center; justify-content: center; padding: 16px; }
   .ich2-edit-overlay[hidden] { display: none; }
   .hk-tab { font: inherit; font-size: 12px; padding: 3px 12px; border: 1px solid var(--color-bg); background: transparent; color: var(--color-bg); cursor: pointer; margin-left: 6px; }
+  .hk-tab2 { font: inherit; font-size: 14px; font-weight: 700; padding: 8px 20px; border: 2px solid var(--color-text); background: var(--color-bg); color: var(--color-text); cursor: pointer; }
+  .hk-tab2.is-on { background: var(--color-text); color: var(--color-bg); }
+  #rkHk[hidden] { display: none; }
+  .hk-toast { position: fixed; left: 50%; bottom: 70px; transform: translateX(-50%); background: var(--color-text); color: var(--color-bg); padding: 10px 20px; z-index: 9999; font-size: 14px; font-weight: 700; }
   .hk-tab.is-on { background: var(--color-bg); color: var(--color-text); font-weight: 700; }
   .hk-table { width: 100%; border-collapse: collapse; font-size: 13px; }
   .hk-table th, .hk-table td { border: 1px solid var(--color-neutral-400); padding: 4px 6px; text-align: left; vertical-align: middle; }
@@ -1013,7 +1017,6 @@
         <button type="button" class="ich2-selbar-primary" id="ich2SelbarEditBtn" onclick="ich2SelbarEditClick()">編集</button>
         <button type="button" class="ich2-selbar-primary" id="ich2SelbarShukkaBtn" onclick="ich2GoShukka()">出荷手配へ</button>
         <button type="button" class="ich2-selbar-primary" id="hkSelbarBtn" onclick="hkOpenNew()">変更連絡</button>
-        <button type="button" class="ich2-selbar-clear" onclick="hkOpenList()">回覧状況</button>
         <button type="button" class="ich2-selbar-clear" onclick="ich2Selected.clear(); ich2Render();">選択を解除</button>
       </div>
 
@@ -1113,7 +1116,7 @@
   <div class="ich2-edit-overlay" id="hkOverlay" hidden>
     <div class="ich2-edit-panel" style="width:min(1000px,100%);">
       <div class="ich2-edit-head"><span class="ttl">変更連絡</span><span class="no" id="hkTabLabel"></span>
-        <span class="sub"><button type="button" class="hk-tab is-on" data-hk="new">新規作成</button> <button type="button" class="hk-tab" data-hk="list">回覧の状況</button></span></div>
+        <span class="sub">作成者は本村で固定です。回覧の状況は「連絡」画面の「変更回覧」で見られます</span></div>
       <div class="ich2-edit-body" id="hkBody"></div>
       <div class="ich2-edit-foot">
         <span class="ich2-edit-hint" id="hkHint">「回覧する」と、一覧の納期・完成日も新しい日付に書き換わります</span>
@@ -1423,6 +1426,8 @@
       </nav>
     </header>
     <h1>連絡</h1>
+    <div style="display:flex;gap:6px;margin:0 0 10px;"><button type="button" class="hk-tab2 is-on" data-rk="board">伝言板</button><button type="button" class="hk-tab2" data-rk="hk">変更回覧</button></div>
+    <div id="rkBoard">
     <div class="box" id="rkPostForm">
       <div class="field"><label>お名前</label><input id="rk_toukousha"></div>
       <div class="field"><label>連絡内容</label><textarea id="rk_naiyou" rows="3"></textarea></div>
@@ -1432,6 +1437,8 @@
       <div class="listStatus" id="rkStatus">読み込み中...</div>
       <div id="rkList"></div>
     </div>
+    </div>
+    <div id="rkHk" hidden style="display:flex;flex-direction:column;gap:10px;"></div>
   </div>
 
   <!-- ============ 設定 ============ -->
@@ -2064,7 +2071,17 @@
     };
     td.querySelector(".ich2-prog-na-btn").addEventListener("click", (e) => { e.stopPropagation(); finish(true, "***"); });
     input.addEventListener("keydown", (e) => {
-      if (e.key === "Enter") { e.preventDefault(); finish(true); }
+      if (e.key === "Enter") {
+        e.preventDefault();
+        // 次に編集する行(いま表示されている、すぐ下の行の同じ列)を、保存前に覚えておく
+        let nextNo = null, tr = td.parentElement && td.parentElement.nextElementSibling;
+        while (tr && !nextNo) { const nt = tr.querySelector('td.ich2-prog-cell[data-col="' + columnName + '"]'); if (nt) nextNo = nt.dataset.seizou; else tr = tr.nextElementSibling; }
+        finish(true);
+        if (nextNo) setTimeout(() => {
+          const cells = document.querySelectorAll('td.ich2-prog-cell[data-col="' + columnName + '"]');
+          for (const c of cells) { if (c.dataset.seizou === nextNo) { ich2StartEditProgress(c); break; } }
+        }, 0);
+      }
       else if (e.key === "Escape") { e.preventDefault(); finish(false); }
     });
     input.addEventListener("blur", (e) => {
@@ -2163,7 +2180,6 @@
     } catch (e) { return null; }   // シートがまだ無い
   }
   function hkRenderNew() {
-    const sel = hkLoadName();
     const rows = [];
     const n = Math.max(5, hkPre.length);
     for (let i = 0; i < n; i++) rows.push(`<tr data-i="${i}">
@@ -2173,8 +2189,7 @@
       <td class="hk-old" style="width:90px"></td>
       <td style="width:110px"><input type="text" class="hk-newv" placeholder="例 10/20"></td></tr>`);
     document.getElementById("hkBody").innerHTML = `
-      <div class="ich2-edit-field" style="max-width:260px"><label>作成者</label>
-        <select id="hkWho" style="height:30px;font-size:13px">${["<option value=\"\">選んでください</option>"].concat(hkRoster.map(r => `<option${r[0]===sel?" selected":""}>${hkEsc(r[0])}</option>`)).join("")}</select></div>
+      <div style="font-size:13px;font-weight:700">作成者:本村</div>
       <table class="hk-table"><thead><tr><th>製造番号</th><th>現場名 / 品名 / 寸法</th><th>項目</th><th>旧</th><th>新(変更後)</th></tr></thead><tbody>${rows.join("")}</tbody></table>
       <div class="ich2-edit-field"><label>備考(任意)</label><input type="text" id="hkBiko"></div>`;
   }
@@ -2194,7 +2209,7 @@
     old.textContent = hkShort(formatDateOnly(g(kind))) || "(空)";
   }
   async function hkRenderList() {
-    const box = document.getElementById("hkBody");
+    const box = document.getElementById("rkHk");
     box.innerHTML = '<div style="padding:20px">読み込み中...</div>';
     const d = await hkFetchAll();
     if (!d) { box.innerHTML = '<div style="padding:20px">変更連絡のシートがまだありません。GASで「setupHenkou」を1回実行してください。</div>'; return; }
@@ -2233,11 +2248,9 @@
       <script>setTimeout(function(){window.print()},300)<\/script>`);
     w.document.close();
   }
+  function hkToast(msg) { const d = document.createElement("div"); d.className = "hk-toast"; d.textContent = msg; document.body.appendChild(d); setTimeout(() => d.remove(), 3500); }
   async function hkSetMode(mode) {
     hkMode = mode;
-    document.querySelectorAll(".hk-tab").forEach(b => b.classList.toggle("is-on", b.dataset.hk === mode));
-    document.getElementById("hkSendBtn").hidden = mode !== "new";
-    document.getElementById("hkHint").hidden = mode !== "new";
     document.getElementById("hkStatus").textContent = "";
     if (mode === "new") {
       if (!hkRoster.length) { const d = await hkFetchAll(); if (d) hkRoster = d.roster; }
@@ -2247,8 +2260,7 @@
   }
   async function hkSend() {
     const st = document.getElementById("hkStatus");
-    const who = document.getElementById("hkWho").value;
-    if (!who) { st.textContent = "作成者を選んでください"; return; }
+    const who = "本村";
     const items = [];
     const iNo = ich2Header.indexOf("製造番号");
     for (const tr of document.querySelectorAll("#hkBody tbody tr")) {
@@ -2264,18 +2276,22 @@
     }
     if (!items.length) { st.textContent = "変更内容を入れてください"; return; }
     if (!confirm(items.length + "件を回覧します。一覧の納期・完成日も新しい日付に書き換わります。よろしいですか?")) return;
-    hkSaveName(who);
-    const btn = document.getElementById("hkSendBtn"); btn.disabled = true; st.textContent = "送信中...";
+    // 先に画面へ反映して、送信は裏で行う(待たせない)。失敗したら元に戻す
+    const olds = items.map(it => { const r = hkLookup(it.seizou); const c = ich2Header.indexOf(it.kind); return { r, c, old: r && c !== -1 ? r[c] : undefined }; });
+    items.forEach((it, k) => { const o = olds[k]; if (o.r && o.c !== -1) o.r[o.c] = it.newVal; });
+    ich2RenderAll();
+    document.getElementById("hkOverlay").hidden = true;
+    hkToast("回覧を送信しています...");
     try {
       const res = await fetch(GAS_URL, { method: "POST", body: JSON.stringify({ type: "henkouCreate", sakuseisha: who, items, biko: document.getElementById("hkBiko").value.trim() }) });
       const data = await res.json();
       if (data.result !== "success") throw new Error(data.message || "失敗しました");
-      items.forEach(it => { const r = hkLookup(it.seizou); const i = ich2Header.indexOf(it.kind); if (r && i !== -1) r[i] = it.newVal; });
+      hkToast("回覧しました(連絡番号 " + data.no + ")。一覧の日付も書き換えました");
+    } catch (e) {
+      items.forEach((it, k) => { const o = olds[k]; if (o.r && o.c !== -1) o.r[o.c] = o.old === undefined ? "" : o.old; });
       ich2RenderAll();
-      alert("回覧しました(連絡番号 " + data.no + ")。一覧の日付も書き換えました。");
-      await hkSetMode("list");
-    } catch (e) { st.textContent = "失敗: " + e.message; }
-    btn.disabled = false;
+      alert("回覧の送信に失敗したため、一覧の日付を元に戻しました: " + e.message);
+    }
   }
   async function hkOpenNew() {
     const iNo = ich2Header.indexOf("製造番号");
@@ -2284,12 +2300,18 @@
     document.getElementById("hkOverlay").hidden = false;
     await hkSetMode("new");
   }
-  async function hkOpenList() { hkPre = []; document.getElementById("hkOverlay").hidden = false; await hkSetMode("list"); }
   (function hkInit() {
     if (!document.getElementById("hkOverlay")) return;
     document.getElementById("hkCloseBtn").addEventListener("click", () => { document.getElementById("hkOverlay").hidden = true; });
     document.getElementById("hkSendBtn").addEventListener("click", hkSend);
-    document.querySelectorAll(".hk-tab").forEach(b => b.addEventListener("click", () => hkSetMode(b.dataset.hk)));
+    document.querySelectorAll(".hk-tab2").forEach(b => b.addEventListener("click", () => {
+      const hk = b.dataset.rk === "hk";
+      document.querySelectorAll(".hk-tab2").forEach(x => x.classList.toggle("is-on", x === b));
+      document.getElementById("rkBoard").hidden = hk;
+      document.getElementById("rkHk").hidden = !hk;
+      if (hk) hkRenderList();
+    }));
+    document.getElementById("rkHk").addEventListener("click", e => { const b = e.target.closest("[data-print]"); if (b) hkPrint(b.dataset.print); });
     const body = document.getElementById("hkBody");
     body.addEventListener("input", e => { const tr = e.target.closest("tr[data-i]"); if (tr && e.target.classList.contains("hk-no")) hkRefreshRow(tr); });
     body.addEventListener("change", e => { const tr = e.target.closest("tr[data-i]"); if (tr) hkRefreshRow(tr); });
