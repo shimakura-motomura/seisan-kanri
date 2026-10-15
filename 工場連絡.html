@@ -5,6 +5,10 @@
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <meta name="theme-color" content="#f3f2f2">
 <title>工場連絡システム</title>
+<link rel="icon" type="image/png" href="icon-192.png">
+<link rel="apple-touch-icon" href="icon-180.png">
+<link rel="manifest" href="kojo.webmanifest">
+<meta name="apple-mobile-web-app-title" content="工場連絡">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Archivo:wght@400;500;600;700;900&family=Noto+Sans+JP:wght@400;500;700;900&display=swap">
@@ -55,8 +59,9 @@ input:focus-visible, textarea:focus-visible, button:focus-visible { outline: 2px
 .sort-btn.is-active { background: var(--ink); color: var(--bg); }
 
 .dept-row { display: flex; border-top: 1px solid var(--divider-25); overflow-x: auto; }
-.dept-btn small { font-size: 9px; font-weight: 700; margin-left: 3px; color: var(--accent, #c8341a); }
-.dept-btn { flex: 0 0 auto; height: 40px; padding: 0 12px; border-left: 1px solid var(--divider-25); font-size: 13px; font-weight: 700; white-space: nowrap; display: flex; align-items: center; gap: 5px; background: transparent; color: var(--ink); }
+.dept-btn small { position: absolute; left: 0; right: 0; bottom: 2px; text-align: center; font-size: 8px; font-weight: 700; line-height: 1; pointer-events: none; color: var(--accent, #c8341a); }
+.dept-btn.is-active small { color: #ffb4a6; }
+.dept-btn { position: relative; flex: 0 0 auto; height: 40px; padding: 0 12px; border-left: 1px solid var(--divider-25); font-size: 13px; font-weight: 700; white-space: nowrap; display: flex; align-items: center; gap: 5px; background: transparent; color: var(--ink); }
 .dept-btn.is-active { background: var(--ink); color: var(--bg); }
 .dept-btn-n { font-size: 10px; font-weight: 700; opacity: 0.7; }
 
@@ -72,6 +77,9 @@ input:focus-visible, textarea:focus-visible, button:focus-visible { outline: 2px
   overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
   text-decoration: underline; text-decoration-color: var(--accent); text-decoration-thickness: 2px; text-underline-offset: 2px;
 }
+.job-no-col { flex: 0 0 auto; display: flex; flex-direction: column; align-items: flex-end; gap: 2px; }
+.job-banyu { font-size: 10px; font-weight: 900; line-height: 1; padding: 3px 6px; background: #fbe8cc; color: #7a4a05; border: 1px solid #c87a12; letter-spacing: 0.02em; }
+.job-banyu.is-past { background: #dfeee4; color: #1e5c37; border-color: #2f7d4f; }
 .job-no { flex: 0 0 auto; font-size: 14px; font-weight: 900; color: var(--accent); letter-spacing: 0.02em; }
 .job-line1 { font-size: 10px; font-weight: 700; color: var(--muted-2); line-height: 1.45; width: 100%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .job-line1 .sep { color: var(--sep); }
@@ -205,7 +213,7 @@ async function loadJobs() {
     iSunpou = idx("寸法"), iJuken = idx("検完") !== -1 ? idx("検完") : idx("受・完"), iKu = idx("区"), iSeisaku = idx("製"), iCoiluse = idx("コイル使用"), iTosouCols = ["酸洗","研磨","エポ","FRP","メッキ","外装","その他"].map(n => { const k = idx(n); return (k === -1 && n === "その他") ? idx("判定不能") : k; }),
     iZumen = idx("図"), iToroku = idx("登録日"),
     iJuchu = idx("受注日"), iSeisakuDay = idx("製作日"), iKansei = idx("完成日"),
-    iNaiso = idx("内装日"), iGaiso = idx("外装日"), iShukka = idx("出荷日");
+    iNaiso = idx("内装日"), iGaiso = idx("外装日"), iShukka = idx("出荷日"), iBanyu = idx("搬入日");
 
   // 塗装7列のうち、記入がある工程だけを「工程名 元の文章」で並べる
   const TOSOU_NAMES = ["酸洗","研磨","エポ","FRP","メッキ","外装","他"];
@@ -316,6 +324,7 @@ async function loadJobs() {
         no: r[iSeizou],
         site: r[iGenba],
         due: r[iNouki] || "",
+        banyu: iBanyu >= 0 ? (r[iBanyu] || "") : "",
         juken: r[iJuken] || "",
         dept: kubunToDept(r[iSeisaku], r[iKu]),
         // コイル関連(PCの一覧と同じ判定):製作部署がコイル/コイル使用チェック/品名に熱交換器/塗装仕様に熱源
@@ -380,6 +389,11 @@ function visibleJobs() {
       const db = b.due ? new Date(b.due).getTime() : Infinity;
       return da - db;
     }
+    if (state.sort === "juken") {   // 検完の日付が早い順(空欄は最後)。同じ日は製番順
+      const ja = a.juken ? new Date(a.juken).getTime() : NaN, jb = b.juken ? new Date(b.juken).getTime() : NaN;
+      const xa = isNaN(ja) ? Infinity : ja, xb = isNaN(jb) ? Infinity : jb;
+      if (xa !== xb) return xa < xb ? -1 : 1;
+    }
     // 製造番号順(先頭のアルファベットは製品種類の区分なので、末尾の数字部分だけで比較する)
     const na = parseInt((a.no || "").match(/(\d+)/)?.[1] || "0", 10);
     const nb = parseInt((b.no || "").match(/(\d+)/)?.[1] || "0", 10);
@@ -411,8 +425,9 @@ function renderHeader() {
 
 function renderJobsToolbar() {
   const sorts = [
-    { key: "due", label: "納期が近い順" },
-    { key: "no", label: "製造番号順" }
+    { key: "due", label: "納期順" },
+    { key: "juken", label: "検完順" },
+    { key: "no", label: "製番順" }
   ];
   const deptOptions = ["すべて", ...DEPTS];
   return `
@@ -432,7 +447,7 @@ function renderJobsToolbar() {
         const inDept = d === "すべて" ? pool : d === "第3工場" ? pool.filter(j => j.isDai3) : d === "コイル" ? pool.filter(j => j.isCoil) : pool.filter(j => j.dept === d);
         const isOpen = state.dept === d && state.deptOpen && ["第1工場","コイル","SUS工場","他"].includes(d);
         const n = isOpen ? inDept.filter(j => !j.isDai3).length : inDept.length;
-        return `<button class="dept-btn${state.dept === d ? " is-active" : ""}" data-action="dept" data-dept="${escapeHtml(d)}"><span>${escapeHtml(DEPT_LABELS[d] || d)}${isOpen ? "<small>完成除</small>" : ""}</span><span class="dept-btn-n">${n}</span></button>`;
+        return `<button class="dept-btn${state.dept === d ? " is-active" : ""}" data-action="dept" data-dept="${escapeHtml(d)}"><span>${escapeHtml(DEPT_LABELS[d] || d)}</span>${isOpen ? "<small>完成除</small>" : ""}<span class="dept-btn-n">${n}</span></button>`;
       }).join("")}
     </div>
   `;
@@ -460,11 +475,21 @@ function renderJobsTab() {
   `;
 }
 
+// 搬入日(製造番号の下に出す)。今日以前=緑、これから=オレンジ。空欄のときは何も出さない
+function banyuTag(v) {
+  const s = String(v || "").trim();
+  if (!s || s === "***") return "";
+  const d = new Date(s);
+  if (isNaN(d.getTime())) return `<span class="job-banyu">搬入 ${escapeHtml(s)}</span>`;
+  const past = d.setHours(0,0,0,0) <= new Date().setHours(0,0,0,0);
+  return `<span class="job-banyu${past ? " is-past" : ""}">搬入 ${md(s)}</span>`;
+}
+
 function jobBody(j) {
   return `
     <div class="job-head">
       <span class="job-site">${escapeHtml(j.site)}</span>
-      <span class="job-no">${escapeHtml(j.no)}</span>
+      <span class="job-no-col"><span class="job-no">${escapeHtml(j.no)}</span>${banyuTag(j.banyu)}</span>
     </div>
     <div class="job-line1">納期 ${md(j.due)}<span class="sep"> │ </span>検完 ${md(j.juken)}<span class="sep"> │ </span>${escapeHtml(j.item)}<span class="sep"> │ </span>${escapeHtml(j.dims)}</div>
     <div class="job-line2">${escapeHtml(j.paint || "塗装仕様 未入力")}</div>
