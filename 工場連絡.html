@@ -549,7 +549,7 @@ function renderJobsTab() {
             ? `<a class="job-main" href="${escapeHtml(j.zumen)}" target="_blank" rel="noopener">${jobBody(j)}</a>`
             : `<div class="job-main">${jobBody(j)}</div>`}
           <div class="job-dept">
-            <span class="job-dept-label">${escapeHtml(DEPT_LABELS[j.dept] || j.dept)}</span>
+            <span class="job-dept-label">${j.dept === "コイル" ? "ｺｲﾙ" : escapeHtml(DEPT_LABELS[j.dept] || j.dept)}</span>
           </div>
         </div>
       `).join("")}
