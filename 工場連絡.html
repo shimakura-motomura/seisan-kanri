@@ -78,8 +78,8 @@ input:focus-visible, textarea:focus-visible, button:focus-visible { outline: 2px
   text-decoration: underline; text-decoration-color: var(--accent); text-decoration-thickness: 2px; text-underline-offset: 2px;
 }
 .job-no-col { flex: 0 0 auto; display: flex; flex-direction: column; align-items: flex-end; gap: 2px; }
-.job-banyu { font-size: 10px; font-weight: 900; line-height: 1; padding: 3px 6px; background: #fbe8cc; color: #7a4a05; border: 1px solid #c87a12; letter-spacing: 0.02em; }
-.job-banyu.is-past { background: #dfeee4; color: #1e5c37; border-color: #2f7d4f; }
+.job-banyu { font-size: 11px; font-weight: 900; line-height: 1; margin-top: 10px; color: #c06a00; letter-spacing: 0.02em; }
+.job-banyu.is-past { color: #2f7d4f; }
 .job-no { flex: 0 0 auto; font-size: 14px; font-weight: 900; color: var(--accent); letter-spacing: 0.02em; }
 .job-line1 { font-size: 10px; font-weight: 700; color: var(--muted-2); line-height: 1.45; width: 100%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .job-line1 .sep { color: var(--sep); }
@@ -134,6 +134,11 @@ input:focus-visible, textarea:focus-visible, button:focus-visible { outline: 2px
 .hk-pick small { font-size:12px; font-weight:700; color:var(--muted); margin-left:8px; }
 .tab-badge { position:absolute; top:6px; right:calc(50% - 38px); min-width:20px; height:20px; border-radius:10px; background:#c0392b; color:#fff; font-size:12px; font-weight:900; display:flex; align-items:center; justify-content:center; padding:0 5px; box-sizing:border-box; }
 .tab-btn { position:relative; }
+.hk-sub { display:flex; border-bottom:2px solid var(--ink); }
+.hk-sub button { flex:1 1 0; height:46px; background:var(--bg); color:var(--ink); font-size:15px; font-weight:900; position:relative; }
+.hk-sub button.is-on { background:var(--ink); color:var(--bg); }
+.hk-sub button + button { border-left:2px solid var(--ink); }
+.hk-sub .tab-badge { position:static; display:inline-flex; margin-left:6px; vertical-align:middle; }
 .tabbar { flex: 0 0 auto; position: sticky; bottom: 0; z-index: 20; display: flex; border-top: 2px solid var(--ink); background: var(--bg); }
 .tab-btn { flex: 1 1 0; height: calc(62px + env(safe-area-inset-bottom)); padding-bottom: env(safe-area-inset-bottom); box-sizing: border-box; background: transparent; color: var(--ink); display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 3px; }
 .tab-btn.is-active { background: var(--ink); color: var(--bg); }
@@ -185,6 +190,7 @@ const state = {
   jobs: [],
   hk: { main: [], items: [], oks: [], roster: [], ready: false },
   me: "",
+  sub: "伝言板",
   confirming: "",
   loading: true,
   posting: false
@@ -577,6 +583,13 @@ function jobBody(j) {
 
 function renderBoardTab() {
   if (state.loading) return `<div class="loading">読み込み中...</div>`;
+  const un = hkUnreadList().length;
+  const subbar = `<div class="hk-sub"><button data-action="sub" data-sub="伝言板" class="${state.sub === "伝言板" ? "is-on" : ""}">伝言板</button>
+    <button data-action="sub" data-sub="変更回覧" class="${state.sub === "変更回覧" ? "is-on" : ""}">変更回覧${un ? `<span class="tab-badge">${un}</span>` : ""}</button></div>`;
+  if (state.sub === "変更回覧") return subbar + renderHenkouTab();
+  return subbar + renderPostsPart();
+}
+function renderPostsPart() {
   const canPost = state.name.trim() && state.body.trim() && !state.posting;
   return `
     <div class="post-form">
@@ -644,20 +657,16 @@ function renderSheet() {
 
 function render() {
   const isJobs = state.tab === "製造";
-  const isHk = state.tab === "変更";
   const unread = hkUnreadList().length;
   app.innerHTML = `
     ${renderHeader()}
-    <div class="main">${isJobs ? renderJobsTab() : isHk ? renderHenkouTab() : renderBoardTab()}</div>
+    <div class="main">${isJobs ? renderJobsTab() : renderBoardTab()}</div>
     <div class="tabbar">
       <button class="tab-btn${isJobs ? " is-active" : ""}" data-action="tab" data-tab="製造">
         <span class="tab-btn-main">製造</span><span class="tab-btn-sub">案件一覧</span>
       </button>
-      <button class="tab-btn${isHk ? " is-active" : ""}" data-action="tab" data-tab="変更">
-        <span class="tab-btn-main">変更</span><span class="tab-btn-sub">回覧</span>${unread ? `<span class="tab-badge">${unread}</span>` : ""}
-      </button>
       <button class="tab-btn${state.tab === "連絡" ? " is-active" : ""}" data-action="tab" data-tab="連絡">
-        <span class="tab-btn-main">連絡</span><span class="tab-btn-sub">伝言板</span>
+        <span class="tab-btn-main">連絡</span><span class="tab-btn-sub">伝言板・回覧</span>${unread ? `<span class="tab-badge">${unread}</span>` : ""}
       </button>
     </div>
     ${renderSheet()}
@@ -719,7 +728,8 @@ app.addEventListener("click", async e => {
     else { state.dept = d; state.deptOpen = false; }
     render();
   }
-  else if (action === "tab") { state.tab = target.dataset.tab; render(); if (state.tab === "変更") { await loadHenkou(); render(); } }
+  else if (action === "tab") { state.tab = target.dataset.tab; render(); if (state.tab === "連絡") { await loadHenkou(); render(); } }
+  else if (action === "sub") { state.sub = target.dataset.sub; render(); if (state.sub === "変更回覧") { await loadHenkou(); render(); } }
   else if (action === "hk-me") { state.me = target.dataset.name; hkSetMe(state.me); render(); }
   else if (action === "hk-change-me") { state.me = ""; hkSetMe(""); render(); }
   else if (action === "hk-ok") {

@@ -928,9 +928,6 @@
         <div class="ich2-filter-group">
           <button type="button" id="ich2BuyOpenBtn">買入品表示</button>
         </div>
-        <div class="ich2-filter-group">
-          <button type="button" id="hkOpenBtn">変更連絡</button>
-        </div>
         <label class="ich2-sort-label">
           並び順
           <select class="input" id="ich2Sort">
@@ -1015,6 +1012,8 @@
         <span id="ich2SelBreakdown" style="font-size:11px;color:var(--color-neutral-400);"></span>
         <button type="button" class="ich2-selbar-primary" id="ich2SelbarEditBtn" onclick="ich2SelbarEditClick()">編集</button>
         <button type="button" class="ich2-selbar-primary" id="ich2SelbarShukkaBtn" onclick="ich2GoShukka()">出荷手配へ</button>
+        <button type="button" class="ich2-selbar-primary" id="hkSelbarBtn" onclick="hkOpenNew()">変更連絡</button>
+        <button type="button" class="ich2-selbar-clear" onclick="hkOpenList()">回覧状況</button>
         <button type="button" class="ich2-selbar-clear" onclick="ich2Selected.clear(); ich2Render();">選択を解除</button>
       </div>
 
@@ -2147,7 +2146,7 @@
 
 
   // ============ 変更連絡 ============
-  const HK_ROWS = 5;
+  let hkPre = [];
   let hkRoster = [], hkMode = "new";
   function hkEsc(t) { return String(t == null ? "" : t).replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;").replace(/"/g,"&quot;"); }
   function hkLoadName() { try { return localStorage.getItem("hkPcName") || ""; } catch (e) { return ""; } }
@@ -2166,8 +2165,9 @@
   function hkRenderNew() {
     const sel = hkLoadName();
     const rows = [];
-    for (let i = 0; i < HK_ROWS; i++) rows.push(`<tr data-i="${i}">
-      <td style="width:130px"><input type="text" class="hk-no" placeholder="製造番号"></td>
+    const n = Math.max(5, hkPre.length);
+    for (let i = 0; i < n; i++) rows.push(`<tr data-i="${i}">
+      <td style="width:130px"><input type="text" class="hk-no" placeholder="製造番号" value="${hkEsc(hkPre[i] || "")}"></td>
       <td class="hk-info" style="min-width:200px;color:#555"></td>
       <td style="width:90px"><select class="hk-kind"><option>納期</option><option>完成日</option></select></td>
       <td class="hk-old" style="width:90px"></td>
@@ -2242,6 +2242,7 @@
     if (mode === "new") {
       if (!hkRoster.length) { const d = await hkFetchAll(); if (d) hkRoster = d.roster; }
       hkRenderNew();
+      document.querySelectorAll("#hkBody tbody tr").forEach(hkRefreshRow);
     } else await hkRenderList();
   }
   async function hkSend() {
@@ -2276,10 +2277,16 @@
     } catch (e) { st.textContent = "失敗: " + e.message; }
     btn.disabled = false;
   }
+  async function hkOpenNew() {
+    const iNo = ich2Header.indexOf("製造番号");
+    const sel = new Set([...ich2Selected].filter(k => k.startsWith("make:")).map(k => k.slice(5)));
+    hkPre = ich2All.map(r => String(r[iNo]).trim()).filter(no => sel.has(no));
+    document.getElementById("hkOverlay").hidden = false;
+    await hkSetMode("new");
+  }
+  async function hkOpenList() { hkPre = []; document.getElementById("hkOverlay").hidden = false; await hkSetMode("list"); }
   (function hkInit() {
-    const open = document.getElementById("hkOpenBtn");
-    if (!open) return;
-    open.addEventListener("click", async () => { document.getElementById("hkOverlay").hidden = false; await hkSetMode("new"); });
+    if (!document.getElementById("hkOverlay")) return;
     document.getElementById("hkCloseBtn").addEventListener("click", () => { document.getElementById("hkOverlay").hidden = true; });
     document.getElementById("hkSendBtn").addEventListener("click", hkSend);
     document.querySelectorAll(".hk-tab").forEach(b => b.addEventListener("click", () => hkSetMode(b.dataset.hk)));
@@ -2465,6 +2472,7 @@
       (makeKeys.length && buyCount) ? "(製作品 " + makeKeys.length + " / 買入品 " + buyCount + ")" : "";
     // 「出荷手配へ」は1件以上、「編集」は製作品をちょうど1件選択しているときだけ有効
     document.getElementById("ich2SelbarShukkaBtn").disabled = total === 0;
+    document.getElementById("hkSelbarBtn").disabled = makeKeys.length === 0;   // 変更連絡は、製作品を1件以上選んだときだけ
     const bm = document.getElementById("ich2BuyModalSel");
     if (bm) {
       bm.textContent = total === 0 ? "未選択" : (total + " 件を選択中(製作品 " + makeKeys.length + " / 買入品 " + buyCount + ")");
