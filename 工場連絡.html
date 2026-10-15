@@ -471,6 +471,11 @@ function visibleJobs() {
       const db = b.due ? new Date(b.due).getTime() : Infinity;
       return da - db;
     }
+    if (state.sort === "banyu") {   // 搬入日が早い順(空欄は最後)。同じ日は製番順
+      const ba = a.banyu ? new Date(a.banyu).getTime() : NaN, bb = b.banyu ? new Date(b.banyu).getTime() : NaN;
+      const ya = isNaN(ba) ? Infinity : ba, yb = isNaN(bb) ? Infinity : bb;
+      if (ya !== yb) return ya < yb ? -1 : 1;
+    }
     if (state.sort === "juken") {   // 検完の日付が早い順(空欄は最後)。同じ日は製番順
       const ja = a.juken ? new Date(a.juken).getTime() : NaN, jb = b.juken ? new Date(b.juken).getTime() : NaN;
       const xa = isNaN(ja) ? Infinity : ja, xb = isNaN(jb) ? Infinity : jb;
@@ -509,6 +514,7 @@ function renderJobsToolbar() {
   const sorts = [
     { key: "due", label: "納期順" },
     { key: "juken", label: "検完順" },
+    { key: "banyu", label: "搬入順" },
     { key: "no", label: "製番順" }
   ];
   const deptOptions = ["すべて", ...DEPTS];
