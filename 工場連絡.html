@@ -113,6 +113,27 @@ input:focus-visible, textarea:focus-visible, button:focus-visible { outline: 2px
 .post-when { flex: 0 0 auto; font-size: 12px; font-weight: 700; color: var(--muted); }
 .post-body { font-size: 15px; line-height: 1.55; white-space: pre-wrap; }
 
+.hk-me { display:flex; align-items:center; justify-content:space-between; padding:10px 16px; border-bottom:2px solid var(--ink); background:var(--panel); font-size:15px; font-weight:900; }
+.hk-me button { border:2px solid var(--ink); background:var(--bg); font-size:13px; font-weight:700; padding:6px 10px; color:var(--ink); }
+.hk-sec { padding:8px 16px; font-size:12px; font-weight:900; letter-spacing:0.08em; background:var(--ink); color:var(--bg); }
+.hk-card { background:var(--bg); border-bottom:2px solid var(--ink); padding:12px 16px 14px; display:flex; flex-direction:column; gap:8px; }
+.hk-card.is-unread { border-left:8px solid #c0392b; }
+.hk-head { display:flex; justify-content:space-between; align-items:baseline; gap:8px; }
+.hk-no { font-size:17px; font-weight:900; }
+.hk-when { font-size:12px; font-weight:700; color:var(--muted); }
+.hk-item { border:2px solid var(--ink); padding:8px 10px; display:flex; flex-direction:column; gap:3px; }
+.hk-item-no { font-size:15px; font-weight:900; }
+.hk-item-sub { font-size:13px; color:var(--muted-2, #555); }
+.hk-chg { font-size:17px; font-weight:900; }
+.hk-chg .hk-new { color:#c0392b; }
+.hk-ok { height:60px; border:2px solid #c0392b; background:#c0392b; color:#fff; font-size:18px; font-weight:900; width:100%; }
+.hk-ok:disabled { opacity:0.5; }
+.hk-done { font-size:13px; font-weight:700; color:#2f7d4f; }
+.hk-pick { padding:16px; display:flex; flex-direction:column; gap:10px; }
+.hk-pick button { height:56px; border:2px solid var(--ink); background:var(--bg); font-size:18px; font-weight:900; text-align:left; padding:0 14px; color:var(--ink); }
+.hk-pick small { font-size:12px; font-weight:700; color:var(--muted); margin-left:8px; }
+.tab-badge { position:absolute; top:6px; right:calc(50% - 38px); min-width:20px; height:20px; border-radius:10px; background:#c0392b; color:#fff; font-size:12px; font-weight:900; display:flex; align-items:center; justify-content:center; padding:0 5px; box-sizing:border-box; }
+.tab-btn { position:relative; }
 .tabbar { flex: 0 0 auto; position: sticky; bottom: 0; z-index: 20; display: flex; border-top: 2px solid var(--ink); background: var(--bg); }
 .tab-btn { flex: 1 1 0; height: calc(62px + env(safe-area-inset-bottom)); padding-bottom: env(safe-area-inset-bottom); box-sizing: border-box; background: transparent; color: var(--ink); display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 3px; }
 .tab-btn.is-active { background: var(--ink); color: var(--bg); }
@@ -162,6 +183,9 @@ const state = {
   body: "",
   posts: [],
   jobs: [],
+  hk: { main: [], items: [], oks: [], roster: [], ready: false },
+  me: "",
+  confirming: "",
   loading: true,
   posting: false
 };
@@ -376,6 +400,58 @@ function formatWhen(v) {
     " " + String(d.getHours()).padStart(2, "0") + ":" + String(d.getMinutes()).padStart(2, "0");
 }
 
+// ===== 変更連絡 =====
+function hkGetMe() { try { return localStorage.getItem("hkMe") || ""; } catch (e) { return ""; } }
+function hkSetMe(v) { try { if (v) localStorage.setItem("hkMe", v); else localStorage.removeItem("hkMe"); } catch (e) {} }
+function hkShort(v) {
+  const m = String(v || "").match(/^\d{4}\/(\d{1,2})\/(\d{1,2})/);
+  return m ? (+m[1]) + "/" + (+m[2]) : String(v || "");
+}
+async function loadHenkou() {
+  const names = ["変更連絡", "変更連絡_明細", "変更連絡_確認", "変更連絡_宛先"];
+  const url = "https://sheets.googleapis.com/v4/spreadsheets/" + SPREADSHEET_ID + "/values:batchGet?" +
+    names.map(n => "ranges=" + encodeURIComponent(n)).join("&") + "&key=" + SHEETS_API_KEY;
+  try {
+    const res = await fetch(url);
+    if (!res.ok) throw new Error("HTTP " + res.status);
+    const d = (await res.json()).valueRanges.map(v => (v.values || []).slice(1));
+    state.hk = { main: d[0], items: d[1], oks: d[2], roster: d[3].filter(r => r[0]), ready: true };
+  } catch (e) { state.hk.ready = true; }   // シート未作成でも、他の画面は動かす
+}
+function hkConfirmed(no, name) { return state.hk.oks.some(r => r[0] === no && r[1] === name); }
+function hkUnreadList() {
+  if (!state.me) return [];
+  return state.hk.main.filter(m => !hkConfirmed(m[0], state.me)).reverse();
+}
+function renderHenkouTab() {
+  if (state.loading) return `<div class="loading">読み込み中...</div>`;
+  const hk = state.hk;
+  if (!state.me || !hk.roster.some(r => r[0] === state.me)) {
+    if (!hk.roster.length) return `<div class="empty"><div class="empty-title">変更連絡はまだ準備中です</div><div class="empty-sub">宛先の登録が終わると使えます。</div></div>`;
+    return `<div class="hk-pick"><div class="field"><label>あなたのお名前を選んでください(この端末に覚えます)</label></div>
+      ${hk.roster.map(r => `<button data-action="hk-me" data-name="${escapeHtml(r[0])}">${escapeHtml(r[0])}<small>${escapeHtml(r[1])}</small></button>`).join("")}</div>`;
+  }
+  const card = (m, unread) => {
+    const no = m[0];
+    const its = hk.items.filter(r => r[0] === no);
+    return `<div class="hk-card${unread ? " is-unread" : ""}">
+      <div class="hk-head"><span class="hk-no">${escapeHtml(no)}</span><span class="hk-when">${escapeHtml(String(m[1]).slice(5))} ${escapeHtml(m[2])}</span></div>
+      ${its.map(r => `<div class="hk-item"><div class="hk-item-no">${escapeHtml(r[1])}　${escapeHtml(r[2])}</div>
+        <div class="hk-item-sub">${escapeHtml([r[3], r[4]].filter(Boolean).join(" / "))}</div>
+        <div class="hk-chg">${escapeHtml(r[5])}:${escapeHtml(hkShort(r[6]) || "(空)")} → <span class="hk-new">${escapeHtml(hkShort(r[7]))}</span></div></div>`).join("")}
+      ${m[4] ? `<div class="post-body">${escapeHtml(m[4])}</div>` : ""}
+      ${unread ? `<button class="hk-ok" data-action="hk-ok" data-no="${escapeHtml(no)}"${state.confirming === no ? " disabled" : ""}>${state.confirming === no ? "送信中..." : "確認しました"}</button>`
+               : `<div class="hk-done">✔ 確認済み</div>`}
+    </div>`;
+  };
+  const un = hkUnreadList();
+  const done = hk.main.filter(m => hkConfirmed(m[0], state.me)).reverse().slice(0, 20);
+  return `<div class="hk-me"><span>${escapeHtml(state.me)} さん</span><button data-action="hk-change-me">名前を変える</button></div>
+    <div class="hk-sec">未確認 (${un.length})</div>
+    ${un.length ? un.map(m => card(m, true)).join("") : `<div class="empty"><div class="empty-title">未確認の変更連絡はありません</div></div>`}
+    ${done.length ? `<div class="hk-sec">確認済み</div>` + done.map(m => card(m, false)).join("") : ""}`;
+}
+
 function visibleJobs() {
   const q = state.query.trim();
   let jobs = state.jobs
@@ -568,14 +644,19 @@ function renderSheet() {
 
 function render() {
   const isJobs = state.tab === "製造";
+  const isHk = state.tab === "変更";
+  const unread = hkUnreadList().length;
   app.innerHTML = `
     ${renderHeader()}
-    <div class="main">${isJobs ? renderJobsTab() : renderBoardTab()}</div>
+    <div class="main">${isJobs ? renderJobsTab() : isHk ? renderHenkouTab() : renderBoardTab()}</div>
     <div class="tabbar">
       <button class="tab-btn${isJobs ? " is-active" : ""}" data-action="tab" data-tab="製造">
         <span class="tab-btn-main">製造</span><span class="tab-btn-sub">案件一覧</span>
       </button>
-      <button class="tab-btn${!isJobs ? " is-active" : ""}" data-action="tab" data-tab="連絡">
+      <button class="tab-btn${isHk ? " is-active" : ""}" data-action="tab" data-tab="変更">
+        <span class="tab-btn-main">変更</span><span class="tab-btn-sub">回覧</span>${unread ? `<span class="tab-badge">${unread}</span>` : ""}
+      </button>
+      <button class="tab-btn${state.tab === "連絡" ? " is-active" : ""}" data-action="tab" data-tab="連絡">
         <span class="tab-btn-main">連絡</span><span class="tab-btn-sub">伝言板</span>
       </button>
     </div>
@@ -638,7 +719,24 @@ app.addEventListener("click", async e => {
     else { state.dept = d; state.deptOpen = false; }
     render();
   }
-  else if (action === "tab") { state.tab = target.dataset.tab; render(); }
+  else if (action === "tab") { state.tab = target.dataset.tab; render(); if (state.tab === "変更") { await loadHenkou(); render(); } }
+  else if (action === "hk-me") { state.me = target.dataset.name; hkSetMe(state.me); render(); }
+  else if (action === "hk-change-me") { state.me = ""; hkSetMe(""); render(); }
+  else if (action === "hk-ok") {
+    const no = target.dataset.no;
+    if (state.confirming) return;
+    state.confirming = no; render();
+    try {
+      const res = await fetch(GAS_URL, { method: "POST", body: JSON.stringify({ type: "henkouConfirm", no, name: state.me }) });
+      const data = await res.json();
+      if (data.result !== "success") throw new Error(data.message || "失敗しました");
+      const dep = (state.hk.roster.find(r => r[0] === state.me) || [])[1] || "";
+      state.hk.oks.push([no, state.me, dep, ""]);
+    } catch (err) {
+      alert("確認の送信に失敗しました。通信を確認してもう一度押してください。");
+    }
+    state.confirming = ""; render();
+  }
   else if (action === "job-history") { state.sheet = target.dataset.no; render(); }
   else if (action === "sheet-close") { state.sheet = null; render(); }
   else if (action === "sheet-stop") { e.stopPropagation(); }
@@ -669,7 +767,8 @@ app.addEventListener("click", async e => {
 (async function init() {
   render();
   try {
-    const [jobs, posts] = await Promise.all([loadJobs(), loadPosts()]);
+    state.me = hkGetMe();
+    const [jobs, posts] = await Promise.all([loadJobs(), loadPosts(), loadHenkou()]);
     state.jobs = jobs;
     state.posts = posts;
   } catch (err) {
