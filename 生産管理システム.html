@@ -489,6 +489,7 @@
   #ich2MemoPop textarea { width: 100%; box-sizing: border-box; font-size: 14px; font-family: inherit; padding: 5px 6px; border: 1px solid #999; resize: vertical; }
   #ich2MemoPop .mp-foot { display: flex; align-items: center; gap: 6px; margin-top: 6px; }
   #ich2MemoPop .mp-hint { flex: 1; font-size: 11px; color: #777; }
+  #ich2MemoPop .mp-del { color: #c00; border: 1px solid #c00; background: var(--color-bg); font-size: 12px; padding: 2px 10px; cursor: pointer; font-family: inherit; }
   #ich2MemoPop .mp-err { color: #c00; font-size: 12px; font-weight: 700; margin-bottom: 4px; }
   #ich2MemoPop button { font-size: 12px; padding: 3px 10px; cursor: pointer; font-family: inherit; }
   .ich2-badge .dot { width: 4px; height: 4px; flex: none; }
@@ -2211,7 +2212,7 @@
     pop.id = "ich2MemoPop";
     pop.innerHTML = '<div class="mp-title">' + ich2Esc(no) + '</div>' +
       '<textarea rows="4"></textarea>' +
-      '<div class="mp-foot"><span class="mp-hint">欄外クリックで保存</span></div>';
+      '<div class="mp-foot"><span class="mp-hint">欄外クリックで保存</span>' + (current.trim() ? '<button type="button" class="mp-del">削除</button>' : '') + '</div>';
     document.body.appendChild(pop);
     const ta = pop.querySelector("textarea");
     ta.value = (initText != null) ? initText : current;
@@ -2232,6 +2233,8 @@
       if (e.key === "Escape") { e.preventDefault(); pop.__finish(false); }
       else if (e.key === "Enter" && (e.ctrlKey || e.metaKey)) { e.preventDefault(); pop.__finish(true); }
     });
+    const delBtn = pop.querySelector(".mp-del");
+    if (delBtn) delBtn.addEventListener("click", () => { ta.value = ""; pop.__finish(true); });
     setTimeout(() => document.addEventListener("mousedown", ich2MemoOutside, true), 0);
   }
 
