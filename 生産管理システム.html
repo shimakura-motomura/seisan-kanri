@@ -167,7 +167,7 @@
   .ts3-btn:hover { background: rgba(32,30,29,0.07); }
 
   .ts3-list-scroll { overflow: auto; border: 1px solid var(--color-divider); background: var(--color-bg); max-height: calc(100vh - 300px); min-height: 120px; }
-  table.ts3-data { border-collapse: collapse; width: 100%; table-layout: auto; font-size: 11px; }
+  table.ts3-data { border-collapse: collapse; width: 100%; table-layout: fixed; font-size: 11px; }   /* 列幅は中身で変えず固定(幅は tsApplyColgroup で指定) */
   table.ts3-data th {
     position: sticky; top: 0; background: var(--color-bg); z-index: 2;
     text-align: left; font-size: 10px; letter-spacing: 0.02em; padding: 5px 8px;
@@ -199,7 +199,7 @@
   .ts3-plain { font-size: 12px; color: var(--color-neutral-900, #201e1d); display: inline-block; min-width: 36px; text-align: center; }
   .ts3-plain.empty { color: var(--color-neutral-500); }
   .ich2-badge.ts3-co { width: 36px; font-size: 10px; display: inline-flex; }
-  table.ts3-data th.ts3-note, table.ts3-data td.ts3-note { width: 100%; max-width: 0 !important; overflow: hidden; text-overflow: ellipsis; text-align: left; }
+  table.ts3-data th.ts3-note, table.ts3-data td.ts3-note { width: auto; max-width: 0 !important; overflow: hidden; text-overflow: ellipsis; text-align: left; }
   .ts3-card.empty { border-style: dashed; background: transparent; color: transparent; }
   .ts3-card.wide { min-width: 62px; max-width: 90px; }
   .ts3-float-input { position: fixed; z-index: 500; font-size: 13px; padding: 4px 6px; border: 2px solid var(--color-accent); font-family: inherit; box-sizing: border-box; background: var(--color-bg); box-shadow: 0 2px 8px rgba(32,30,29,0.25); }
@@ -3248,6 +3248,22 @@
     return v == null ? "" : v;
   }
 
+  // 列幅は内容で変えず固定。同じ見出しは、どのタブ・どの表でも同じ幅(備考/内容の「残り幅の列」だけ、画面幅に合わせて伸びる)
+  const TS_COLW = { "製造番号":72, "納期":48, "現場名":100, "品名":84, "寸法":96, "検完":44, "区":26, "製作":40, "vol":38, "材質":42, "内容":90, "価格":62, "工数㎡":50, "予定":46, "持込":46, "完成":46, "納品":46, "社名":48, "業者":48, "備考":110 };
+  const TS_COLW_TAB = { "外装": { "内容": 54 }, "メッキ": { "備考": 165 } };
+  function tsApplyColgroup(table, widths, flexIndex, flexMin) {
+    const old = table.querySelector("colgroup"); if (old) old.remove();
+    const cg = document.createElement("colgroup");
+    let sum = 0;
+    widths.forEach((w, i) => {
+      const c = document.createElement("col");
+      if (i !== flexIndex) { c.style.width = w + "px"; sum += w; }
+      cg.appendChild(c);
+    });
+    table.insertBefore(cg, table.firstChild);
+    table.style.minWidth = (sum + flexMin) + "px";
+  }
+
   function tsRenderTosouTable(table, tab, rowsList, opt) {
     const compact = !!opt.compact, p = opt.p, pane = p.name;
     const cols = TS_COLS[tab.key];
@@ -3271,6 +3287,11 @@
       trh.appendChild(th);
     });
     thead.appendChild(trh);
+    {
+      const ov = TS_COLW_TAB[tab.key] || {};
+      const ws = [compact ? 26 : 30].concat(cols.map(([label]) => label === "製造番号" ? (compact ? 72 : 84) : (ov[label] || TS_COLW[label] || 60)));
+      tsApplyColgroup(table, ws, 1 + cols.findIndex(([label]) => label === noteLabel), 120);
+    }
     rowsList.forEach(o => {
       const tr = document.createElement("tr");
       tr.dataset.key = o.key;
@@ -3682,6 +3703,7 @@
     tsEl(p, "stat").textContent = tsPaint.err ? tsPaint.err : list.length + "品目" + (latest ? " ／ 更新 " + latest : "");
     const head = ["品名", "斗缶", "4L缶", "残量L", "㎡/L(目安)", "塗装㎡", "備考"];
     const hcls = { "斗缶": "c", "4L缶": "c", "㎡/L(目安)": "c", "残量L": "r", "塗装㎡": "r", "備考": "ts3-note" };
+    tsApplyColgroup(table, [200, 72, 72, 56, 70, 56, 0], 6, 120);
     table.querySelector("thead").innerHTML = "<tr>" + head.map(h => "<th" + (hcls[h] ? ' class="' + hcls[h] + '"' : "") + ">" + h + "</th>").join("") + "</tr>";
     const tb = table.querySelector("tbody"); tb.innerHTML = "";
     list.forEach(o => {
