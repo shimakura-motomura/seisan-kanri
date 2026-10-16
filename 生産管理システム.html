@@ -167,7 +167,7 @@
   .ts3-btn:hover { background: rgba(32,30,29,0.07); }
 
   .ts3-list-scroll { overflow: auto; border: 1px solid var(--color-divider); background: var(--color-bg); max-height: calc(100vh - 300px); min-height: 120px; }
-  table.ts3-data { border-collapse: collapse; width: 100%; table-layout: fixed; font-size: 11px; }   /* 列幅は中身で変えず固定(幅は tsApplyColgroup で指定) */
+  table.ts3-data { border-collapse: collapse; width: 100%; table-layout: auto; font-size: 11px; }
   table.ts3-data th {
     position: sticky; top: 0; background: var(--color-bg); z-index: 2;
     text-align: left; font-size: 10px; letter-spacing: 0.02em; padding: 5px 8px;
@@ -199,7 +199,7 @@
   .ts3-plain { font-size: 12px; color: var(--color-neutral-900, #201e1d); display: inline-block; min-width: 36px; text-align: center; }
   .ts3-plain.empty { color: var(--color-neutral-500); }
   .ich2-badge.ts3-co { width: 36px; font-size: 10px; display: inline-flex; }
-  table.ts3-data th.ts3-note, table.ts3-data td.ts3-note { width: auto; max-width: 0 !important; overflow: hidden; text-overflow: ellipsis; text-align: left; }
+  table.ts3-data th.ts3-note, table.ts3-data td.ts3-note { width: 100%; max-width: 0 !important; overflow: hidden; text-overflow: ellipsis; text-align: left; }
   .ts3-card.empty { border-style: dashed; background: transparent; color: transparent; }
   .ts3-card.wide { min-width: 62px; max-width: 90px; }
   .ts3-float-input { position: fixed; z-index: 500; font-size: 13px; padding: 4px 6px; border: 2px solid var(--color-accent); font-family: inherit; box-sizing: border-box; background: var(--color-bg); box-shadow: 0 2px 8px rgba(32,30,29,0.25); }
@@ -481,17 +481,6 @@
   .ich2-prog-cell { cursor: pointer; padding-left: 0px !important; padding-right: 0px !important; }
   .ich2-prog-cell.banyu .ich2-badge { width: 35px; }
   .ich2-prog-cell:hover { background: rgba(236,48,19,0.08); }
-  /* 搬入メモ: メモがある搬入欄は右上に小さな三角印(Excelのメモと同じ見た目) */
-  .ich2-prog-cell.banyu.has-memo { position: relative; }
-  .ich2-prog-cell.banyu.has-memo::after { content: ""; position: absolute; top: 0; right: 0; border-top: 8px solid var(--color-accent); border-left: 8px solid transparent; pointer-events: none; }
-  #ich2MemoPop { position: fixed; z-index: 9999; background: var(--color-bg); border: 2px solid var(--color-accent); box-shadow: 0 4px 16px rgba(32,30,29,0.3); padding: 8px; width: 260px; }
-  #ich2MemoPop .mp-title { font-size: 12px; font-weight: 700; margin-bottom: 4px; }
-  #ich2MemoPop textarea { width: 100%; box-sizing: border-box; font-size: 14px; font-family: inherit; padding: 5px 6px; border: 1px solid #999; resize: vertical; }
-  #ich2MemoPop .mp-foot { display: flex; align-items: center; gap: 6px; margin-top: 6px; }
-  #ich2MemoPop .mp-hint { flex: 1; font-size: 11px; color: #777; }
-  #ich2MemoPop .mp-del { color: #c00; border: 1px solid #c00; background: var(--color-bg); font-size: 12px; padding: 2px 10px; cursor: pointer; font-family: inherit; }
-  #ich2MemoPop .mp-err { color: #c00; font-size: 12px; font-weight: 700; margin-bottom: 4px; }
-  #ich2MemoPop button { font-size: 12px; padding: 3px 10px; cursor: pointer; font-family: inherit; }
   .ich2-badge .dot { width: 4px; height: 4px; flex: none; }
   .ich2-footnote { padding: 6px 4px; font-size: 11px; color: var(--color-neutral-700); flex: none; }
   .ich2-empty { padding: 48px 20px; text-align: center; color: var(--color-neutral-600); font-size: 13px; }
@@ -1503,6 +1492,8 @@
     if (numEl) numEl.textContent = t.getFullYear() + "." + String(t.getMonth()+1).padStart(2,"0") + "." + String(t.getDate()).padStart(2,"0");
   })();
 
+  // 出荷日を入れた行は、画面を開き直すまで一覧に残す(入力ミスにその場で気づけるように)
+  const ich2KeepMake = new Set(), ich2KeepBuy = new Set();
   function nav(screen) {
     document.querySelectorAll(".screen").forEach(s => s.classList.remove("active"));
     document.getElementById("screen-" + screen).classList.add("active");
@@ -1514,6 +1505,7 @@
     if (screen === "shukka" && !initialized.shukka) { initShukka(); initialized.shukka = true; }
     if (screen === "renraku" && !initialized.renraku) { initRenraku(); initialized.renraku = true; }
     if (screen === "ichiran" && !initialized.ichiran) { initIchiran(); initialized.ichiran = true; }
+    else if (screen === "ichiran" && (ich2KeepMake.size || ich2KeepBuy.size)) { ich2KeepMake.clear(); ich2KeepBuy.clear(); if (typeof ich2RenderAll === "function") ich2RenderAll(); }
     if (screen === "tosou") setTimeout(() => { if (typeof tsFit === "function") tsFit(); }, 0);
   }
 
@@ -1739,6 +1731,7 @@
 
     // 買入品の一覧は、ポップアップで開く
     document.getElementById("ich2BuyOpenBtn").addEventListener("click", () => {
+      ich2KeepBuy.clear();
       document.getElementById("ich2BuyOverlay").hidden = false;
       ich2RenderAll();
     });
@@ -1806,14 +1799,14 @@
       iSunpou = idx("寸法"), iZairyou = idx("材質"), iJuken = idx("検完") !== -1 ? idx("検完") : idx("受・完"), iKu = idx("区"), iSeisaku = idx("製"), iCoiluse = idx("コイル使用"),
       iTosouSanArai = idx("酸洗"), iTosouKenma = idx("研磨"), iTosouEpo = idx("エポ"), iTosouFrp = idx("FRP"), iTosouMekki = idx("メッキ"), iTosouGaisou = idx("外装"), iTosouSonota = idx("その他") !== -1 ? idx("その他") : idx("判定不能"),
       iJuchu = idx("受注日"), iSeisakuDay = idx("製作日"), iKansei = idx("完成日"), iNaiso = idx("内装日"), iGaiso = idx("外装日"), iShukka = idx("出荷日"), iBanyu = idx("搬入日"),
-      iBanyuMemo = idx("搬入メモ"), iTantou = idx("担当者"), iMsunpou = idx("m寸法"), iShitsuryou = idx("質量"), iKatabangou = idx("型番"), iBaika = idx("売価(千円)"), iBiko = idx("備考"), iZumen = idx("図");
+      iTantou = idx("担当者"), iMsunpou = idx("m寸法"), iShitsuryou = idx("質量"), iKatabangou = idx("型番"), iBaika = idx("売価(千円)"), iBiko = idx("備考"), iZumen = idx("図");
 
     // コイル判定などで使う、塗装仕様7列をまとめた文字列(元の単一「塗装仕様」列の代わり)
     const tosouAll = r => [r[iTosouSanArai], r[iTosouKenma], r[iTosouEpo], r[iTosouFrp], r[iTosouMekki], r[iTosouGaisou], r[iTosouSonota]].filter(Boolean).join(" ");
 
     const q = ich2State.query.trim().toLowerCase();
     let rows = ich2All.filter(r => {
-      if (!ich2State.showShipped && ich2IsShipped(r[iShukka])) return false;
+      if (!ich2State.showShipped && ich2IsShipped(r[iShukka]) && !ich2KeepMake.has(String(r[iSeizou]).trim())) return false;
       if (q && !((r[iSeizou]||"")+(r[iGenba]||"")+(r[iHinmei]||"")+(r[iTantou]||"")).toLowerCase().includes(q)) return false;
       if (ich2State.dept !== "全数") {
         if (ich2State.dept === "コイル") {
@@ -1922,9 +1915,7 @@
           const raw = (ci >= 0 ? r[ci] : "") || "";
           const colName = ci >= 0 ? H[ci] : "搬入日";
           const wide = (ci === iNaiso || ci === iGaiso);
-          const isBanyu = (colName === "搬入日");
-          const memo = (isBanyu && iBanyuMemo >= 0) ? String(r[iBanyuMemo] || "").trim() : "";
-          return '<td class="center ich2-prog-cell' + (isBanyu ? " banyu" : "") + (memo ? " has-memo" : "") + '" data-seizou="'+ich2Esc(no)+'" data-col="'+ich2Esc(colName)+'" data-val="'+ich2Esc(ich2EditableDateValue(raw))+'" title="'+(memo ? ich2Esc("📝 " + memo) : (isBanyu ? "クリックして編集／右クリックでメモ" : "クリックして編集"))+'">'+ich2Badge(ich2Cell(raw, ich2RowRef(r, progIdx)), wide)+'</td>';
+          return '<td class="center ich2-prog-cell' + (colName === "搬入日" ? " banyu" : "") + '" data-seizou="'+ich2Esc(no)+'" data-col="'+ich2Esc(colName)+'" data-val="'+ich2Esc(ich2EditableDateValue(raw))+'" title="クリックして編集">'+ich2Badge(ich2Cell(raw, ich2RowRef(r, progIdx)), wide)+'</td>';
         }).join("") +
         '<td class="ich2-nowrap">'+ich2Esc(r[iTantou])+'</td>' +
         '<td class="ich2-nowrap ich2-ellipsis ich2-tabular ich2-muted" title="'+ich2Esc(r[iMsunpou])+'">'+ich2Esc(r[iMsunpou])+'</td>' +
@@ -1941,10 +1932,6 @@
     // 行内ポップアップを廃止し、「✏」ボタンから開く一括編集画面(ich2OpenEditModal)で編集する。
     document.querySelectorAll("#ich2Tbody .ich2-prog-cell").forEach(td => {
       td.addEventListener("click", () => ich2StartEditProgress(td));
-      if (td.classList.contains("banyu")) {
-        // 搬入欄の右クリックで、搬入メモ(自由記入)を開く
-        td.addEventListener("contextmenu", e => { e.preventDefault(); ich2OpenMemo(td); });
-      }
     });
 
     // チェックボックス(行・全選択)の同期
@@ -1974,7 +1961,7 @@
     let rows = ich2BuyAll.map((r, i) => ({ r, rowIndex: ich2BuyRowNo[i] })).filter(({ r }) => {
       if (q && !((r[iModel]||"")+(r[iSite]||"")+(r[iNote]||"")+(r[iPic]||"")+(r[iKubun]||"")).toLowerCase().includes(q)) return false;
       // 出荷済み(出荷日が今日以前、または納品済み)は、「出荷済みも表示」か「納品済み」絞り込みのときだけ出す
-      if (!ich2BuyState.showShipped && ich2BuyState.filter !== "done" && (ich2IsShipped(r[iOut]) || ich2DatePassed(r[iDone]))) return false;
+      if (!ich2BuyState.showShipped && ich2BuyState.filter !== "done" && (ich2IsShipped(r[iOut]) || ich2DatePassed(r[iDone])) && !ich2KeepBuy.has(ich2BuyRowNo[ich2BuyAll.indexOf(r)])) return false;
       if (ich2BuyState.filter === "soon") {
         const v = r[iIn]; if (!v) return false;
         const d = new Date(v); if (isNaN(d.getTime())) return false;
@@ -2137,6 +2124,7 @@
   }
 
   async function ich2SaveBuyCell(rowIndex, columnName, value, td, original) {
+    ich2KeepBuy.add(rowIndex);
     const iModel = ich2BuyHeader.indexOf("型式");
     const row = ich2BuyAll[ich2BuyRowNo.indexOf(rowIndex)];
     const iCol = ich2BuyHeader.indexOf(columnName);
@@ -2155,88 +2143,30 @@
   }
 
   // 先に画面を変えて、保存は裏で行う(失敗したときだけ元に戻す)
-  // 保存は1件ずつ順番に行い(同時に送るとGAS側の書き込みが衝突して失敗しやすいため)、失敗したときは最大3回までやり直す
-  let ich2SaveQueue = Promise.resolve();
-  async function ich2PostProgress(seizouBangou, columnName, value) {
-    let lastErr;
-    for (let attempt = 0; attempt < 3; attempt++) {
-      try {
-        const res = await fetch(GAS_URL, { method: "POST", body: JSON.stringify({ type: "updateProgress", seizouBangou, columnName, value }) });
-        const data = await res.json();
-        if (data.result === "success") return;
-        lastErr = new Error(data.message || "更新に失敗しました");
-      } catch (e) { lastErr = e; }
-      if (attempt < 2) await new Promise(r => setTimeout(r, 1200 * (attempt + 1)));
-    }
-    throw lastErr;
-  }
   async function ich2SaveProgress(seizouBangou, columnName, value, td, original) {
+    ich2KeepMake.add(String(seizouBangou).trim());
     const idxSeizou = ich2Header.indexOf("製造番号");
     let idxCol = ich2Header.indexOf(columnName);
     let addedCol = false;
-    if (idxCol === -1 && (columnName === "搬入日" || columnName === "搬入メモ")) {      // シートに「搬入日」「搬入メモ」の列が新しくできる
-      ich2Header.push(columnName); idxCol = ich2Header.length - 1; addedCol = true;
+    if (idxCol === -1 && columnName === "搬入日") {      // シートに「搬入日」の列が新しくできる
+      ich2Header.push("搬入日"); idxCol = ich2Header.length - 1; addedCol = true;
       ich2All.forEach(r => { while (r.length < idxCol) r.push(""); });
     }
     const row = ich2All.find(r => r[idxSeizou] === seizouBangou);
     const oldVal = row && idxCol !== -1 ? row[idxCol] : undefined;
     if (row && idxCol !== -1) row[idxCol] = value;
     ich2RenderAll();
-    ich2SaveQueue = ich2SaveQueue.then(async () => {
-      try {
-        await ich2PostProgress(seizouBangou, columnName, value);
-      } catch (e) {
-        if (row && idxCol !== -1) row[idxCol] = oldVal === undefined ? "" : oldVal;
-        ich2RenderAll();
-        if (columnName === "搬入メモ") {
-          // メモは入力した文字を失わないよう、入力ボックスを開き直す(欄外クリックでもう一度保存できる)
-          const cell = Array.from(document.querySelectorAll("#ich2Tbody .ich2-prog-cell.banyu")).find(c => c.dataset.seizou === seizouBangou);
-          if (cell) { ich2OpenMemo(cell, value, "保存できませんでした: " + (e.message || e)); return; }
-        }
-        alert("保存に失敗したため、元の表示に戻しました(" + seizouBangou + " の " + columnName + "): " + e.message);
-      }
-    });
+    try {
+      const res = await fetch(GAS_URL, { method: "POST", body: JSON.stringify({ type: "updateProgress", seizouBangou, columnName, value }) });
+      const data = await res.json();
+      if (data.result !== "success") throw new Error(data.message || "更新に失敗しました");
+    } catch (e) {
+      if (row && idxCol !== -1) row[idxCol] = oldVal === undefined ? "" : oldVal;
+      ich2RenderAll();
+      alert("保存に失敗したため、元の表示に戻しました(" + seizouBangou + " の " + columnName + "): " + e.message);
+    }
   }
 
-
-  // ============ 搬入メモ(搬入欄を右クリックで記入) ============
-  function ich2CloseMemo() { const p = document.getElementById("ich2MemoPop"); if (p) p.remove(); document.removeEventListener("mousedown", ich2MemoOutside, true); }
-  function ich2MemoOutside(e) { const p = document.getElementById("ich2MemoPop"); if (p && !p.contains(e.target)) p.__finish(true); }
-  function ich2OpenMemo(td, initText, errMsg) {
-    ich2CloseMemo();
-    const no = td.dataset.seizou;
-    const iNo = ich2Header.indexOf("製造番号"), iMemo = ich2Header.indexOf("搬入メモ");
-    const row = ich2All.find(r => r[iNo] === no);
-    const current = (row && iMemo !== -1) ? String(row[iMemo] || "") : "";
-    const pop = document.createElement("div");
-    pop.id = "ich2MemoPop";
-    pop.innerHTML = '<div class="mp-title">' + ich2Esc(no) + '</div>' +
-      '<textarea rows="4"></textarea>' +
-      '<div class="mp-foot"><span class="mp-hint">欄外クリックで保存</span>' + (current.trim() ? '<button type="button" class="mp-del">削除</button>' : '') + '</div>';
-    document.body.appendChild(pop);
-    const ta = pop.querySelector("textarea");
-    ta.value = (initText != null) ? initText : current;
-    if (errMsg) { const eEl = document.createElement("div"); eEl.className = "mp-err"; eEl.textContent = errMsg; pop.insertBefore(eEl, ta); }
-    const rc = td.getBoundingClientRect();
-    const left = Math.min(rc.left, window.innerWidth - 280);
-    const top = (rc.bottom + 170 > window.innerHeight) ? Math.max(4, rc.top - 150) : rc.bottom + 2;
-    pop.style.left = Math.max(4, left) + "px"; pop.style.top = top + "px";
-    ta.focus();
-    let done = false;
-    pop.__finish = (save) => {
-      if (done) return; done = true;
-      const v = ta.value.trim();
-      ich2CloseMemo();
-      if (save && v !== current.trim()) ich2SaveProgress(no, "搬入メモ", v, td, td.innerHTML);
-    };
-    ta.addEventListener("keydown", e => {
-      if (e.key === "Escape") { e.preventDefault(); pop.__finish(false); }
-      else if (e.key === "Enter" && (e.ctrlKey || e.metaKey)) { e.preventDefault(); pop.__finish(true); }
-    });
-    const delBtn = pop.querySelector(".mp-del");
-    if (delBtn) delBtn.addEventListener("click", () => { ta.value = ""; pop.__finish(true); });
-    setTimeout(() => document.addEventListener("mousedown", ich2MemoOutside, true), 0);
-  }
 
   // ============ 変更連絡 ============
   let hkPre = [];
@@ -3248,22 +3178,6 @@
     return v == null ? "" : v;
   }
 
-  // 列幅は内容で変えず固定。同じ見出しは、どのタブ・どの表でも同じ幅(備考/内容の「残り幅の列」だけ、画面幅に合わせて伸びる)
-  const TS_COLW = { "製造番号":72, "納期":48, "現場名":100, "品名":84, "寸法":96, "検完":44, "区":26, "製作":40, "vol":38, "材質":42, "内容":90, "価格":62, "工数㎡":50, "予定":46, "持込":46, "完成":46, "納品":46, "社名":48, "業者":48, "備考":110 };
-  const TS_COLW_TAB = { "外装": { "内容": 54 }, "メッキ": { "備考": 165 } };
-  function tsApplyColgroup(table, widths, flexIndex, flexMin) {
-    const old = table.querySelector("colgroup"); if (old) old.remove();
-    const cg = document.createElement("colgroup");
-    let sum = 0;
-    widths.forEach((w, i) => {
-      const c = document.createElement("col");
-      if (i !== flexIndex) { c.style.width = w + "px"; sum += w; }
-      cg.appendChild(c);
-    });
-    table.insertBefore(cg, table.firstChild);
-    table.style.minWidth = (sum + flexMin) + "px";
-  }
-
   function tsRenderTosouTable(table, tab, rowsList, opt) {
     const compact = !!opt.compact, p = opt.p, pane = p.name;
     const cols = TS_COLS[tab.key];
@@ -3287,11 +3201,6 @@
       trh.appendChild(th);
     });
     thead.appendChild(trh);
-    {
-      const ov = TS_COLW_TAB[tab.key] || {};
-      const ws = [compact ? 26 : 30].concat(cols.map(([label]) => label === "製造番号" ? (compact ? 72 : 84) : (ov[label] || TS_COLW[label] || 60)));
-      tsApplyColgroup(table, ws, 1 + cols.findIndex(([label]) => label === noteLabel), 120);
-    }
     rowsList.forEach(o => {
       const tr = document.createElement("tr");
       tr.dataset.key = o.key;
@@ -3703,7 +3612,6 @@
     tsEl(p, "stat").textContent = tsPaint.err ? tsPaint.err : list.length + "品目" + (latest ? " ／ 更新 " + latest : "");
     const head = ["品名", "斗缶", "4L缶", "残量L", "㎡/L(目安)", "塗装㎡", "備考"];
     const hcls = { "斗缶": "c", "4L缶": "c", "㎡/L(目安)": "c", "残量L": "r", "塗装㎡": "r", "備考": "ts3-note" };
-    tsApplyColgroup(table, [200, 72, 72, 56, 70, 56, 0], 6, 120);
     table.querySelector("thead").innerHTML = "<tr>" + head.map(h => "<th" + (hcls[h] ? ' class="' + hcls[h] + '"' : "") + ">" + h + "</th>").join("") + "</tr>";
     const tb = table.querySelector("tbody"); tb.innerHTML = "";
     list.forEach(o => {
