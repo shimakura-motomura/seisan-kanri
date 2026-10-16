@@ -481,6 +481,15 @@
   .ich2-prog-cell { cursor: pointer; padding-left: 0px !important; padding-right: 0px !important; }
   .ich2-prog-cell.banyu .ich2-badge { width: 35px; }
   .ich2-prog-cell:hover { background: rgba(236,48,19,0.08); }
+  /* 搬入メモ: メモがある搬入欄は右上に小さな三角印(Excelのメモと同じ見た目) */
+  .ich2-prog-cell.banyu.has-memo { position: relative; }
+  .ich2-prog-cell.banyu.has-memo::after { content: ""; position: absolute; top: 0; right: 0; border-top: 8px solid var(--color-accent); border-left: 8px solid transparent; pointer-events: none; }
+  #ich2MemoPop { position: fixed; z-index: 9999; background: var(--color-bg); border: 2px solid var(--color-accent); box-shadow: 0 4px 16px rgba(32,30,29,0.3); padding: 8px; width: 260px; }
+  #ich2MemoPop .mp-title { font-size: 12px; font-weight: 700; margin-bottom: 4px; }
+  #ich2MemoPop textarea { width: 100%; box-sizing: border-box; font-size: 14px; font-family: inherit; padding: 5px 6px; border: 1px solid #999; resize: vertical; }
+  #ich2MemoPop .mp-foot { display: flex; align-items: center; gap: 6px; margin-top: 6px; }
+  #ich2MemoPop .mp-hint { flex: 1; font-size: 10px; color: #777; }
+  #ich2MemoPop button { font-size: 12px; padding: 3px 10px; cursor: pointer; font-family: inherit; }
   .ich2-badge .dot { width: 4px; height: 4px; flex: none; }
   .ich2-footnote { padding: 6px 4px; font-size: 11px; color: var(--color-neutral-700); flex: none; }
   .ich2-empty { padding: 48px 20px; text-align: center; color: var(--color-neutral-600); font-size: 13px; }
@@ -1795,7 +1804,7 @@
       iSunpou = idx("寸法"), iZairyou = idx("材質"), iJuken = idx("検完") !== -1 ? idx("検完") : idx("受・完"), iKu = idx("区"), iSeisaku = idx("製"), iCoiluse = idx("コイル使用"),
       iTosouSanArai = idx("酸洗"), iTosouKenma = idx("研磨"), iTosouEpo = idx("エポ"), iTosouFrp = idx("FRP"), iTosouMekki = idx("メッキ"), iTosouGaisou = idx("外装"), iTosouSonota = idx("その他") !== -1 ? idx("その他") : idx("判定不能"),
       iJuchu = idx("受注日"), iSeisakuDay = idx("製作日"), iKansei = idx("完成日"), iNaiso = idx("内装日"), iGaiso = idx("外装日"), iShukka = idx("出荷日"), iBanyu = idx("搬入日"),
-      iTantou = idx("担当者"), iMsunpou = idx("m寸法"), iShitsuryou = idx("質量"), iKatabangou = idx("型番"), iBaika = idx("売価(千円)"), iBiko = idx("備考"), iZumen = idx("図");
+      iBanyuMemo = idx("搬入メモ"), iTantou = idx("担当者"), iMsunpou = idx("m寸法"), iShitsuryou = idx("質量"), iKatabangou = idx("型番"), iBaika = idx("売価(千円)"), iBiko = idx("備考"), iZumen = idx("図");
 
     // コイル判定などで使う、塗装仕様7列をまとめた文字列(元の単一「塗装仕様」列の代わり)
     const tosouAll = r => [r[iTosouSanArai], r[iTosouKenma], r[iTosouEpo], r[iTosouFrp], r[iTosouMekki], r[iTosouGaisou], r[iTosouSonota]].filter(Boolean).join(" ");
@@ -1911,7 +1920,9 @@
           const raw = (ci >= 0 ? r[ci] : "") || "";
           const colName = ci >= 0 ? H[ci] : "搬入日";
           const wide = (ci === iNaiso || ci === iGaiso);
-          return '<td class="center ich2-prog-cell' + (colName === "搬入日" ? " banyu" : "") + '" data-seizou="'+ich2Esc(no)+'" data-col="'+ich2Esc(colName)+'" data-val="'+ich2Esc(ich2EditableDateValue(raw))+'" title="クリックして編集">'+ich2Badge(ich2Cell(raw, ich2RowRef(r, progIdx)), wide)+'</td>';
+          const isBanyu = (colName === "搬入日");
+          const memo = (isBanyu && iBanyuMemo >= 0) ? String(r[iBanyuMemo] || "").trim() : "";
+          return '<td class="center ich2-prog-cell' + (isBanyu ? " banyu" : "") + (memo ? " has-memo" : "") + '" data-seizou="'+ich2Esc(no)+'" data-col="'+ich2Esc(colName)+'" data-val="'+ich2Esc(ich2EditableDateValue(raw))+'" title="'+(memo ? ich2Esc("📝 " + memo) : (isBanyu ? "クリックして編集／右クリックでメモ" : "クリックして編集"))+'">'+ich2Badge(ich2Cell(raw, ich2RowRef(r, progIdx)), wide)+'</td>';
         }).join("") +
         '<td class="ich2-nowrap">'+ich2Esc(r[iTantou])+'</td>' +
         '<td class="ich2-nowrap ich2-ellipsis ich2-tabular ich2-muted" title="'+ich2Esc(r[iMsunpou])+'">'+ich2Esc(r[iMsunpou])+'</td>' +
@@ -1928,6 +1939,10 @@
     // 行内ポップアップを廃止し、「✏」ボタンから開く一括編集画面(ich2OpenEditModal)で編集する。
     document.querySelectorAll("#ich2Tbody .ich2-prog-cell").forEach(td => {
       td.addEventListener("click", () => ich2StartEditProgress(td));
+      if (td.classList.contains("banyu")) {
+        // 搬入欄の右クリックで、搬入メモ(自由記入)を開く
+        td.addEventListener("contextmenu", e => { e.preventDefault(); ich2OpenMemo(td); });
+      }
     });
 
     // チェックボックス(行・全選択)の同期
@@ -2142,8 +2157,8 @@
     const idxSeizou = ich2Header.indexOf("製造番号");
     let idxCol = ich2Header.indexOf(columnName);
     let addedCol = false;
-    if (idxCol === -1 && columnName === "搬入日") {      // シートに「搬入日」の列が新しくできる
-      ich2Header.push("搬入日"); idxCol = ich2Header.length - 1; addedCol = true;
+    if (idxCol === -1 && (columnName === "搬入日" || columnName === "搬入メモ")) {      // シートに「搬入日」「搬入メモ」の列が新しくできる
+      ich2Header.push(columnName); idxCol = ich2Header.length - 1; addedCol = true;
       ich2All.forEach(r => { while (r.length < idxCol) r.push(""); });
     }
     const row = ich2All.find(r => r[idxSeizou] === seizouBangou);
@@ -2161,6 +2176,44 @@
     }
   }
 
+
+  // ============ 搬入メモ(搬入欄を右クリックで記入) ============
+  function ich2CloseMemo() { const p = document.getElementById("ich2MemoPop"); if (p) p.remove(); document.removeEventListener("mousedown", ich2MemoOutside, true); }
+  function ich2MemoOutside(e) { const p = document.getElementById("ich2MemoPop"); if (p && !p.contains(e.target)) p.__finish(true); }
+  function ich2OpenMemo(td) {
+    ich2CloseMemo();
+    const no = td.dataset.seizou;
+    const iNo = ich2Header.indexOf("製造番号"), iMemo = ich2Header.indexOf("搬入メモ");
+    const row = ich2All.find(r => r[iNo] === no);
+    const current = (row && iMemo !== -1) ? String(row[iMemo] || "") : "";
+    const pop = document.createElement("div");
+    pop.id = "ich2MemoPop";
+    pop.innerHTML = '<div class="mp-title">📝 搬入メモ(' + ich2Esc(no) + ')</div>' +
+      '<textarea rows="4" placeholder="例: 12月頃。午前指定。トレーラー要"></textarea>' +
+      '<div class="mp-foot"><span class="mp-hint">Ctrl+Enterで保存 / Escで取消</span><button type="button" class="mp-cancel">取消</button><button type="button" class="mp-save">保存</button></div>';
+    document.body.appendChild(pop);
+    const ta = pop.querySelector("textarea");
+    ta.value = current;
+    const rc = td.getBoundingClientRect();
+    const left = Math.min(rc.left, window.innerWidth - 280);
+    const top = (rc.bottom + 170 > window.innerHeight) ? Math.max(4, rc.top - 150) : rc.bottom + 2;
+    pop.style.left = Math.max(4, left) + "px"; pop.style.top = top + "px";
+    ta.focus();
+    let done = false;
+    pop.__finish = (save) => {
+      if (done) return; done = true;
+      const v = ta.value.trim();
+      ich2CloseMemo();
+      if (save && v !== current.trim()) ich2SaveProgress(no, "搬入メモ", v, td, td.innerHTML);
+    };
+    ta.addEventListener("keydown", e => {
+      if (e.key === "Escape") { e.preventDefault(); pop.__finish(false); }
+      else if (e.key === "Enter" && (e.ctrlKey || e.metaKey)) { e.preventDefault(); pop.__finish(true); }
+    });
+    pop.querySelector(".mp-save").addEventListener("click", () => pop.__finish(true));
+    pop.querySelector(".mp-cancel").addEventListener("click", () => pop.__finish(false));
+    setTimeout(() => document.addEventListener("mousedown", ich2MemoOutside, true), 0);
+  }
 
   // ============ 変更連絡 ============
   let hkPre = [];
