@@ -488,7 +488,8 @@
   #ich2MemoPop .mp-title { font-size: 12px; font-weight: 700; margin-bottom: 4px; }
   #ich2MemoPop textarea { width: 100%; box-sizing: border-box; font-size: 14px; font-family: inherit; padding: 5px 6px; border: 1px solid #999; resize: vertical; }
   #ich2MemoPop .mp-foot { display: flex; align-items: center; gap: 6px; margin-top: 6px; }
-  #ich2MemoPop .mp-hint { flex: 1; font-size: 10px; color: #777; }
+  #ich2MemoPop .mp-hint { flex: 1; font-size: 11px; color: #777; }
+  #ich2MemoPop .mp-err { color: #c00; font-size: 12px; font-weight: 700; margin-bottom: 4px; }
   #ich2MemoPop button { font-size: 12px; padding: 3px 10px; cursor: pointer; font-family: inherit; }
   .ich2-badge .dot { width: 4px; height: 4px; flex: none; }
   .ich2-footnote { padding: 6px 4px; font-size: 11px; color: var(--color-neutral-700); flex: none; }
@@ -2153,6 +2154,21 @@
   }
 
   // 先に画面を変えて、保存は裏で行う(失敗したときだけ元に戻す)
+  // 保存は1件ずつ順番に行い(同時に送るとGAS側の書き込みが衝突して失敗しやすいため)、失敗したときは最大3回までやり直す
+  let ich2SaveQueue = Promise.resolve();
+  async function ich2PostProgress(seizouBangou, columnName, value) {
+    let lastErr;
+    for (let attempt = 0; attempt < 3; attempt++) {
+      try {
+        const res = await fetch(GAS_URL, { method: "POST", body: JSON.stringify({ type: "updateProgress", seizouBangou, columnName, value }) });
+        const data = await res.json();
+        if (data.result === "success") return;
+        lastErr = new Error(data.message || "更新に失敗しました");
+      } catch (e) { lastErr = e; }
+      if (attempt < 2) await new Promise(r => setTimeout(r, 1200 * (attempt + 1)));
+    }
+    throw lastErr;
+  }
   async function ich2SaveProgress(seizouBangou, columnName, value, td, original) {
     const idxSeizou = ich2Header.indexOf("製造番号");
     let idxCol = ich2Header.indexOf(columnName);
@@ -2165,22 +2181,27 @@
     const oldVal = row && idxCol !== -1 ? row[idxCol] : undefined;
     if (row && idxCol !== -1) row[idxCol] = value;
     ich2RenderAll();
-    try {
-      const res = await fetch(GAS_URL, { method: "POST", body: JSON.stringify({ type: "updateProgress", seizouBangou, columnName, value }) });
-      const data = await res.json();
-      if (data.result !== "success") throw new Error(data.message || "更新に失敗しました");
-    } catch (e) {
-      if (row && idxCol !== -1) row[idxCol] = oldVal === undefined ? "" : oldVal;
-      ich2RenderAll();
-      alert("保存に失敗したため、元の表示に戻しました(" + seizouBangou + " の " + columnName + "): " + e.message);
-    }
+    ich2SaveQueue = ich2SaveQueue.then(async () => {
+      try {
+        await ich2PostProgress(seizouBangou, columnName, value);
+      } catch (e) {
+        if (row && idxCol !== -1) row[idxCol] = oldVal === undefined ? "" : oldVal;
+        ich2RenderAll();
+        if (columnName === "搬入メモ") {
+          // メモは入力した文字を失わないよう、入力ボックスを開き直す(欄外クリックでもう一度保存できる)
+          const cell = Array.from(document.querySelectorAll("#ich2Tbody .ich2-prog-cell.banyu")).find(c => c.dataset.seizou === seizouBangou);
+          if (cell) { ich2OpenMemo(cell, value, "保存できませんでした: " + (e.message || e)); return; }
+        }
+        alert("保存に失敗したため、元の表示に戻しました(" + seizouBangou + " の " + columnName + "): " + e.message);
+      }
+    });
   }
 
 
   // ============ 搬入メモ(搬入欄を右クリックで記入) ============
   function ich2CloseMemo() { const p = document.getElementById("ich2MemoPop"); if (p) p.remove(); document.removeEventListener("mousedown", ich2MemoOutside, true); }
   function ich2MemoOutside(e) { const p = document.getElementById("ich2MemoPop"); if (p && !p.contains(e.target)) p.__finish(true); }
-  function ich2OpenMemo(td) {
+  function ich2OpenMemo(td, initText, errMsg) {
     ich2CloseMemo();
     const no = td.dataset.seizou;
     const iNo = ich2Header.indexOf("製造番号"), iMemo = ich2Header.indexOf("搬入メモ");
@@ -2188,12 +2209,13 @@
     const current = (row && iMemo !== -1) ? String(row[iMemo] || "") : "";
     const pop = document.createElement("div");
     pop.id = "ich2MemoPop";
-    pop.innerHTML = '<div class="mp-title">📝 搬入メモ(' + ich2Esc(no) + ')</div>' +
-      '<textarea rows="4" placeholder="例: 12月頃。午前指定。トレーラー要"></textarea>' +
-      '<div class="mp-foot"><span class="mp-hint">Ctrl+Enterで保存 / Escで取消</span><button type="button" class="mp-cancel">取消</button><button type="button" class="mp-save">保存</button></div>';
+    pop.innerHTML = '<div class="mp-title">' + ich2Esc(no) + '</div>' +
+      '<textarea rows="4"></textarea>' +
+      '<div class="mp-foot"><span class="mp-hint">欄外クリックで保存</span></div>';
     document.body.appendChild(pop);
     const ta = pop.querySelector("textarea");
-    ta.value = current;
+    ta.value = (initText != null) ? initText : current;
+    if (errMsg) { const eEl = document.createElement("div"); eEl.className = "mp-err"; eEl.textContent = errMsg; pop.insertBefore(eEl, ta); }
     const rc = td.getBoundingClientRect();
     const left = Math.min(rc.left, window.innerWidth - 280);
     const top = (rc.bottom + 170 > window.innerHeight) ? Math.max(4, rc.top - 150) : rc.bottom + 2;
@@ -2210,8 +2232,6 @@
       if (e.key === "Escape") { e.preventDefault(); pop.__finish(false); }
       else if (e.key === "Enter" && (e.ctrlKey || e.metaKey)) { e.preventDefault(); pop.__finish(true); }
     });
-    pop.querySelector(".mp-save").addEventListener("click", () => pop.__finish(true));
-    pop.querySelector(".mp-cancel").addEventListener("click", () => pop.__finish(false));
     setTimeout(() => document.addEventListener("mousedown", ich2MemoOutside, true), 0);
   }
 
