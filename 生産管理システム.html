@@ -472,6 +472,8 @@
   .ich2-ellipsis { overflow: hidden; text-overflow: ellipsis; }
   .ich2-tabular { font-variant-numeric: tabular-nums; }
   .ich2-muted { color: var(--color-neutral-700); }
+  #ich2Tbody.arch { pointer-events: none; }   /* 出荷済み表示は見るだけ(図面を開くボタンだけ押せる) */
+  #ich2Tbody.arch .ich2-no-btn { pointer-events: auto; }
   .ich2-no-btn { display: flex; align-items: center; gap: 4px; width: 100%; padding: 0; font: inherit; font-size: inherit; font-weight: 700; white-space: nowrap; text-align: left; cursor: pointer; background: transparent; border: 0; color: var(--color-text); text-decoration: underline; text-decoration-color: var(--color-accent); text-underline-offset: 2px; }
   .ich2-no-btn:hover { color: var(--color-accent-700); }
   .ich2-chip { display: inline-block; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; padding: 0 3px; font-size: 10px; font-weight: 700; line-height: 1.5; border: 1px solid transparent; text-align: center; }
@@ -927,7 +929,7 @@
           <button data-filter="waiting">未着手</button>
         </div>
         <div class="ich2-filter-group" id="ich2ShippedGroup">
-          <button type="button" id="ich2ShowShipped" data-active="false">出荷済みも表示</button>
+          <button type="button" id="ich2ShowShipped" data-active="false">出荷済みを表示</button>
         </div>
         <div class="ich2-filter-group">
           <button type="button" id="ich2BuyOpenBtn">買入品表示</button>
@@ -1505,6 +1507,7 @@
     if (screen === "shukka" && !initialized.shukka) { initShukka(); initialized.shukka = true; }
     if (screen === "renraku" && !initialized.renraku) { initRenraku(); initialized.renraku = true; }
     if (screen === "ichiran" && !initialized.ichiran) { initIchiran(); initialized.ichiran = true; }
+    else if (screen === "ichiran" && ich2ArchMode) { ich2SetArch(false); }   // 出荷済み表示は、別の画面から戻ってきたら通常表示に戻す
     else if (screen === "ichiran" && (ich2KeepMake.size || ich2KeepBuy.size)) { ich2KeepMake.clear(); ich2KeepBuy.clear(); if (typeof ich2RenderAll === "function") ich2RenderAll(); }
     if (screen === "tosou") setTimeout(() => { if (typeof tsFit === "function") tsFit(); }, 0);
   }
@@ -1512,6 +1515,42 @@
   // ================= 一覧(Claude Code版デザイン + 実データ接続) =================
   let ich2All = [];
   let ich2Header = [];
+  // ===== 出荷済み表示(「出荷済み」シートの案件だけを、見るだけで表示する。押したときだけ読み込む) =====
+  let ich2ArchMode = false, ich2ArchRows = null, ich2ArchHeader = null, ich2LiveAll = null, ich2LiveHeader = null;
+  const ICH2_ARCH_CAP = 300;   // 出荷済みは件数が多いので、画面に出すのは先頭300件まで(検索で絞り込む)
+  async function ich2SetArch(on) {
+    const btn = document.getElementById("ich2ShowShipped"), cnt = document.getElementById("ich2Count");
+    if (on === ich2ArchMode) return;
+    if (on) {
+      if (!ich2ArchRows) {
+        btn.disabled = true; cnt.textContent = "出荷済みを読み込み中...";
+        try {
+          const [rows] = await ich2FetchSheetsRanges(["出荷済み"]);
+          ich2ArchHeader = (rows[0] || []).map(h => String(h).trim() === "受・完" ? "検完" : h);
+          const ig = ich2ArchHeader.indexOf("現場名");
+          ich2ArchRows = rows.slice(1).filter(r => r[0] && r[ig]);
+        } catch (e) {
+          btn.disabled = false;
+          cnt.textContent = "";
+          alert("出荷済みシートを読み込めませんでした。\n(まだ作られていない可能性があります)\n" + e.message);
+          ich2RenderAll();
+          return;
+        }
+        btn.disabled = false;
+      }
+      ich2LiveAll = ich2All; ich2LiveHeader = ich2Header;
+      ich2All = ich2ArchRows; ich2Header = ich2ArchHeader;
+    } else {
+      ich2All = ich2LiveAll; ich2Header = ich2LiveHeader;
+    }
+    ich2ArchMode = on;
+    ich2State.showShipped = on;
+    btn.classList.toggle("active", on);
+    document.getElementById("ich2Tbody").classList.toggle("arch", on);
+    document.getElementById("ich2Scroller").scrollTop = 0;
+    ich2RenderAll();
+  }
+
   const ich2State = { query: "", filter: "all", sort: "no", dept: "全数", deptOpen: false, showShipped: false };   // deptOpen = 部署ボタンを2度押し(完成品を除く)
   const ich2Selected = new Set();
   let ich2Tab = "make";
@@ -1754,11 +1793,7 @@
       });
     });
     document.getElementById("ich2Sort").addEventListener("change", e => { ich2State.sort = e.target.value; ich2RenderAll(); });
-    document.getElementById("ich2ShowShipped").addEventListener("click", (e) => {
-      ich2State.showShipped = !ich2State.showShipped;
-      e.target.classList.toggle("active", ich2State.showShipped);
-      ich2RenderAll();
-    });
+    document.getElementById("ich2ShowShipped").addEventListener("click", () => ich2SetArch(!ich2ArchMode));
     document.querySelectorAll(".ich2-jump-group button[data-jump]").forEach(btn => {
       btn.addEventListener("click", () => {
         const sc = document.getElementById("ich2Scroller");
@@ -1880,7 +1915,14 @@
       });
     });
 
-    document.getElementById("ich2Count").textContent = rows.length + " / " + ich2All.length + " 件";
+    let archNote = "";
+    if (ich2ArchMode) {
+      rows.reverse();   // 出荷済みは新しい製造番号から見る
+      if (rows.length > ICH2_ARCH_CAP) { archNote = "(先頭" + ICH2_ARCH_CAP + "件のみ表示。検索で絞り込んでください)"; }
+    }
+    const shownTotal = rows.length;
+    if (ich2ArchMode && rows.length > ICH2_ARCH_CAP) rows = rows.slice(0, ICH2_ARCH_CAP);
+    document.getElementById("ich2Count").textContent = (ich2ArchMode ? "【出荷済み・見るだけ】 " : "") + shownTotal + " / " + ich2All.length + " 件" + archNote;
     document.getElementById("ich2Empty").hidden = rows.length !== 0;
 
     document.getElementById("ich2Tbody").innerHTML = rows.map(r => {
