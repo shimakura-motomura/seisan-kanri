@@ -1593,6 +1593,21 @@
     idxs.forEach(ci => { const v = String(r[ci] || "").trim(); if (/^\d{4}[\/-]\d{1,2}[\/-]\d{1,2}/.test(v)) { const d = new Date(v); if (!isNaN(d.getTime()) && (!ref || d < ref)) ref = d; } });
     return ref;
   }
+  // 出荷済み表示のマウスオーバー用:「4/10-4/16」のような年なしの期間に、年をつけて返す(例 2005/4/10-2005/4/16)
+  function ich2RangeFull(s, ref) {
+    const m = String(s || "").normalize("NFKC").match(/^(\d{1,2})\/(\d{1,2})\s*[-~〜～－ー]\s*(?:(\d{1,2})\/)?(\d{1,2})?$/);
+    if (!m) return formatDateOnly(s) || "";
+    const m1 = +m[1], d1 = +m[2];
+    let y = ref ? ref.getFullYear() : new Date().getFullYear();
+    let start = new Date(y, m1 - 1, d1);
+    if (ref && start < new Date(ref.getTime() - 90 * 86400000)) { y++; start = new Date(y, m1 - 1, d1); }
+    const head = y + "/" + m1 + "/" + d1;
+    if (!m[4]) return head + "-";
+    const m2 = m[3] ? +m[3] : m1, d2 = +m[4];
+    let y2 = y;
+    if (new Date(y, m2 - 1, d2) < start) y2++;
+    return head + "-" + y2 + "/" + m2 + "/" + d2;
+  }
   function ich2Cell(raw, ref) {
     const s = (raw || "").toString().trim();
     const re = s ? ich2RangeEnd(s, ref) : null;
@@ -1965,7 +1980,7 @@
           const raw = (ci >= 0 ? r[ci] : "") || "";
           const colName = ci >= 0 ? H[ci] : "搬入日";
           const wide = (ci === iNaiso || ci === iGaiso);
-          return '<td class="center ich2-prog-cell' + (colName === "搬入日" ? " banyu" : "") + '" data-seizou="'+ich2Esc(no)+'" data-col="'+ich2Esc(colName)+'" data-val="'+ich2Esc(ich2EditableDateValue(raw))+'" title="'+(ich2ArchMode ? ich2Esc(formatDateOnly(raw) || "") : "クリックして編集")+'">'+ich2Badge(ich2Cell(raw, ich2RowRef(r, progIdx)), wide)+'</td>';
+          return '<td class="center ich2-prog-cell' + (colName === "搬入日" ? " banyu" : "") + '" data-seizou="'+ich2Esc(no)+'" data-col="'+ich2Esc(colName)+'" data-val="'+ich2Esc(ich2EditableDateValue(raw))+'" title="'+(ich2ArchMode ? ich2Esc(ich2RangeFull(raw, ich2RowRef(r, progIdx))) : "クリックして編集")+'">'+ich2Badge(ich2Cell(raw, ich2RowRef(r, progIdx)), wide)+'</td>';
         }).join("") +
         '<td class="ich2-nowrap">'+ich2Esc(r[iTantou])+'</td>' +
         '<td class="ich2-nowrap ich2-ellipsis ich2-tabular ich2-muted" title="'+ich2Esc(r[iMsunpou])+'">'+ich2Esc(r[iMsunpou])+'</td>' +
