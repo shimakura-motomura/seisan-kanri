@@ -474,6 +474,8 @@
   .ich2-muted { color: var(--color-neutral-700); }
   #ich2Tbody.arch .ich2-row-check { pointer-events: none; }   /* 出荷済み表示は見るだけ(日付にマウスを載せると年が出る。図面を開くボタンだけ押せる) */
   #ich2Tbody.arch .ich2-prog-cell { cursor: default; }
+  table.ts3-arch input[type=checkbox] { pointer-events: none; }
+  table.ts3-arch td { cursor: default !important; }
   .ich2-no-btn { display: flex; align-items: center; gap: 4px; width: 100%; padding: 0; font: inherit; font-size: inherit; font-weight: 700; white-space: nowrap; text-align: left; cursor: pointer; background: transparent; border: 0; color: var(--color-text); text-decoration: underline; text-decoration-color: var(--color-accent); text-underline-offset: 2px; }
   .ich2-no-btn:hover { color: var(--color-accent-700); }
   .ich2-chip { display: inline-block; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; padding: 0 3px; font-size: 10px; font-weight: 700; line-height: 1.5; border: 1px solid transparent; text-align: center; }
@@ -1177,6 +1179,7 @@
             <button type="button" data-status="all">すべて</button>
             <button type="button" class="active" data-status="open">未完</button>
             <button type="button" data-status="done">完了</button>
+            <button type="button" data-status="arch" title="出荷済みで、納品から日がたった行(塗装_過去シート)を見る。見るだけ">過去</button>
           </div>
           <select class="ts3-sort" id="tsVendor" title="業者で絞り込み"><option value="">全業者</option></select>
           <select class="ts3-sort" id="tsSort" title="並び順">
@@ -1194,6 +1197,7 @@
             <button type="button" data-status="all">すべて</button>
             <button type="button" class="active" data-status="open">未完</button>
             <button type="button" data-status="done">完了</button>
+            <button type="button" data-status="arch" title="出荷済みで、納品から日がたった行(塗装_過去シート)を見る。見るだけ">過去</button>
           </div>
           <select class="ts3-sort" id="tsVendor2" title="業者で絞り込み"><option value="">全業者</option></select>
           <select class="ts3-sort" id="tsSort2" title="並び順">
@@ -3004,8 +3008,8 @@
   };
   // 酸洗(左)・研磨(右)それぞれが、自分の検索・絞り込み・並び順・選択を持つ
   const TSP = {
-    main: { name: "main", ids: TS_IDS.main, tabKey: null, query: "", status: "open", sort: "nouki", vendor: "", vendorTab: null, sel: new Set(), all: [], rows: [] },
-    sub:  { name: "sub",  ids: TS_IDS.sub,  tabKey: null, query: "", status: "open", sort: "nouki", vendor: "", vendorTab: null, sel: new Set(), all: [], rows: [] },
+    main: { name: "main", ids: TS_IDS.main, tabKey: null, query: "", status: "open", sort: "nouki", vendor: "", vendorTab: null, sel: new Set(), all: [], rows: [], archAll: [], archTab: null },
+    sub:  { name: "sub",  ids: TS_IDS.sub,  tabKey: null, query: "", status: "open", sort: "nouki", vendor: "", vendorTab: null, sel: new Set(), all: [], rows: [], archAll: [], archTab: null },
   };
   const tsEl = (p, k) => document.getElementById(p.ids[k]);
   let tsModalTab = null;
@@ -3020,6 +3024,9 @@
         btn.classList.add("active"); p.status = btn.dataset.status; tsPaneChanged(p);
       }));
       tsEl(p, "sort").addEventListener("change", e => { p.sort = e.target.value; tsPaneChanged(p); });
+      ["click", "dblclick", "mousedown", "keydown", "change"].forEach(ev => tsEl(p, "table").addEventListener(ev, e => {   // 「過去」は見るだけ(図面を開くボタンだけ有効)
+        if (p.status === "arch" && !(e.target.closest && e.target.closest(".ts3-no-link, a"))) e.stopPropagation();
+      }, true));
       tsEl(p, "vendor").addEventListener("change", e => { p.vendor = e.target.value; tsPaneChanged(p); });
       tsEl(p, "edit").addEventListener("click", () => tsEditClick(p));
       tsEl(p, "add").addEventListener("click", () => tsAddClick(p));
@@ -3102,7 +3109,24 @@
   function tsPaneChanged(p) {
     if (p.tabKey === TS_SCHEDULE_KEY) tsRenderCalendar(p);
     else if (p.tabKey === TS_PAINT_KEY) tsRenderPaint(p);
+    else if (p.status === "arch" && p.archTab !== p.tabKey) tsLoadArch(p);
     else tsApply(p);
+  }
+  // 「過去」:塗装_過去シートを(押したときだけ)読み込み、このタブの行を見るだけで表示する
+  const TS_ARCH_CAP = 300;
+  let tsArchCache = null;
+  async function tsLoadArch(p) {
+    const tab = TOSOU_TABS.find(t => t.key === p.tabKey);
+    if (!tab || p.tabKey === TS_SCHEDULE_KEY || p.tabKey === TS_PAINT_KEY) return;
+    const stat = tsEl(p, "stat");
+    try {
+      if (!tsArchCache) { stat.textContent = "過去を読み込み中..."; const [rows] = await ich2FetchSheetsRanges(["塗装_過去"]); tsArchCache = rows; }
+      if (p.status !== "arch" || p.tabKey !== tab.key) return;
+      const header = tsArchCache[0] || [], iTab = header.indexOf("タブ");
+      const rows = [header].concat(tsArchCache.slice(1).filter(r => r[iTab] === tab.key));
+      p.archAll = tsListFromRows(rows, tab).list; p.archTab = tab.key;
+    } catch (e) { stat.textContent = "過去を読み込めませんでした(塗装_過去シートがまだ無いかもしれません): " + e.message; return; }
+    tsApply(p);
   }
   // 一覧の高さを、画面の下の操作バーのすぐ上までにそろえる(下に無駄な空きを作らない)
   function tsFit() {
@@ -3147,6 +3171,9 @@
   // 1つの塗装シートを読み込み、絞り込み後の行を返す
   async function tsFetchRows(tab) {
     const [rows] = await ich2FetchSheetsRanges(["塗装_" + tab.key]);
+    return tsListFromRows(rows, tab);
+  }
+  function tsListFromRows(rows, tab) {
     const header = rows[0] || [];
     const iSeizou = header.indexOf("製造番号"), iGenba = header.indexOf("現場名"), iHinmei = header.indexOf("品名");
     let list = [];
@@ -3194,7 +3221,8 @@
   // 検索・未完/完了・並び順を、読み込み済みの行に当てて表示する
   function tsApply(p) {
     const tab = TOSOU_TABS.find(t => t.key === p.tabKey); if (!tab) return;
-    let list = p.all.slice();
+    const arch = p.status === "arch";   // 「過去」=塗装_過去シートの行を、見るだけで表示
+    let list = (arch ? (p.archTab === p.tabKey ? p.archAll : []) : p.all).slice();
     const q = p.query.toLowerCase();
     if (q) list = list.filter(o => ((o.get("製造番号")) + (o.get("現場名")) + (o.get("品名"))).toLowerCase().includes(q));
     tsFillVendors(p);
@@ -3215,10 +3243,18 @@
       else d = tsDateVal(a.get("納期")) - tsDateVal(b.get("納期"));
       return d || a.rowIndex - b.rowIndex;
     });
+    let archNote = "";
+    if (arch) {
+      list.reverse();   // 新しい方から見る
+      if (list.length > TS_ARCH_CAP) { archNote = "(先頭" + TS_ARCH_CAP + "件のみ。検索で絞り込んでください)"; }
+    }
+    const listTotal = list.length;
+    if (arch && list.length > TS_ARCH_CAP) list = list.slice(0, TS_ARCH_CAP);
+    tsEl(p, "table").classList.toggle("ts3-arch", arch);
     p.rows = list;
     const keys = new Set(list.map(o => o.key));
     [...p.sel].forEach(k => { if (!keys.has(k)) p.sel.delete(k); });     // 絞り込みで見えなくなった行は選択から外す
-    tsEl(p, "stat").textContent = list.length + "件";
+    tsEl(p, "stat").textContent = (arch ? "【過去・見るだけ】" : "") + listTotal + "件" + archNote;
     tsRenderTosouTable(tsEl(p, "table"), tab, list, { compact: !!TS_PAIR[tsCurrentTab], p });
     tsSyncSelection(); tsFit();
   }
@@ -3234,6 +3270,7 @@
       const r = await tsFetchRows(tab);
       if (p.tabKey !== tab.key) return;      // 読み込み中にタブを切り替えた場合は捨てる
       p.all = r.list; p.sel.clear();
+      if (p.status === "arch") { p.archTab = null; return tsLoadArch(p); }
       tsApply(p);
     } catch (e) { tsEl(p, "stat").textContent = "読み込みに失敗しました: " + e.message; }
   }
