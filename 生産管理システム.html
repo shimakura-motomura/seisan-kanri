@@ -3107,7 +3107,10 @@
   }
 
   // 並び順用の日付(早い順。空欄は最後)
+  const TS_DATE_COLS = ["納期", "搬入予定", "完成納品", "完成日"];
   function tsDateVal(v) {
+    const raw = String(v == null ? "" : v).trim();
+    if (/^\d{1,2}[\/\-]\d{1,2}$/.test(raw)) v = ich2NormalizeDateInput(raw);   // 年なし(1/15)は、年を補って並べる
     const m = String(formatDateOnly(v) || "").match(/^(\d{4})\/(\d{1,2})\/(\d{1,2})/);
     return m ? (+m[1]) * 10000 + (+m[2]) * 100 + (+m[3]) : 99999999;
   }
@@ -3400,17 +3403,17 @@
     try {
       if (tsEditing) {
         const fields = {};
-        inputs.forEach(i => { if (!i.disabled && i.value.trim() !== (i.dataset.orig || "").trim()) fields[i.dataset.col] = i.value.trim(); });
+        inputs.forEach(i => { if (!i.disabled && i.value.trim() !== (i.dataset.orig || "").trim()) fields[i.dataset.col] = TS_DATE_COLS.includes(i.dataset.col) ? ich2NormalizeDateInput(i.value.trim()) : i.value.trim(); });
         if (!Object.keys(fields).length) { status.textContent = "変更がありません"; btn.disabled = false; return; }
         await tsPost({ type: "updateTosou", tab: tab.key, rowIndex: tsEditing.rowIndex, seizouBangou: tsEditing.get("製造番号"), fields });
       } else {
         if (!val["内容"]) { status.textContent = "内容は必須です"; btn.disabled = false; return; }
         await tsPost({
           type: "addTosou", tab: tab.key,
-          seizouBangou: val["製造番号"], nouki: val["納期"], genbaMei: val["現場名"], hinmei: val["品名"], sunpou: val["寸法"],
+          seizouBangou: val["製造番号"], nouki: ich2NormalizeDateInput(val["納期"]), genbaMei: val["現場名"], hinmei: val["品名"], sunpou: val["寸法"],
           bui: val["部位"], naiyou: val["内容"].replace(/ブラスト/g, "ﾌﾞﾗｽﾄ"), vol: val["vol"], zairyou: val["材質"], kakaku: val["価格"] || "",
-          gyousha: val["業者"], hankomiYotei: val["搬入予定"], kanseiNouhin: val["完成納品"], biko: val["備考"],
-          kanseiBi: val["完成日"] || "", kousuu: val["工数㎡"] || "",
+          gyousha: val["業者"], hankomiYotei: ich2NormalizeDateInput(val["搬入予定"]), kanseiNouhin: ich2NormalizeDateInput(val["完成納品"]), biko: val["備考"],
+          kanseiBi: ich2NormalizeDateInput(val["完成日"] || ""), kousuu: val["工数㎡"] || "",
         });
       }
       tsCloseModal(); [TSP.main, TSP.sub].forEach(q => { if (q.tabKey) tsLoadList(q); });
