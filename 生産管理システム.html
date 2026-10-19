@@ -472,7 +472,6 @@
   .ich2-ellipsis { overflow: hidden; text-overflow: ellipsis; }
   .ich2-tabular { font-variant-numeric: tabular-nums; }
   .ich2-muted { color: var(--color-neutral-700); }
-  #ich2Tbody.arch .ich2-row-check { pointer-events: none; }   /* 出荷済み表示は見るだけ(日付にマウスを載せると年が出る。図面を開くボタンだけ押せる) */
   #ich2Tbody.arch .ich2-prog-cell { cursor: default; }
   table.ts3-arch input[type=checkbox] { pointer-events: none; }
   table.ts3-arch td { cursor: default !important; }
@@ -1530,7 +1529,7 @@
       ich2ArchGuarded = true;
       const tb = document.getElementById("ich2Tbody");
       ["click", "dblclick", "mousedown", "keydown"].forEach(ev => tb.addEventListener(ev, e => {
-        if (ich2ArchMode && !(e.target.closest && e.target.closest(".ich2-no-btn"))) e.stopPropagation();
+        if (ich2ArchMode && !(e.target.closest && e.target.closest(".ich2-no-btn, .ich2-row-check"))) e.stopPropagation();   // 出荷済み表示は、図面ボタンと左のチェックだけ有効(チェックしてから下の「編集」で直す)
       }, true));
     }
     if (on) {
@@ -1556,6 +1555,7 @@
       ich2All = ich2LiveAll; ich2Header = ich2LiveHeader;
     }
     ich2ArchMode = on;
+    ich2Selected.clear();   // 通常⇔出荷済みを切り替えたら、選択はいったん外す
     ich2State.showShipped = on;
     btn.classList.toggle("active", on);
     document.getElementById("ich2Tbody").classList.toggle("arch", on);
@@ -1944,12 +1944,12 @@
 
     let archNote = "";
     if (ich2ArchMode) {
-      rows.reverse();   // 出荷済みは新しい製造番号から見る
-      if (rows.length > ICH2_ARCH_CAP) { archNote = "(先頭" + ICH2_ARCH_CAP + "件のみ表示。検索で絞り込んでください)"; }
+      // 並びは普段の一覧と同じ(古いものが上・新しいものが下)。件数が多いときは、新しい側の300件を出す
+      if (rows.length > ICH2_ARCH_CAP) { archNote = "(新しい方の" + ICH2_ARCH_CAP + "件のみ表示。検索で絞り込んでください)"; }
     }
     const shownTotal = rows.length;
-    if (ich2ArchMode && rows.length > ICH2_ARCH_CAP) rows = rows.slice(0, ICH2_ARCH_CAP);
-    document.getElementById("ich2Count").textContent = (ich2ArchMode ? "【出荷済み・見るだけ】 " : "") + shownTotal + " / " + ich2All.length + " 件" + archNote;
+    if (ich2ArchMode && rows.length > ICH2_ARCH_CAP) rows = rows.slice(rows.length - ICH2_ARCH_CAP);
+    document.getElementById("ich2Count").textContent = (ich2ArchMode ? "【出荷済み】 " : "") + shownTotal + " / " + ich2All.length + " 件" + archNote;
     document.getElementById("ich2Empty").hidden = rows.length !== 0;
 
     document.getElementById("ich2Tbody").innerHTML = rows.map(r => {
@@ -2226,7 +2226,7 @@
     if (row && idxCol !== -1) row[idxCol] = value;
     ich2RenderAll();
     try {
-      const res = await fetch(GAS_URL, { method: "POST", body: JSON.stringify({ type: "updateProgress", seizouBangou, columnName, value }) });
+      const res = await fetch(GAS_URL, { method: "POST", body: JSON.stringify(Object.assign({ type: "updateProgress", seizouBangou, columnName, value }, ich2ArchExtra(row))) });
       const data = await res.json();
       if (data.result !== "success") throw new Error(data.message || "更新に失敗しました");
     } catch (e) {
@@ -2531,7 +2531,7 @@
 
     try {
       const results = await Promise.all(changes.map(c =>
-        fetch(GAS_URL, { method: "POST", body: JSON.stringify({ type: "updateProgress", seizouBangou, columnName: c.col, value: c.value }) })
+        fetch(GAS_URL, { method: "POST", body: JSON.stringify(Object.assign({ type: "updateProgress", seizouBangou, columnName: c.col, value: c.value }, ich2ArchExtra(row))) })
           .then(res => res.json())
           .then(data => ({ col: c.col, ok: data.result === "success", message: data.message }))
       ));
@@ -2559,6 +2559,13 @@
     if (e.target.id === "ich2EditOverlay") ich2CloseEditModal();
   });
 
+  // 出荷済み表示から保存するときは、「出荷済みシートの行」だと分かる印と、行を特定する現場名・品名を付ける
+  function ich2ArchExtra(row) {
+    if (!ich2ArchMode) return {};
+    const g = c => { const k = ich2Header.indexOf(c); return k !== -1 && row ? String(row[k] || "") : ""; };
+    return { sheet: "出荷済み", genba: g("現場名"), hinmei: g("品名") };
+  }
+
   function ich2UpdateSelbar() {
     const keys = [...ich2Selected];
     const makeKeys = keys.filter(k => k.startsWith("make:"));
@@ -2568,8 +2575,8 @@
     document.getElementById("ich2SelBreakdown").textContent =
       (makeKeys.length && buyCount) ? "(製作品 " + makeKeys.length + " / 買入品 " + buyCount + ")" : "";
     // 「出荷手配へ」は1件以上、「編集」は製作品をちょうど1件選択しているときだけ有効
-    document.getElementById("ich2SelbarShukkaBtn").disabled = total === 0;
-    document.getElementById("hkSelbarBtn").disabled = makeKeys.length === 0;   // 変更連絡は、製作品を1件以上選んだときだけ
+    document.getElementById("ich2SelbarShukkaBtn").disabled = total === 0 || ich2ArchMode;   // 出荷済み表示中は、出荷手配・変更連絡は使えない(編集だけ)
+    document.getElementById("hkSelbarBtn").disabled = makeKeys.length === 0 || ich2ArchMode;   // 変更連絡は、製作品を1件以上選んだときだけ
     const bm = document.getElementById("ich2BuyModalSel");
     if (bm) {
       bm.textContent = total === 0 ? "未選択" : (total + " 件を選択中(製作品 " + makeKeys.length + " / 買入品 " + buyCount + ")");
