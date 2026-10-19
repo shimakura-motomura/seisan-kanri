@@ -472,8 +472,8 @@
   .ich2-ellipsis { overflow: hidden; text-overflow: ellipsis; }
   .ich2-tabular { font-variant-numeric: tabular-nums; }
   .ich2-muted { color: var(--color-neutral-700); }
-  #ich2Tbody.arch { pointer-events: none; }   /* 出荷済み表示は見るだけ(図面を開くボタンだけ押せる) */
-  #ich2Tbody.arch .ich2-no-btn { pointer-events: auto; }
+  #ich2Tbody.arch .ich2-row-check { pointer-events: none; }   /* 出荷済み表示は見るだけ(日付にマウスを載せると年が出る。図面を開くボタンだけ押せる) */
+  #ich2Tbody.arch .ich2-prog-cell { cursor: default; }
   .ich2-no-btn { display: flex; align-items: center; gap: 4px; width: 100%; padding: 0; font: inherit; font-size: inherit; font-weight: 700; white-space: nowrap; text-align: left; cursor: pointer; background: transparent; border: 0; color: var(--color-text); text-decoration: underline; text-decoration-color: var(--color-accent); text-underline-offset: 2px; }
   .ich2-no-btn:hover { color: var(--color-accent-700); }
   .ich2-chip { display: inline-block; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; padding: 0 3px; font-size: 10px; font-weight: 700; line-height: 1.5; border: 1px solid transparent; text-align: center; }
@@ -1518,9 +1518,17 @@
   // ===== 出荷済み表示(「出荷済み」シートの案件だけを、見るだけで表示する。押したときだけ読み込む) =====
   let ich2ArchMode = false, ich2ArchRows = null, ich2ArchHeader = null, ich2LiveAll = null, ich2LiveHeader = null;
   const ICH2_ARCH_CAP = 300;   // 出荷済みは件数が多いので、画面に出すのは先頭300件まで(検索で絞り込む)
+  let ich2ArchGuarded = false;
   async function ich2SetArch(on) {
     const btn = document.getElementById("ich2ShowShipped"), cnt = document.getElementById("ich2Count");
     if (on === ich2ArchMode) return;
+    if (!ich2ArchGuarded) {   // 出荷済み表示中は、表の中のクリック(編集)を無効にする(図面ボタンだけ有効)
+      ich2ArchGuarded = true;
+      const tb = document.getElementById("ich2Tbody");
+      ["click", "dblclick", "mousedown", "keydown"].forEach(ev => tb.addEventListener(ev, e => {
+        if (ich2ArchMode && !(e.target.closest && e.target.closest(".ich2-no-btn"))) e.stopPropagation();
+      }, true));
+    }
     if (on) {
       if (!ich2ArchRows) {
         btn.disabled = true; cnt.textContent = "出荷済みを読み込み中...";
@@ -1957,7 +1965,7 @@
           const raw = (ci >= 0 ? r[ci] : "") || "";
           const colName = ci >= 0 ? H[ci] : "搬入日";
           const wide = (ci === iNaiso || ci === iGaiso);
-          return '<td class="center ich2-prog-cell' + (colName === "搬入日" ? " banyu" : "") + '" data-seizou="'+ich2Esc(no)+'" data-col="'+ich2Esc(colName)+'" data-val="'+ich2Esc(ich2EditableDateValue(raw))+'" title="クリックして編集">'+ich2Badge(ich2Cell(raw, ich2RowRef(r, progIdx)), wide)+'</td>';
+          return '<td class="center ich2-prog-cell' + (colName === "搬入日" ? " banyu" : "") + '" data-seizou="'+ich2Esc(no)+'" data-col="'+ich2Esc(colName)+'" data-val="'+ich2Esc(ich2EditableDateValue(raw))+'" title="'+(ich2ArchMode ? ich2Esc(formatDateOnly(raw) || "") : "クリックして編集")+'">'+ich2Badge(ich2Cell(raw, ich2RowRef(r, progIdx)), wide)+'</td>';
         }).join("") +
         '<td class="ich2-nowrap">'+ich2Esc(r[iTantou])+'</td>' +
         '<td class="ich2-nowrap ich2-ellipsis ich2-tabular ich2-muted" title="'+ich2Esc(r[iMsunpou])+'">'+ich2Esc(r[iMsunpou])+'</td>' +
