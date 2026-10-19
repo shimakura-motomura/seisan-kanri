@@ -560,6 +560,8 @@
   .ich2-edit-save { background: var(--color-accent); color: #fff; border: 0; padding: 9px 28px; font: inherit; font-size: 13px; font-weight: 700; cursor: pointer; border-radius: 0; }
   .ich2-edit-save:hover { background: var(--color-accent-600); }
   .ich2-edit-save:disabled { opacity: 0.6; cursor: default; }
+  .ich2-edit-del { background: none; border: 1px solid #c0392b; color: #c0392b; padding: 9px 16px; font: inherit; font-size: 13px; cursor: pointer; border-radius: 0; margin-right: auto; }
+  .ich2-edit-del:hover { background: #c0392b; color: #fff; }
   .ich2-edit-cancel { background: none; border: 1px solid var(--color-neutral-400); padding: 9px 20px; font: inherit; font-size: 13px; cursor: pointer; border-radius: 0; }
   .ich2-edit-hint { font-size: 11px; color: var(--color-neutral-700); flex: 1 1 auto; }
   .ich2-edit-status { font-size: 12px; color: var(--color-neutral-700); }
@@ -1104,6 +1106,7 @@
           </div>
           <div class="ich2-edit-body" id="ich2EditBody"></div>
           <div class="ich2-edit-foot">
+            <button type="button" class="ich2-edit-del" id="ich2EditDelBtn">この行を削除</button>
             <span class="ich2-edit-hint">変更した項目だけが保存されます</span>
             <span class="ich2-edit-status" id="ich2EditStatus"></span>
             <button type="button" class="ich2-edit-cancel" id="ich2EditCancelBtn">キャンセル</button>
@@ -2464,6 +2467,7 @@
     }).join("");
 
     document.getElementById("ich2EditBody").innerHTML =
+      '<div><div class="ich2-edit-sec-h"><b>製造番号</b><span>間違えたときだけ直す。塗装の同じ番号も一緒に直ります</span><i></i></div><div class="ich2-edit-grid"><div class="ich2-edit-field"><input type="text" id="ich2EfNo" value="'+ich2Esc(seizouBangou)+'"></div></div></div>' +
       '<div><div class="ich2-edit-sec-h"><b>基本情報</b><i></i></div><div class="ich2-edit-grid">' + textRows + '</div></div>' +
       '<div><div class="ich2-edit-sec-h"><b>塗装仕様</b><span>酸洗・研磨は「部位 材質」/ メッキは「部位」/ 他は「部位(内容)」</span><i></i></div><div class="ich2-edit-grid g7 tosou">' + tosouRows + '</div></div>' +
       '<div><div class="ich2-edit-sec-h"><b>備考</b><i></i></div>' + wideRows + '</div>' +
@@ -2522,12 +2526,14 @@
       if (newVal !== oldVal) changes.push({ col, value: newVal });
     });
 
-    if (changes.length === 0) { ich2CloseEditModal(); return; }
+    const newNo = (document.getElementById("ich2EfNo").value || "").normalize("NFKC").trim().toUpperCase();
+    const renameWanted = newNo !== "" && newNo !== String(seizouBangou).normalize("NFKC").trim().toUpperCase();
+    if (changes.length === 0 && !renameWanted) { ich2CloseEditModal(); return; }
 
     const saveBtn = document.getElementById("ich2EditSaveBtn");
     const status = document.getElementById("ich2EditStatus");
     saveBtn.disabled = true;
-    status.textContent = changes.length + "件を保存中…";
+    status.textContent = (changes.length ? changes.length + "件を保存中…" : "製造番号を変更中…");
 
     try {
       const results = await Promise.all(changes.map(c =>
@@ -2544,6 +2550,14 @@
         const idx = ich2Header.indexOf(c.col);
         if (idx !== -1) row[idx] = c.value;
       });
+      if (renameWanted) {   // 製造番号の変更は、ほかの項目を保存したあとに行う
+        status.textContent = "製造番号を変更中…";
+        const rr = await fetch(GAS_URL, { method: "POST", body: JSON.stringify(Object.assign({ type: "renameSeizou", seizouBangou, newNo }, ich2ArchExtra(row))) });
+        const rd = await rr.json();
+        if (rd.result !== "success") throw new Error("製造番号を変更できませんでした: " + (rd.message || "失敗"));
+        row[idxSeizou] = newNo;
+        ich2Selected.clear();
+      }
       ich2CloseEditModal();
       ich2RenderAll();
     } catch (e) {
@@ -2553,6 +2567,32 @@
     }
   }
 
+  async function ich2DeleteRow() {
+    const overlay = document.getElementById("ich2EditOverlay");
+    const seizouBangou = overlay.dataset.seizou;
+    const idxSeizou = ich2Header.indexOf("製造番号");
+    const row = ich2All.find(r => r[idxSeizou] === seizouBangou);
+    if (!row) return;
+    const gi = ich2Header.indexOf("現場名");
+    if (!confirm(seizouBangou + "(" + (gi !== -1 ? row[gi] : "") + ")を削除します。\n「削除済み」シートに残るので、あとで元に戻せます。\n\nよろしいですか？")) return;
+    const status = document.getElementById("ich2EditStatus"), saveBtn = document.getElementById("ich2EditSaveBtn"), delBtn = document.getElementById("ich2EditDelBtn");
+    saveBtn.disabled = true; delBtn.disabled = true; status.textContent = "削除中…";
+    try {
+      const res = await fetch(GAS_URL, { method: "POST", body: JSON.stringify(Object.assign({ type: "deleteSeizou", seizouBangou }, ich2ArchExtra(row))) });
+      const d = await res.json();
+      if (d.result !== "success") throw new Error(d.message || "削除に失敗しました");
+      const at = ich2All.indexOf(row);
+      if (at !== -1) ich2All.splice(at, 1);
+      ich2Selected.clear();
+      ich2CloseEditModal();
+      ich2RenderAll();
+      if (d.tosou > 0) alert("削除しました。\n塗装に、同じ製造番号の行が " + d.tosou + " 件あります。塗装画面で確認してください。");
+    } catch (e) {
+      alert("削除できませんでした(行は消していません): " + e.message);
+    }
+    status.textContent = ""; saveBtn.disabled = false; delBtn.disabled = false;
+  }
+  document.getElementById("ich2EditDelBtn").addEventListener("click", ich2DeleteRow);
   document.getElementById("ich2EditSaveBtn").addEventListener("click", ich2SaveEditModal);
   document.getElementById("ich2EditCancelBtn").addEventListener("click", ich2CloseEditModal);
   document.getElementById("ich2EditOverlay").addEventListener("click", (e) => {
