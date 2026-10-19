@@ -2547,7 +2547,7 @@
   const TOSOU_TABS = [
     { key: "酸洗", unit: "㎡", naiyou: ["酸洗","酸洗+脱脂"] },
     { key: "研磨", unit: "㎡", naiyou: ["研磨"] },
-    { key: "エポ", unit: "㎡", naiyou: ["内エポ","ブラスト"] },
+    { key: "エポ", unit: "㎡", naiyou: ["内エポ","ﾌﾞﾗｽﾄ"] },
     { key: "FRP", unit: "KL", naiyou: ["FRP直","FRP2","ゴムシート10t","ゴムシート3t","消防立会"] },
     { key: "メッキ", unit: "kg", naiyou: ["メッキ"] },
     { key: "外装", unit: "㎡", naiyou: ["錆止","耐熱","耐塩(アルテクトプライマー)","エポ系錆止(ハイポンファインデクロ)","その他"] },
@@ -2781,7 +2781,7 @@
             body: JSON.stringify({
               type: "addTosou", tab: item.tab, seizouBangou,
               nouki: payload.nouki, genbaMei: payload.genbaMei, hinmei: payload.hinmei, sunpou: payload.sunpou,
-              bui: item.bui, naiyou: item.naiyou, vol: item.vol || "",
+              bui: item.bui, naiyou: String(item.naiyou || "").replace(/ブラスト/g, "ﾌﾞﾗｽﾄ"), vol: item.vol || "",
               zairyou: item.zairyou || "", kakaku: "", gyousha: item.gyousha || "", hankomiYotei: "", kanseiNouhin: "", biko: "",
             }),
           });
@@ -3355,7 +3355,7 @@
     document.getElementById("tsEditTtl").textContent = o ? "塗装 編集" : "塗装 手動追加";
     document.getElementById("tsEditNo").textContent = o ? o.get("製造番号") : "新規";
     document.getElementById("tsEditSub").textContent = tab.key + (o ? " ／ " + [o.get("現場名"), o.get("品名")].filter(Boolean).join(" ／ ") : " ／ 通常は製作手配から自動登録されます。イレギュラー時のみ使用");
-    document.getElementById("tsEditHint").textContent = o ? "変更した項目だけが保存されます" : "部位と内容は必須です";
+    document.getElementById("tsEditHint").textContent = o ? "変更した項目だけが保存されます" : "内容は必須です(部位は空欄でも登録できます)";
     document.getElementById("tsEditStatus").textContent = "";
     const fields = tsModalFields(tab);
     const dateLabels = ["納期","予定","持込","完成","納品"];
@@ -3404,11 +3404,11 @@
         if (!Object.keys(fields).length) { status.textContent = "変更がありません"; btn.disabled = false; return; }
         await tsPost({ type: "updateTosou", tab: tab.key, rowIndex: tsEditing.rowIndex, seizouBangou: tsEditing.get("製造番号"), fields });
       } else {
-        if (!val["部位"] || !val["内容"]) { status.textContent = "部位と内容は必須です"; btn.disabled = false; return; }
+        if (!val["内容"]) { status.textContent = "内容は必須です"; btn.disabled = false; return; }
         await tsPost({
           type: "addTosou", tab: tab.key,
           seizouBangou: val["製造番号"], nouki: val["納期"], genbaMei: val["現場名"], hinmei: val["品名"], sunpou: val["寸法"],
-          bui: val["部位"], naiyou: val["内容"], vol: val["vol"], zairyou: val["材質"], kakaku: val["価格"] || "",
+          bui: val["部位"], naiyou: val["内容"].replace(/ブラスト/g, "ﾌﾞﾗｽﾄ"), vol: val["vol"], zairyou: val["材質"], kakaku: val["価格"] || "",
           gyousha: val["業者"], hankomiYotei: val["搬入予定"], kanseiNouhin: val["完成納品"], biko: val["備考"],
           kanseiBi: val["完成日"] || "", kousuu: val["工数㎡"] || "",
         });
