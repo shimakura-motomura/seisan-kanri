@@ -3110,6 +3110,29 @@
         if (r[idxSeizou]) tsProductMap[r[idxSeizou]] = { genbaMei: r[idxGenba] || "", hinmei: r[idxHinmei] || "", sunpou: r[idxSunpou] || "", zumen: r[idxZumen] || "", juken: r[idxJuken] || "", ku: r[idxKu] || "", seisaku: r[idxSei] || "" };
       });
     } catch (e) { console.error("マスタ読み込み失敗", e); }
+    tsLoadArchMap().then(() => { [TSP.main, TSP.sub].forEach(p => { if (p.all && p.all.length && p.tabKey && p.tabKey !== TS_SCHEDULE_KEY && p.tabKey !== TS_PAINT_KEY) tsApply(p); }); }).catch(e => console.error("出荷済みの図面リンク読み込み失敗", e));   // 画面が開いたあと、裏で読む
+  }
+
+  // 出荷済みシートに移った案件の図面リンク(など)を、必要な列だけ読んで tsProductMap に足す(一覧にある案件はそのまま)
+  async function tsLoadArchMap() {
+    const [h0] = await ich2FetchSheetsRanges(["出荷済み!1:1"]);
+    const header = (h0 && h0[0]) || [];
+    const letter = i => { let n = i + 1, s = ""; while (n > 0) { const m = (n - 1) % 26; s = String.fromCharCode(65 + m) + s; n = Math.floor((n - 1) / 26); } return s; };
+    const idx = name => header.indexOf(name);
+    const iNo = idx("製造番号"), iGenba = idx("現場名"), iHinmei = idx("品名"), iSunpou = idx("寸法"), iZumen = idx("図"), iKu = idx("区"), iSei = idx("製");
+    const iJuken = idx("検完") !== -1 ? idx("検完") : idx("受・完");
+    const cols = [iNo, iGenba, iHinmei, iSunpou, iZumen, iJuken, iKu, iSei];
+    if (iNo === -1 || iZumen === -1) return;
+    const uniq = [...new Set(cols.filter(c => c !== -1))];
+    const got = await ich2FetchSheetsRanges(uniq.map(c => "出荷済み!" + letter(c) + ":" + letter(c)));
+    const colData = {}; uniq.forEach((c, k) => { colData[c] = got[k]; });
+    const g = (c, r) => (c === -1 || !colData[c] || !colData[c][r] ? "" : (colData[c][r][0] || ""));
+    const n = (colData[iNo] || []).length;
+    for (let r = 1; r < n; r++) {
+      const no = g(iNo, r);
+      if (!no || tsProductMap[no]) continue;
+      tsProductMap[no] = { genbaMei: g(iGenba, r), hinmei: g(iHinmei, r), sunpou: g(iSunpou, r), zumen: g(iZumen, r), juken: g(iJuken, r), ku: g(iKu, r), seisaku: g(iSei, r) };
+    }
   }
 
   const TS_TAB_SUB = { "酸洗": "PICKLING", "研磨": "POLISH", "エポ": "EPOXY", "FRP": "FRP", "メッキ": "PLATING", "外装": "EXTERIOR", "メッキスケ": "SCHEDULE" };
