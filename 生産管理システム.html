@@ -473,7 +473,17 @@
   .ich2-tabular { font-variant-numeric: tabular-nums; }
   .ich2-muted { color: var(--color-neutral-700); }
   #ich2Tbody.arch .ich2-prog-cell { cursor: default; }
-  table.ts3-arch td { cursor: default !important; }
+  tr[data-arch="1"] td { cursor: default !important; }
+  .tsb-filter { display: flex; flex-wrap: wrap; gap: 12px 16px; align-items: center; padding: 8px 16px; border-bottom: 1px solid var(--color-border, #ddd); font-size: 13px; }
+  .tsb-filter select { font: inherit; padding: 3px 6px; }
+  .tsb-term { margin-left: auto; font-weight: 700; color: var(--color-accent-700, #a02); }
+  table.tsb { width: 100%; border-collapse: collapse; table-layout: fixed; font-size: 13px; }
+  table.tsb td { padding: 4px 6px; border-bottom: 1px solid #e5e5e5; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  table.tsb tr.tsb-grp td { background: #f0f0f0; font-weight: 700; border-top: 2px solid #ccc; }
+  table.tsb tr.tsb-paid td { color: #888; background: #f6fbf6; }
+  table.tsb col.c-chk { width: 34px; } table.tsb col.c-no { width: 90px; } table.tsb col.c-hin { width: 250px; } table.tsb col.c-nou { width: 90px; } table.tsb col.c-ven { width: 130px; } table.tsb col.c-pr { width: 90px; } table.tsb col.c-st { width: 70px; }
+  table.tsb td.r { text-align: right; }
+
   .ich2-no-btn { display: flex; align-items: center; gap: 4px; width: 100%; padding: 0; font: inherit; font-size: inherit; font-weight: 700; white-space: nowrap; text-align: left; cursor: pointer; background: transparent; border: 0; color: var(--color-text); text-decoration: underline; text-decoration-color: var(--color-accent); text-underline-offset: 2px; }
   .ich2-no-btn:hover { color: var(--color-accent-700); }
   .ich2-chip { display: inline-block; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; padding: 0 3px; font-size: 10px; font-weight: 700; line-height: 1.5; border: 1px solid transparent; text-align: center; }
@@ -1177,10 +1187,8 @@
         <div class="ts3-filter-bar">
           <input type="text" id="tsSearch" class="ts3-filter-input" placeholder="製番・現場名・品名で検索">
           <div class="ts3-seg" id="tsStatusFilter">
-            <button type="button" data-status="all">すべて</button>
             <button type="button" class="active" data-status="open">未完</button>
-            <button type="button" data-status="done">完了</button>
-            <button type="button" data-status="arch" title="出荷済みで、納品から日がたった行(塗装_過去シート)を見る。見るだけ">過去</button>
+            <button type="button" data-status="done" title="納品が入った行(古いものも含む)。納品が新しい順に300件まで。検索で探せます">完了</button>
           </div>
           <select class="ts3-sort" id="tsVendor" title="業者で絞り込み"><option value="">全業者</option></select>
           <select class="ts3-sort" id="tsSort" title="並び順">
@@ -1195,10 +1203,8 @@
         <div class="ts3-filter-bar">
           <input type="text" id="tsSearch2" class="ts3-filter-input" placeholder="製番・現場名・品名で検索">
           <div class="ts3-seg" id="tsStatusFilter2">
-            <button type="button" data-status="all">すべて</button>
             <button type="button" class="active" data-status="open">未完</button>
-            <button type="button" data-status="done">完了</button>
-            <button type="button" data-status="arch" title="出荷済みで、納品から日がたった行(塗装_過去シート)を見る。見るだけ">過去</button>
+            <button type="button" data-status="done" title="納品が入った行(古いものも含む)。納品が新しい順に300件まで。検索で探せます">完了</button>
           </div>
           <select class="ts3-sort" id="tsVendor2" title="業者で絞り込み"><option value="">全業者</option></select>
           <select class="ts3-sort" id="tsSort2" title="並び順">
@@ -1225,6 +1231,7 @@
         <button type="button" class="ich2-selbar-primary" id="tsBtnEdit">編集</button>
         <button type="button" class="ich2-selbar-primary" id="tsBtnAdd">手動追加</button>
         <button type="button" class="ich2-selbar-primary" id="tsBtnDone">完了にする</button>
+        <button type="button" class="ich2-selbar-primary" id="tsBtnBill" title="納品月・業者ごとに、請求済みをチェックする">請求</button>
         <button type="button" class="ich2-selbar-clear" id="tsBtnClear">選択を解除</button>
       </div>
       <div class="ts3-bargrp" id="tsBarSub" hidden>
@@ -1233,6 +1240,7 @@
         <button type="button" class="ich2-selbar-primary" id="tsBtnEdit2">編集</button>
         <button type="button" class="ich2-selbar-primary" id="tsBtnAdd2">手動追加</button>
         <button type="button" class="ich2-selbar-primary" id="tsBtnDone2">完了にする</button>
+        <button type="button" class="ich2-selbar-primary" id="tsBtnBill2" title="納品月・業者ごとに、請求済みをチェックする">請求</button>
         <button type="button" class="ich2-selbar-clear" id="tsBtnClear2">選択を解除</button>
       </div>
     </div>
@@ -1276,6 +1284,25 @@
           <span class="ich2-edit-status" id="tsPaintStatus"></span>
           <button type="button" class="ich2-edit-cancel" id="tsPaintCancelBtn">キャンセル</button>
           <button type="button" class="ich2-edit-save" id="tsPaintSaveBtn">追加する</button>
+        </div>
+      </div>
+    </div>
+
+
+    <div class="ich2-edit-overlay" id="tsBillOverlay" hidden>
+      <div class="ich2-edit-panel" style="width:min(960px,96vw);max-height:92vh;display:flex;flex-direction:column;">
+        <div class="ich2-edit-head"><span class="ttl" id="tsBillTtl">請求</span><span class="sub" id="tsBillSub"></span></div>
+        <div class="tsb-filter">
+          <label>納品月 <select id="tsBillMonth"></select></label>
+          <label>業者 <select id="tsBillVendor"></select></label>
+          <label>状態 <select id="tsBillState"><option value="">すべて</option><option value="no">未請求のみ</option><option value="yes">請求済のみ</option></select></label>
+          <span class="tsb-term" id="tsBillTerm"></span>
+        </div>
+        <div class="ich2-edit-body" id="tsBillBody" style="overflow:auto;flex:1;"></div>
+        <div class="ich2-edit-foot">
+          <span class="ich2-edit-hint" id="tsBillHint">チェックすると、すぐ保存されます</span>
+          <span class="ich2-edit-status" id="tsBillStatus"></span>
+          <button type="button" class="ich2-edit-cancel" id="tsBillCloseBtn">閉じる</button>
         </div>
       </div>
     </div>
@@ -3068,8 +3095,8 @@
   let tsBuiList = [];
   let tsProductMap = {};
   const TS_IDS = {
-    main: { search:"tsSearch", seg:"tsStatusFilter", stat:"tsListStatus", sort:"tsSort", vendor:"tsVendor", table:"tsListTable", cnt:"tsSelCount", edit:"tsBtnEdit", add:"tsBtnAdd", done:"tsBtnDone", clr:"tsBtnClear" },
-    sub:  { search:"tsSearch2", seg:"tsStatusFilter2", stat:"tsListStatus2", sort:"tsSort2", vendor:"tsVendor2", table:"tsListTable2", cnt:"tsSelCount2", edit:"tsBtnEdit2", add:"tsBtnAdd2", done:"tsBtnDone2", clr:"tsBtnClear2" },
+    main: { search:"tsSearch", seg:"tsStatusFilter", stat:"tsListStatus", sort:"tsSort", vendor:"tsVendor", table:"tsListTable", cnt:"tsSelCount", edit:"tsBtnEdit", add:"tsBtnAdd", done:"tsBtnDone", bill:"tsBtnBill", clr:"tsBtnClear" },
+    sub:  { search:"tsSearch2", seg:"tsStatusFilter2", stat:"tsListStatus2", sort:"tsSort2", vendor:"tsVendor2", table:"tsListTable2", cnt:"tsSelCount2", edit:"tsBtnEdit2", add:"tsBtnAdd2", done:"tsBtnDone2", bill:"tsBtnBill2", clr:"tsBtnClear2" },
   };
   // 酸洗(左)・研磨(右)それぞれが、自分の検索・絞り込み・並び順・選択を持つ
   const TSP = {
@@ -3089,13 +3116,15 @@
         btn.classList.add("active"); p.status = btn.dataset.status; p.sel.clear(); tsPaneChanged(p);
       }));
       tsEl(p, "sort").addEventListener("change", e => { p.sort = e.target.value; tsPaneChanged(p); });
-      ["click", "dblclick", "mousedown", "keydown", "change"].forEach(ev => tsEl(p, "table").addEventListener(ev, e => {   // 「過去」は見るだけ(図面を開くボタンだけ有効)
-        if (p.status === "arch" && !(e.target.closest && e.target.closest(".ts3-no-link, a, .ts3-chk"))) e.stopPropagation();   // 「過去」は、図面ボタンと左のチェックだけ有効(チェックしてから下の「編集」で直す)
+      ["click", "dblclick", "mousedown", "keydown", "change"].forEach(ev => tsEl(p, "table").addEventListener(ev, e => {
+        const tr = e.target.closest && e.target.closest("tr");   // 過去シートの行(完了に入っている古い行)は、表の中を直接は直せない。図面ボタンと左のチェックだけ有効(チェックしてから下の「編集」で直す)
+        if (tr && tr.dataset.arch === "1" && !(e.target.closest(".ts3-no-link, a, .ts3-chk"))) e.stopPropagation();
       }, true));
       tsEl(p, "vendor").addEventListener("change", e => { p.vendor = e.target.value; tsPaneChanged(p); });
       tsEl(p, "edit").addEventListener("click", () => tsEditClick(p));
       tsEl(p, "add").addEventListener("click", () => tsAddClick(p));
       tsEl(p, "done").addEventListener("click", () => tsDoneClick(p));
+      tsEl(p, "bill").addEventListener("click", () => tsBillOpen(p));
       tsEl(p, "clr").addEventListener("click", () => { p.sel.clear(); tsSyncSelection(); });
     }
     window.addEventListener("resize", tsFit);
@@ -3183,7 +3212,7 @@
     $("tsSearch2").placeholder = paintMode ? "品名で検索" : calMode ? "現場名で検索" : "製番・現場名・品名で検索";
     $("tsListTable2").classList.remove("ts3-paint");
     $("tsStatusFilter2").hidden = special; $("tsSort2").hidden = special; $("tsVendor2").hidden = special;
-    $("tsBtnEdit2").hidden = special; $("tsBtnDone2").hidden = special; $("tsBtnClear2").hidden = special;
+    $("tsBtnEdit2").hidden = special; $("tsBtnDone2").hidden = special; $("tsBtnBill2").hidden = special; $("tsBtnClear2").hidden = special;
     const ratio = TS_RATIO[tsCurrentTab];
     [["tsPaneMain", "tsBarMain"], ["tsPaneSub", "tsBarSub"]].forEach(([a, b], i) => {
       const f = (two && ratio) ? (i === 0 ? "0 0 calc(" + ratio + "% - 7px)" : "1 1 0") : "";
@@ -3197,24 +3226,30 @@
   function tsPaneChanged(p) {
     if (p.tabKey === TS_SCHEDULE_KEY) tsRenderCalendar(p);
     else if (p.tabKey === TS_PAINT_KEY) tsRenderPaint(p);
-    else if (p.status === "arch" && p.archTab !== p.tabKey) tsLoadArch(p);
+    else if (p.status === "done" && p.archTab !== p.tabKey) tsLoadArch(p);
     else tsApply(p);
   }
-  // 「過去」:塗装_過去シートを(押したときだけ)読み込み、このタブの行を見るだけで表示する
+  // 「完了」:納品が入った行は、夜中に塗装_過去シートへ移る。完了を開いたときだけ読み込み、このタブの行を出す
   const TS_ARCH_CAP = 300;
   let tsArchCache = null;
+  async function tsEnsureArch(p) {   // 塗装_過去を読んで、このタブの行を p.archAll に入れる(読み込み済みなら読み直さない)
+    const tab = TOSOU_TABS.find(t => t.key === p.tabKey);
+    if (!tab) return;
+    if (!tsArchCache) { const [rows] = await ich2FetchSheetsRanges(["塗装_過去"]); tsArchCache = rows; }
+    const header = tsArchCache[0] || [], iTab = header.indexOf("タブ");
+    const rows = [header], rowNums = [1];
+    tsArchCache.forEach((r, i) => { if (i > 0 && r[iTab] === tab.key) { rows.push(r); rowNums.push(i + 1); } });
+    p.archAll = tsListFromRows(rows, tab, rowNums, "過去:").list; p.archTab = tab.key;
+  }
   async function tsLoadArch(p) {
     const tab = TOSOU_TABS.find(t => t.key === p.tabKey);
     if (!tab || p.tabKey === TS_SCHEDULE_KEY || p.tabKey === TS_PAINT_KEY) return;
     const stat = tsEl(p, "stat");
     try {
-      if (!tsArchCache) { stat.textContent = "過去を読み込み中..."; const [rows] = await ich2FetchSheetsRanges(["塗装_過去"]); tsArchCache = rows; }
-      if (p.status !== "arch" || p.tabKey !== tab.key) return;
-      const header = tsArchCache[0] || [], iTab = header.indexOf("タブ");
-      const rows = [header], rowNums = [1];
-      tsArchCache.forEach((r, i) => { if (i > 0 && r[iTab] === tab.key) { rows.push(r); rowNums.push(i + 1); } });
-      p.archAll = tsListFromRows(rows, tab, rowNums).list; p.archTab = tab.key;
-    } catch (e) { stat.textContent = "過去を読み込めませんでした(塗装_過去シートがまだ無いかもしれません): " + e.message; return; }
+      if (!tsArchCache) stat.textContent = "完了を読み込み中...";
+      await tsEnsureArch(p);
+      if (p.status !== "done" || p.tabKey !== tab.key) return;
+    } catch (e) { stat.textContent = "完了(過去)を読み込めませんでした: " + e.message; p.archAll = []; p.archTab = tab.key; }
     tsApply(p);
   }
   // 一覧の高さを、画面の下の操作バーのすぐ上までにそろえる(下に無駄な空きを作らない)
@@ -3263,7 +3298,7 @@
     const [rows] = await ich2FetchSheetsRanges(["塗装_" + tab.key]);
     return tsListFromRows(rows, tab);
   }
-  function tsListFromRows(rows, tab, rowNums) {   // rowNums=各行のシート上の行番号(過去シートの行を絞り込んで渡すとき用)
+  function tsListFromRows(rows, tab, rowNums, keyPrefix) {   // rowNums=各行のシート上の行番号 / keyPrefix=過去シートの行に付ける印(「過去:」)
     const header = rows[0] || [];
     const iSeizou = header.indexOf("製造番号"), iGenba = header.indexOf("現場名"), iHinmei = header.indexOf("品名");
     let list = [];
@@ -3278,7 +3313,7 @@
       if (/^[（(]?記入例/.test(String(r[header.indexOf("備考")] || ""))) return;   // シート2行目の「記入例」行は除く
       const over = {};
       const rn = rowNums ? rowNums[k] : k + 1;
-      list.push({ rowIndex: rn, tab: tab.key, key: tab.key + ":" + rn, set: (n, v) => { over[n] = v; }, get: name => {
+      list.push({ rowIndex: rn, tab: tab.key, arch: !!keyPrefix, key: (keyPrefix || "") + tab.key + ":" + rn, set: (n, v) => { over[n] = v; }, get: name => {
         if (name in over) return over[name];
         let c = header.indexOf(name);
         if (c === -1 && name === "完成納品") c = header.findIndex(h => String(h).includes("納品"));   // シートの見出しが「完成/納品日」でも読めるように
@@ -3302,7 +3337,7 @@
     const sel = tsEl(p, "vendor"); if (!sel) return;
     if (p.vendorTab !== p.tabKey) { p.vendor = ""; p.vendorTab = p.tabKey; }
     const names = new Set(); let hasNone = false;
-    (p.all || []).forEach(o => { const g = String(o.get("業者") || "").trim(); if (g) names.add(g); else hasNone = true; });
+    (p.status === "done" && p.archTab === p.tabKey ? (p.all || []).concat(p.archAll || []) : (p.all || [])).forEach(o => { const g = String(o.get("業者") || "").trim(); if (g) names.add(g); else hasNone = true; });
     const list = [...names].sort((a, b) => String(a).localeCompare(String(b), "ja"));
     if (p.vendor && p.vendor !== "__none__" && !names.has(p.vendor)) p.vendor = "";
     sel.innerHTML = '<option value="">全業者</option>' + list.map(n => '<option value="' + ich2Esc(n) + '">' + ich2Esc(n) + '</option>').join("") + (hasNone ? '<option value="__none__">(業者未入力)</option>' : "");
@@ -3312,8 +3347,9 @@
   // 検索・未完/完了・並び順を、読み込み済みの行に当てて表示する
   function tsApply(p) {
     const tab = TOSOU_TABS.find(t => t.key === p.tabKey); if (!tab) return;
-    const arch = p.status === "arch";   // 「過去」=塗装_過去シートの行を、見るだけで表示
-    let list = (arch ? (p.archTab === p.tabKey ? p.archAll : []) : p.all).slice();
+    const arch = p.status === "done";   // 「完了」=納品済み。まだ移っていない行+塗装_過去シートの行(新しい順・300件まで)
+    let list = p.all.slice();
+    if (arch && p.archTab === p.tabKey) list = list.concat(p.archAll || []);
     const q = p.query.toLowerCase();
     if (q) list = list.filter(o => ((o.get("製造番号")) + (o.get("現場名")) + (o.get("品名"))).toLowerCase().includes(q));
     tsFillVendors(p);
@@ -3336,16 +3372,16 @@
     });
     let archNote = "";
     if (arch) {
-      list.reverse();   // 新しい方から見る
-      if (list.length > TS_ARCH_CAP) { archNote = "(先頭" + TS_ARCH_CAP + "件のみ。検索で絞り込んでください)"; }
+      const nv = o => { const t = tsDateVal(o.get("完成納品")); return t === 99999999 ? 0 : t; };
+      list.sort((a, b) => nv(b) - nv(a));   // 納品が新しい順
+      if (list.length > TS_ARCH_CAP) { archNote = "(新しい順に" + TS_ARCH_CAP + "件のみ。検索で絞り込んでください)"; }
     }
     const listTotal = list.length;
     if (arch && list.length > TS_ARCH_CAP) list = list.slice(0, TS_ARCH_CAP);
-    tsEl(p, "table").classList.toggle("ts3-arch", arch);
     p.rows = list;
     const keys = new Set(list.map(o => o.key));
     [...p.sel].forEach(k => { if (!keys.has(k)) p.sel.delete(k); });     // 絞り込みで見えなくなった行は選択から外す
-    tsEl(p, "stat").textContent = (arch ? "【過去・見るだけ】" : "") + listTotal + "件" + archNote;
+    tsEl(p, "stat").textContent = "" + listTotal + "件" + archNote;
     tsRenderTosouTable(tsEl(p, "table"), tab, list, { compact: !!TS_PAIR[tsCurrentTab], p });
     tsSyncSelection(); tsFit();
   }
@@ -3361,7 +3397,7 @@
       const r = await tsFetchRows(tab);
       if (p.tabKey !== tab.key) return;      // 読み込み中にタブを切り替えた場合は捨てる
       p.all = r.list; p.sel.clear();
-      if (p.status === "arch") { p.archTab = null; return tsLoadArch(p); }
+      if (p.status === "done") { p.archTab = null; return tsLoadArch(p); }
       tsApply(p);
     } catch (e) { tsEl(p, "stat").textContent = "読み込みに失敗しました: " + e.message; }
   }
@@ -3400,6 +3436,7 @@
     rowsList.forEach(o => {
       const tr = document.createElement("tr");
       tr.dataset.key = o.key;
+      if (o.arch) tr.dataset.arch = "1";   // 過去シートの行(表の中は直接直せない)
       const tdc = document.createElement("td"); tdc.className = "ts3-chk";
       const cb = document.createElement("input"); cb.type = "checkbox";
       cb.addEventListener("change", () => { if (cb.checked) p.sel.add(o.key); else p.sel.delete(o.key); tsSyncSelection(); });
@@ -3435,7 +3472,7 @@
           td.addEventListener("click", () => tsStartInline(td, o, label));
         } else if (compact && label !== "製造番号") td.title = td.textContent;
         if (TS_DATE_LABELS.includes(label)) {   // 日付は、マウスを載せると年つき(yyyy/mm/dd)で出す
-          const tip = ich2DateTip(v, null, TS_INLINE[label] && p.status !== "arch" ? "(クリックで入力)" : "");
+          const tip = ich2DateTip(v, null, TS_INLINE[label] && !o.arch ? "(クリックで入力)" : "");
           if (tip) td.title = tip;
         }
         tr.appendChild(td);
@@ -3515,7 +3552,7 @@
       const n = p.sel.size, off = p.tabKey === TS_SCHEDULE_KEY || p.tabKey === TS_PAINT_KEY;
       tsEl(p, "cnt").textContent = off ? (p.tabKey === TS_PAINT_KEY ? "塗料在庫" : "カレンダー") : (n === 0 ? "未選択" : n + " 件を選択中");
       tsEl(p, "edit").disabled = off || n !== 1;
-      tsEl(p, "done").disabled = off || n === 0 || p.status === "arch";   // 「過去」では、まとめて完了にはできない(編集だけ)
+      tsEl(p, "done").disabled = off || n === 0 || [...p.sel].some(k => k.startsWith("過去:"));   // 過去シートの行は、まとめて完了にはできない(編集だけ)
       tsEl(p, "add").disabled = false;
     });
   }
@@ -3523,9 +3560,8 @@
   function tsEditClick(p) {
     if (p.sel.size !== 1) { alert("編集は1件だけ選択してください。"); return; }
     const key = [...p.sel][0];
-    const arch = p.status === "arch";
-    const o = (arch ? p.archAll : p.all).find(x => x.key === key);
-    tsEditArch = arch;
+    const o = p.all.concat(p.archAll || []).find(x => x.key === key);
+    tsEditArch = !!(o && o.arch);
     if (o) tsOpenModal(o, p.tabKey);
   }
   function tsAddClick(p) {
@@ -3620,6 +3656,89 @@
       tsCloseModal(); [TSP.main, TSP.sub].forEach(q => { if (q.tabKey) tsLoadList(q); });
     } catch (e) { status.textContent = "失敗: " + e.message; btn.disabled = false; }
   }
+
+
+  // ===== 請求(塗装の各タブ。納品月・業者で絞って、現場ごとに「請求済」をチェック。チェックしたらすぐ保存) =====
+  let tsBillPane = null, tsBillRows = [];
+  const tsbMonthOf = o => { const v = tsDateVal(o.get("完成納品")); return v === 99999999 ? 0 : Math.floor(v / 100); };   // 202610 など
+  const tsbPrice = o => { const n = parseFloat(String(o.get("価格") || "").replace(/[^0-9.]/g, "")); return isNaN(n) ? 0 : n; };
+  function tsbEom(ym, add) {   // ym=202610, add=0 → 2026/10/31 / add=1 → 2026/11/30
+    const y = Math.floor(ym / 100), m = ym % 100;
+    const d = new Date(y, m - 1 + add + 1, 0);
+    return d.getFullYear() + "/" + (d.getMonth() + 1) + "/" + d.getDate();
+  }
+  async function tsBillOpen(p) {
+    if (!p.tabKey || p.tabKey === TS_SCHEDULE_KEY || p.tabKey === TS_PAINT_KEY) return;
+    tsBillPane = p;
+    const ov = document.getElementById("tsBillOverlay"), st = document.getElementById("tsBillStatus");
+    document.getElementById("tsBillTtl").textContent = p.tabKey + " 請求";
+    document.getElementById("tsBillBody").innerHTML = "";
+    st.textContent = "読み込み中..."; ov.hidden = false;
+    try {
+      await tsEnsureArch(p);
+      tsBillRows = p.all.filter(o => tsIsDone(o)).concat(p.archAll || []).filter(o => String(o.get("完成納品") || "").trim());
+      const months = [...new Set(tsBillRows.map(tsbMonthOf))].sort((a, b) => b - a);
+      const ms = document.getElementById("tsBillMonth");
+      ms.innerHTML = months.map(m => '<option value="' + m + '">' + (m ? Math.floor(m / 100) + "年" + (m % 100) + "月" : "日付なし") + '</option>').join("") || '<option value="">(なし)</option>';
+      const hasNo = months.find(m => tsBillRows.some(o => tsbMonthOf(o) === m && !String(o.get("請求済") || "").trim()));   // 初期値=未請求がある一番新しい月
+      if (hasNo != null) ms.value = String(hasNo);
+      const names = [...new Set(tsBillRows.map(o => String(o.get("業者") || "").trim()))].sort((a, b) => a.localeCompare(b, "ja"));
+      document.getElementById("tsBillVendor").innerHTML = '<option value="">全業者</option>' + names.map(n => '<option value="' + ich2Esc(n) + '">' + ich2Esc(n || "(業者なし)") + '</option>').join("");
+      st.textContent = "";
+      tsBillRender();
+    } catch (e) { st.textContent = "読み込めませんでした: " + e.message; }
+  }
+  function tsBillRender() {
+    const body = document.getElementById("tsBillBody");
+    const m = Number(document.getElementById("tsBillMonth").value) || 0, ven = document.getElementById("tsBillVendor").value, stt = document.getElementById("tsBillState").value;
+    const paid = o => String(o.get("請求済") || "").trim() === "済";
+    const list = tsBillRows.filter(o => tsbMonthOf(o) === m && (!ven || String(o.get("業者") || "").trim() === ven) && (stt === "" || (stt === "yes") === paid(o)));
+    document.getElementById("tsBillTerm").textContent = m ? "締め " + tsbEom(m, 0) + " → 支払期限 " + tsbEom(m, 1) : "";
+    const groups = new Map();
+    list.forEach(o => { const g = String(o.get("現場名") || "").trim() || "(現場名なし)"; if (!groups.has(g)) groups.set(g, []); groups.get(g).push(o); });
+    const nPaid = list.filter(paid).length, sum = list.reduce((a, o) => a + tsbPrice(o), 0);
+    document.getElementById("tsBillSub").textContent = list.length + "件 / 請求済 " + nPaid + " / 未請求 " + (list.length - nPaid) + (sum ? " / 価格計 " + sum.toLocaleString() : "");
+    let h = '<table class="tsb"><colgroup><col class="c-chk"><col class="c-no"><col class="c-hin"><col class="c-nou"><col class="c-ven"><col class="c-pr"><col class="c-st"></colgroup>';
+    h += '<tr class="tsb-grp"><td><input type="checkbox" data-all="1"' + (list.length && nPaid === list.length ? " checked" : "") + '></td><td colspan="6">表示中すべて(' + list.length + '件)を一括でチェック</td></tr>';
+    [...groups.entries()].forEach(([g, os]) => {
+      const gp = os.filter(paid).length, gs = os.reduce((a, o) => a + tsbPrice(o), 0);
+      h += '<tr class="tsb-grp"><td><input type="checkbox" data-grp="' + ich2Esc(g) + '"' + (gp === os.length ? " checked" : "") + '></td><td colspan="4" title="' + ich2Esc(g) + '">' + ich2Esc(g) + '</td><td class="r">' + (gs ? gs.toLocaleString() : "") + '</td><td>' + gp + "/" + os.length + '</td></tr>';
+      os.forEach(o => {
+        const pd = paid(o);
+        h += '<tr class="' + (pd ? "tsb-paid" : "") + '"><td><input type="checkbox" data-key="' + ich2Esc(o.key) + '"' + (pd ? " checked" : "") + '></td><td>' + ich2Esc(o.get("製造番号")) + '</td><td title="' + ich2Esc(o.get("品名")) + '">' + ich2Esc(o.get("品名")) + '</td><td title="' + ich2Esc(ich2FullDate(o.get("完成納品"))) + '">' + ich2Esc(formatDateShort(o.get("完成納品"))) + '</td><td>' + ich2Esc(o.get("業者")) + '</td><td class="r">' + (tsbPrice(o) ? tsbPrice(o).toLocaleString() : "") + '</td><td>' + (pd ? "請求済" : "未請求") + '</td></tr>';
+      });
+    });
+    body.innerHTML = list.length ? h + "</table>" : '<div style="padding:16px;color:#777">該当する製品はありません</div>';
+    body._list = list; body._groups = groups;
+  }
+  async function tsBillSave(os, on) {
+    const st = document.getElementById("tsBillStatus");
+    const todo = os.filter(o => (String(o.get("請求済") || "").trim() === "済") !== on);
+    if (!todo.length) return;
+    st.textContent = "保存中...";
+    try {
+      await tsPost({ type: "tosouBilling", value: on ? "済" : "", items: todo.map(o => ({ tab: o.tab, rowIndex: o.rowIndex, seizouBangou: o.get("製造番号"), sheet: o.arch ? "塗装_過去" : undefined })) });
+      todo.forEach(o => o.set("請求済", on ? "済" : ""));
+      if (todo.some(o => o.arch)) tsArchCache = null;   // 次に開いたとき読み直す
+      st.textContent = "保存しました(" + todo.length + "件)";
+    } catch (e) { st.textContent = "失敗: " + e.message; }
+    tsBillRender();
+  }
+  (function () {
+    const body = document.getElementById("tsBillBody");
+    body.addEventListener("change", e => {
+      const t = e.target; if (!(t instanceof HTMLInputElement)) return;
+      const list = body._list || [];
+      if (t.dataset.all) tsBillSave(list, t.checked);
+      else if (t.dataset.grp) tsBillSave(body._groups.get(t.dataset.grp) || [], t.checked);
+      else if (t.dataset.key) tsBillSave(list.filter(o => o.key === t.dataset.key), t.checked);
+    });
+    ["tsBillMonth", "tsBillVendor", "tsBillState"].forEach(id => document.getElementById(id).addEventListener("change", tsBillRender));
+    const ov = document.getElementById("tsBillOverlay"); let down = false;
+    ov.addEventListener("mousedown", e => { down = e.target === ov; });
+    ov.addEventListener("click", e => { if (e.target === ov && down) ov.hidden = true; });
+    document.getElementById("tsBillCloseBtn").addEventListener("click", () => { ov.hidden = true; });
+  })();
 
   async function tsDoneClick(p) {
     if (p.sel.size === 0) return;
