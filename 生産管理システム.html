@@ -2595,8 +2595,11 @@
   document.getElementById("ich2EditDelBtn").addEventListener("click", ich2DeleteRow);
   document.getElementById("ich2EditSaveBtn").addEventListener("click", ich2SaveEditModal);
   document.getElementById("ich2EditCancelBtn").addEventListener("click", ich2CloseEditModal);
+  // 外側の暗い所を押したときだけ閉じる(入力欄の文字をドラッグで選んで、外側でマウスを離したときに閉じてしまわないよう、押し始めた場所も確かめる)
+  let ich2EditDownOnBg = false;
+  document.getElementById("ich2EditOverlay").addEventListener("mousedown", (e) => { ich2EditDownOnBg = (e.target.id === "ich2EditOverlay"); });
   document.getElementById("ich2EditOverlay").addEventListener("click", (e) => {
-    if (e.target.id === "ich2EditOverlay") ich2CloseEditModal();
+    if (e.target.id === "ich2EditOverlay" && ich2EditDownOnBg) ich2CloseEditModal();
   });
 
   // 出荷済み表示から保存するときは、「出荷済みシートの行」だと分かる印と、行を特定する現場名・品名を付ける
@@ -3902,7 +3905,9 @@
     });
     document.getElementById("skkSearchInput").addEventListener("input", (e) => { skkQuery = e.target.value.trim(); skkRenderAll(); });
     document.getElementById("skkNewBtn").addEventListener("click", () => skkOpenModal(null));
-    document.getElementById("skkModalBackdrop").addEventListener("click", (e) => { if (e.target.id === "skkModalBackdrop") skkCloseModal(); });
+    let skkDownOnBg = false;
+    document.getElementById("skkModalBackdrop").addEventListener("mousedown", (e) => { skkDownOnBg = (e.target.id === "skkModalBackdrop"); });
+    document.getElementById("skkModalBackdrop").addEventListener("click", (e) => { if (e.target.id === "skkModalBackdrop" && skkDownOnBg) skkCloseModal(); });
     document.getElementById("skkModalSaveBtn").addEventListener("click", skkSave);
     document.getElementById("skkPrintBtn").addEventListener("click", skkPrintSchedule);
     document.getElementById("skkSheetPrintBtn").addEventListener("click", skkPrintSchedule);
