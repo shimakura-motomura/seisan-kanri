@@ -473,7 +473,6 @@
   .ich2-tabular { font-variant-numeric: tabular-nums; }
   .ich2-muted { color: var(--color-neutral-700); }
   #ich2Tbody.arch .ich2-prog-cell { cursor: default; }
-  table.ts3-arch input[type=checkbox] { pointer-events: none; }
   table.ts3-arch td { cursor: default !important; }
   .ich2-no-btn { display: flex; align-items: center; gap: 4px; width: 100%; padding: 0; font: inherit; font-size: inherit; font-weight: 700; white-space: nowrap; text-align: left; cursor: pointer; background: transparent; border: 0; color: var(--color-text); text-decoration: underline; text-decoration-color: var(--color-accent); text-underline-offset: 2px; }
   .ich2-no-btn:hover { color: var(--color-accent-700); }
@@ -1615,6 +1614,22 @@
     if (new Date(y, m2 - 1, d2) < start) y2++;
     return head + "-" + y2 + "/" + m2 + "/" + d2;
   }
+  // マウスを載せたときに出す、年つきの日付(yyyy/mm/dd)。期間は「yyyy/mm/dd-yyyy/mm/dd」、***は「対象外」
+  function ich2Pad(s) { return String(s == null ? "" : s).replace(/(\d{4})\/(\d{1,2})\/(\d{1,2})/g, (m, y, mo, d) => y + "/" + mo.padStart(2, "0") + "/" + d.padStart(2, "0")); }
+  function ich2FullDate(raw, ref) {
+    const s = String(raw == null ? "" : raw).normalize("NFKC").trim();
+    if (!s) return "";
+    if (s === "***") return "対象外";
+    if (/^\d{1,2}\/\d{1,2}\s*[-~〜～－ー]/.test(s)) return ich2Pad(ich2RangeFull(s, ref));
+    const f = String(formatDateOnly(s) || "");
+    if (/^\d{4}\/\d{1,2}\/\d{1,2}/.test(f)) return ich2Pad(f);
+    if (/^\d{1,2}[\/\-]\d{1,2}$/.test(s)) return ich2Pad(ich2NormalizeDateInput(s));
+    return s;
+  }
+  function ich2DateTip(raw, ref, hint) {
+    const full = ich2FullDate(raw, ref);
+    return full ? (hint ? full + "\n" + hint : full) : String(hint || "").replace(/^\(|\)$/g, "");
+  }
   function ich2Cell(raw, ref) {
     const s = (raw || "").toString().trim();
     const re = s ? ich2RangeEnd(s, ref) : null;
@@ -1965,12 +1980,12 @@
         '<tr style="--rowbg:' + (checked ? "var(--color-accent-100)" : "var(--color-bg)") + ';">' +
         '<td class="ich2-sticky-col center" style="left:0;"><input type="checkbox" class="ich2-row-check" data-key="'+ich2Esc(key)+'" '+(checked?"checked":"")+' style="width:13px;height:13px;accent-color:var(--color-accent);"></td>' +
         '<td class="ich2-sticky-col" style="left:24px;">'+(zumen ? '<button type="button" class="ich2-no-btn" onclick="openZumenPreview(\''+ich2Esc(zumen).replace(/'/g,"&#39;")+'\')" title="図面をプレビュー">'+ich2Esc(r[iSeizou])+'</button>' : ich2Esc(r[iSeizou]))+'</td>' +
-        '<td class="ich2-sticky-col ich2-tabular" style="left:84px;" title="'+ich2Esc(formatDateOnly(r[iNouki]))+'">'+ich2Esc(formatDateShort(r[iNouki]))+'</td>' +
+        '<td class="ich2-sticky-col ich2-tabular" style="left:84px;" title="'+ich2Esc(ich2FullDate(r[iNouki], ich2RowRef(r, progIdx)))+'">'+ich2Esc(formatDateShort(r[iNouki]))+'</td>' +
         '<td class="ich2-sticky-col ich2-nowrap ich2-ellipsis" style="left:122px;">'+ich2Esc(r[iGenba])+'</td>' +
         '<td class="ich2-sticky-col ich2-muted ich2-nowrap ich2-ellipsis grp-end" style="left:218px;">'+ich2Esc(r[iHinmei])+'</td>' +
         '<td class="ich2-nowrap ich2-tabular">'+ich2Esc(r[iSunpou])+'</td>' +
         '<td class="ich2-nowrap ich2-tabular ich2-ellipsis" title="'+ich2Esc(iZairyou !== -1 ? r[iZairyou] : "")+'">'+ich2Esc(iZairyou !== -1 ? r[iZairyou] : "")+'</td>' +
-        '<td class="ich2-nowrap ich2-tabular ich2-muted" title="'+ich2Esc(formatDateOnly(r[iJuken]))+'">'+ich2Esc(formatDateShort(r[iJuken]))+'</td>' +
+        '<td class="ich2-nowrap ich2-tabular ich2-muted" title="'+ich2Esc(ich2FullDate(r[iJuken], ich2RowRef(r, progIdx)))+'">'+ich2Esc(formatDateShort(r[iJuken]))+'</td>' +
         '<td class="center ich2-muted">'+ich2Esc(r[iKu])+'</td>' +
         (() => {
           const sc = ich2SeisakuColor(r[iSeisaku], r[iKu]);
@@ -1987,7 +2002,7 @@
           const raw = (ci >= 0 ? r[ci] : "") || "";
           const colName = ci >= 0 ? H[ci] : "搬入日";
           const wide = (ci === iNaiso || ci === iGaiso);
-          return '<td class="center ich2-prog-cell' + (colName === "搬入日" ? " banyu" : "") + '" data-seizou="'+ich2Esc(no)+'" data-col="'+ich2Esc(colName)+'" data-val="'+ich2Esc(ich2EditableDateValue(raw))+'" title="'+(ich2ArchMode ? ich2Esc(ich2RangeFull(raw, ich2RowRef(r, progIdx))) : "クリックして編集")+'">'+ich2Badge(ich2Cell(raw, ich2RowRef(r, progIdx)), wide)+'</td>';
+          return '<td class="center ich2-prog-cell' + (colName === "搬入日" ? " banyu" : "") + '" data-seizou="'+ich2Esc(no)+'" data-col="'+ich2Esc(colName)+'" data-val="'+ich2Esc(ich2EditableDateValue(raw))+'" title="'+ich2Esc(ich2DateTip(raw, ich2RowRef(r, progIdx), ich2ArchMode ? "" : "(クリックして編集)") || (ich2ArchMode ? "" : "クリックして編集"))+'">'+ich2Badge(ich2Cell(raw, ich2RowRef(r, progIdx)), wide)+'</td>';
         }).join("") +
         '<td class="ich2-nowrap">'+ich2Esc(r[iTantou])+'</td>' +
         '<td class="ich2-nowrap ich2-ellipsis ich2-tabular ich2-muted" title="'+ich2Esc(r[iMsunpou])+'">'+ich2Esc(r[iMsunpou])+'</td>' +
@@ -2065,10 +2080,10 @@
         '<td class="ich2-nowrap">'+ich2Esc(r[iKubun])+'</td>' +
         '<td class="ich2-nowrap ich2-ellipsis" title="'+ich2Esc(r[iModel])+'">'+ich2Esc(r[iModel])+'</td>' +
         '<td class="right ich2-tabular">'+ich2Esc(r[iQty])+'</td>' +
-        '<td class="center ich2-buy-edit" data-row="'+rowIndex+'" data-col="工場入" data-val="'+ich2Esc(r[iIn])+'" style="cursor:pointer;" title="クリックで日付を入力">'+ich2Badge(ich2Cell(r[iIn]))+'</td>' +
+        '<td class="center ich2-buy-edit" data-row="'+rowIndex+'" data-col="工場入" data-val="'+ich2Esc(r[iIn])+'" style="cursor:pointer;" title="'+ich2Esc(ich2DateTip(r[iIn], null, "(クリックで日付を入力)"))+'">'+ich2Badge(ich2Cell(r[iIn]))+'</td>' +
         '<td class="ich2-nowrap ich2-ellipsis">'+ich2Esc(r[iSite])+'</td>' +
-        '<td class="center ich2-buy-edit" data-row="'+rowIndex+'" data-col="'+ich2Esc(H[iOut])+'" data-val="'+ich2Esc(r[iOut])+'" style="cursor:pointer;" title="クリックで日付を入力">'+ich2Badge(ich2Cell(r[iOut]))+'</td>' +
-        '<td class="center ich2-buy-edit" data-row="'+rowIndex+'" data-col="'+ich2Esc(H[iDone])+'" data-val="'+ich2Esc(r[iDone])+'" style="cursor:pointer;" title="クリックで日付を入力">'+ich2Badge(ich2Cell(r[iDone]))+'</td>' +
+        '<td class="center ich2-buy-edit" data-row="'+rowIndex+'" data-col="'+ich2Esc(H[iOut])+'" data-val="'+ich2Esc(r[iOut])+'" style="cursor:pointer;" title="'+ich2Esc(ich2DateTip(r[iOut], null, "(クリックで日付を入力)"))+'">'+ich2Badge(ich2Cell(r[iOut]))+'</td>' +
+        '<td class="center ich2-buy-edit" data-row="'+rowIndex+'" data-col="'+ich2Esc(H[iDone])+'" data-val="'+ich2Esc(r[iDone])+'" style="cursor:pointer;" title="'+ich2Esc(ich2DateTip(r[iDone], null, "(クリックで日付を入力)"))+'">'+ich2Badge(ich2Cell(r[iDone]))+'</td>' +
         '<td class="ich2-nowrap ich2-ellipsis ich2-muted" title="'+ich2Esc(r[iNote])+'">'+ich2Esc(r[iNote])+'</td>' +
         '<td class="ich2-nowrap">'+ich2Esc(r[iPic])+'</td>' +
         '</tr>'
@@ -3071,11 +3086,11 @@
       tsEl(p, "search").addEventListener("input", e => { p.query = e.target.value.trim(); tsPaneChanged(p); });
       document.querySelectorAll("#" + p.ids.seg + " button").forEach(btn => btn.addEventListener("click", () => {
         document.querySelectorAll("#" + p.ids.seg + " button").forEach(b => b.classList.remove("active"));
-        btn.classList.add("active"); p.status = btn.dataset.status; tsPaneChanged(p);
+        btn.classList.add("active"); p.status = btn.dataset.status; p.sel.clear(); tsPaneChanged(p);
       }));
       tsEl(p, "sort").addEventListener("change", e => { p.sort = e.target.value; tsPaneChanged(p); });
       ["click", "dblclick", "mousedown", "keydown", "change"].forEach(ev => tsEl(p, "table").addEventListener(ev, e => {   // 「過去」は見るだけ(図面を開くボタンだけ有効)
-        if (p.status === "arch" && !(e.target.closest && e.target.closest(".ts3-no-link, a"))) e.stopPropagation();
+        if (p.status === "arch" && !(e.target.closest && e.target.closest(".ts3-no-link, a, .ts3-chk"))) e.stopPropagation();   // 「過去」は、図面ボタンと左のチェックだけ有効(チェックしてから下の「編集」で直す)
       }, true));
       tsEl(p, "vendor").addEventListener("change", e => { p.vendor = e.target.value; tsPaneChanged(p); });
       tsEl(p, "edit").addEventListener("click", () => tsEditClick(p));
@@ -3196,8 +3211,9 @@
       if (!tsArchCache) { stat.textContent = "過去を読み込み中..."; const [rows] = await ich2FetchSheetsRanges(["塗装_過去"]); tsArchCache = rows; }
       if (p.status !== "arch" || p.tabKey !== tab.key) return;
       const header = tsArchCache[0] || [], iTab = header.indexOf("タブ");
-      const rows = [header].concat(tsArchCache.slice(1).filter(r => r[iTab] === tab.key));
-      p.archAll = tsListFromRows(rows, tab).list; p.archTab = tab.key;
+      const rows = [header], rowNums = [1];
+      tsArchCache.forEach((r, i) => { if (i > 0 && r[iTab] === tab.key) { rows.push(r); rowNums.push(i + 1); } });
+      p.archAll = tsListFromRows(rows, tab, rowNums).list; p.archTab = tab.key;
     } catch (e) { stat.textContent = "過去を読み込めませんでした(塗装_過去シートがまだ無いかもしれません): " + e.message; return; }
     tsApply(p);
   }
@@ -3229,6 +3245,7 @@
   };
   const TS_DATE_LABELS = ["納期","検完","予定","持込","完成","納品"];
   let tsEditing = null;       // null=手動追加 / {rowIndex,...}=編集
+  let tsEditArch = false;     // true=「過去」(塗装_過去シート)の行を編集中
 
   // 終了済みの現場(納品の入力がなくても「完了」として扱う)
   const TS_FINISHED_SITES = ["丸の内3-2"];
@@ -3246,7 +3263,7 @@
     const [rows] = await ich2FetchSheetsRanges(["塗装_" + tab.key]);
     return tsListFromRows(rows, tab);
   }
-  function tsListFromRows(rows, tab) {
+  function tsListFromRows(rows, tab, rowNums) {   // rowNums=各行のシート上の行番号(過去シートの行を絞り込んで渡すとき用)
     const header = rows[0] || [];
     const iSeizou = header.indexOf("製造番号"), iGenba = header.indexOf("現場名"), iHinmei = header.indexOf("品名");
     let list = [];
@@ -3260,7 +3277,8 @@
       }
       if (/^[（(]?記入例/.test(String(r[header.indexOf("備考")] || ""))) return;   // シート2行目の「記入例」行は除く
       const over = {};
-      list.push({ rowIndex: k + 1, tab: tab.key, key: tab.key + ":" + (k + 1), set: (n, v) => { over[n] = v; }, get: name => {
+      const rn = rowNums ? rowNums[k] : k + 1;
+      list.push({ rowIndex: rn, tab: tab.key, key: tab.key + ":" + rn, set: (n, v) => { over[n] = v; }, get: name => {
         if (name in over) return over[name];
         let c = header.indexOf(name);
         if (c === -1 && name === "完成納品") c = header.findIndex(h => String(h).includes("納品"));   // シートの見出しが「完成/納品日」でも読めるように
@@ -3416,6 +3434,10 @@
           tsSetCard(td, label, v);
           td.addEventListener("click", () => tsStartInline(td, o, label));
         } else if (compact && label !== "製造番号") td.title = td.textContent;
+        if (TS_DATE_LABELS.includes(label)) {   // 日付は、マウスを載せると年つき(yyyy/mm/dd)で出す
+          const tip = ich2DateTip(v, null, TS_INLINE[label] && p.status !== "arch" ? "(クリックで入力)" : "");
+          if (tip) td.title = tip;
+        }
         tr.appendChild(td);
       });
       tbody.appendChild(tr);
@@ -3493,7 +3515,7 @@
       const n = p.sel.size, off = p.tabKey === TS_SCHEDULE_KEY || p.tabKey === TS_PAINT_KEY;
       tsEl(p, "cnt").textContent = off ? (p.tabKey === TS_PAINT_KEY ? "塗料在庫" : "カレンダー") : (n === 0 ? "未選択" : n + " 件を選択中");
       tsEl(p, "edit").disabled = off || n !== 1;
-      tsEl(p, "done").disabled = off || n === 0;
+      tsEl(p, "done").disabled = off || n === 0 || p.status === "arch";   // 「過去」では、まとめて完了にはできない(編集だけ)
       tsEl(p, "add").disabled = false;
     });
   }
@@ -3501,10 +3523,13 @@
   function tsEditClick(p) {
     if (p.sel.size !== 1) { alert("編集は1件だけ選択してください。"); return; }
     const key = [...p.sel][0];
-    const o = p.all.find(x => x.key === key);
+    const arch = p.status === "arch";
+    const o = (arch ? p.archAll : p.all).find(x => x.key === key);
+    tsEditArch = arch;
     if (o) tsOpenModal(o, p.tabKey);
   }
   function tsAddClick(p) {
+    tsEditArch = false;
     if (p.tabKey === TS_SCHEDULE_KEY) { tsOpenSched(null); return; }
     if (p.tabKey === TS_PAINT_KEY) { tsOpenPaint(); return; }
     tsOpenModal(null, p.tabKey);
@@ -3533,7 +3558,7 @@
     document.getElementById("tsEditTtl").textContent = o ? "塗装 編集" : "塗装 手動追加";
     document.getElementById("tsEditNo").textContent = o ? o.get("製造番号") : "新規";
     document.getElementById("tsEditSub").textContent = tab.key + (o ? " ／ " + [o.get("現場名"), o.get("品名")].filter(Boolean).join(" ／ ") : " ／ 通常は製作手配から自動登録されます。イレギュラー時のみ使用");
-    document.getElementById("tsEditHint").textContent = o ? "変更した項目だけが保存されます" : "内容は必須です(部位は空欄でも登録できます)";
+    document.getElementById("tsEditHint").textContent = o ? (tsEditArch ? "過去の行(塗装_過去シート)を直します。変更した項目だけが保存されます" : "変更した項目だけが保存されます") : "内容は必須です(部位は空欄でも登録できます)";
     document.getElementById("tsEditStatus").textContent = "";
     const fields = tsModalFields(tab);
     const dateLabels = ["納期","予定","持込","完成","納品"];
@@ -3580,7 +3605,8 @@
         const fields = {};
         inputs.forEach(i => { if (!i.disabled && i.value.trim() !== (i.dataset.orig || "").trim()) fields[i.dataset.col] = TS_DATE_COLS.includes(i.dataset.col) ? ich2NormalizeDateInput(i.value.trim()) : i.value.trim(); });
         if (!Object.keys(fields).length) { status.textContent = "変更がありません"; btn.disabled = false; return; }
-        await tsPost({ type: "updateTosou", tab: tab.key, rowIndex: tsEditing.rowIndex, seizouBangou: tsEditing.get("製造番号"), fields });
+        await tsPost({ type: "updateTosou", tab: tab.key, rowIndex: tsEditing.rowIndex, seizouBangou: tsEditing.get("製造番号"), fields, sheet: tsEditArch ? "塗装_過去" : undefined });
+        if (tsEditArch) tsArchCache = null;   // 過去の読み込み結果を捨てて、読み直す
       } else {
         if (!val["内容"]) { status.textContent = "内容は必須です"; btn.disabled = false; return; }
         await tsPost({
