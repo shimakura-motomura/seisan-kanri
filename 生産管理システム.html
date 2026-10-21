@@ -68,18 +68,21 @@
   .grid2 { display: grid; grid-template-columns: 1fr 1fr; gap: 0 12px; }
   .hint { font-size: 12px; color: #b00020; margin: -4px 0 16px; }
 
-  #dropZone {
-    border: 2px dashed #ccc; border-radius: 0px; padding: 30px 20px; text-align: center;
-    color: #888; font-size: 14px; cursor: pointer;
-  }
-  #dropZone.dragover { border-color: var(--color-accent); background: #F0F4F7; color: var(--color-accent); }
-  #dropZone .sub { font-size: 12px; margin-top: 6px; color: #aaa; }
   #ocrStatus { font-size: 13px; color: #888; margin-top: 10px; display: none; }
-  #skForm { display: none; }
+  #skForm { display: none; position: fixed; inset: 0; z-index: 600; background: rgba(32,30,29,0.55); overflow-y: auto; padding: 24px 16px; box-sizing: border-box; }
+  #skForm .sk-panel { width: min(980px, 100%); margin: 0 auto; background: var(--color-bg); }
+  .sk-entry { display: flex; gap: 12px; align-items: stretch; margin-bottom: 2px; }
+  .sk-entry .primary-action { flex: 1 1 auto; margin-bottom: 0; }
+  .sk-entry .primary-action.dragover { background: var(--color-accent-700); border-color: var(--color-accent-700); outline: 3px dashed #fff; outline-offset: -10px; }
+  .sk-entry .primary-action.busy { opacity: .55; pointer-events: none; }
+  .sk-entry-btns { display: flex; flex-direction: column; gap: 12px; width: 150px; flex: 0 0 150px; }
+  .sk-entry-btns button { flex: 1 1 0; border: 2px solid var(--color-text); background: var(--color-bg); font: inherit; font-weight: 800; font-size: 18px; cursor: pointer; }
+  .sk-entry-btns button:hover { background: var(--color-neutral-200); }
+  #skHomeMsg { display: none; margin: 10px 0 0; font-size: 14px; }
+  #skHomeMsg.success { display: block; color: #0F6E56; }
+  #skHomeMsg.error { display: block; color: #b00020; }
   .sk-wrap { width: min(980px, 100%); margin: 10px auto 0; }
   .sk-top { margin-bottom: 10px; }
-  .sk-top #dropZone { padding: 8px 20px; background: var(--color-bg); }
-  .sk-top #dropZone .sub { margin-top: 2px; }
   .sk-panel { box-shadow: 0 1px 6px rgba(0,0,0,0.18); }
   .sk-panel .ich2-edit-body { overflow: visible; gap: 10px; padding: 12px 20px; }
   .sk-panel .ich2-edit-head { padding: 8px 20px; }
@@ -795,16 +798,24 @@
       <span class="rule"></span>
     </div>
 
-    <a class="primary-action" href="#" onclick="nav('seisaku');return false;">
-      <span class="primary-action-content">
-        <svg width="44" height="44" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="square" stroke-linejoin="miter" aria-hidden="true"><rect x="8" y="2" width="8" height="4"></rect><path d="M16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2"></path><path d="M8 11h8"></path><path d="M8 15h8"></path><path d="M8 19h5"></path></svg>
-        <span class="primary-action-text">
-          <span class="primary-action-title">製作手配</span>
-          <span class="primary-action-desc">手配の新規登録・進捗の入力</span>
+    <div class="sk-entry">
+      <div class="primary-action" id="dropZone" title="図面PDFをここにドラッグ(クリックでファイルを選ぶこともできます)">
+        <span class="primary-action-content">
+          <svg width="44" height="44" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="square" stroke-linejoin="miter" aria-hidden="true"><rect x="8" y="2" width="8" height="4"></rect><path d="M16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2"></path><path d="M8 11h8"></path><path d="M8 15h8"></path><path d="M8 19h5"></path></svg>
+          <span class="primary-action-text">
+            <span class="primary-action-title">製作手配</span>
+            <span class="primary-action-desc">図面PDFをここにドラッグ&ドロップ(クリックでファイル選択)</span>
+          </span>
         </span>
-      </span>
-      <svg width="34" height="34" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="square" stroke-linejoin="miter" aria-hidden="true"><path d="M5 12h14"></path><path d="m13 6 6 6-6 6"></path></svg>
-    </a>
+      </div>
+      <div class="sk-entry-btns">
+        <button type="button" id="skManualBtn" onclick="document.getElementById('skForm').style.display='block';">手入力</button>
+        <button type="button" id="bkOpenBtn">買入品</button>
+      </div>
+      <input type="file" id="fileInput" accept="application/pdf" style="display:none;">
+    </div>
+    <div id="ocrStatus">図面を読み取り中です。少々お待ちください...</div>
+    <div id="skHomeMsg"></div>
 
     <div class="menu-grid">
       <a class="menu-item" href="#" onclick="nav('ichiran');return false;">
@@ -871,30 +882,8 @@
     </footer>
   </div>
 
-  <!-- ============ 製作手配 ============ -->
-  <div class="screen" id="screen-seisaku">
-    <header class="ich2-topbar">
-      <div class="ich2-brand">生産管理システム</div>
-      <nav class="ich2-topnav">
-        <a href="#" onclick="nav('home');return false;">トップ</a>
-        <a href="#" onclick="nav('ichiran');return false;">一覧</a>
-        <a href="#" onclick="nav('tosou');return false;">塗装</a>
-        <a href="#" onclick="nav('shukka');return false;">出荷</a>
-      </nav>
-    </header>
-    <div class="sk-wrap">
-    <div class="sk-top">
-      <div id="dropZone">
-        図面PDFをここにドラッグ&ドロップ (またはクリックしてファイルを選択)
-        <div class="sub">読み取り結果は仮入力されます。内容を確認・修正してください。</div>
-      </div>
-      <input type="file" id="fileInput" accept="application/pdf" style="display:none;">
-      <button type="button" id="skManualBtn" style="margin-top:8px;padding:8px 16px;background:#fff;border:1px solid var(--color-text);border-radius:0;font-size:13px;cursor:pointer;" onclick="document.getElementById('skForm').style.display='block';this.style.display='none';">PDFなしで手入力する</button>
-      <button type="button" id="bkOpenBtn" style="margin-top:8px;margin-left:8px;padding:8px 16px;background:#fff;border:1px solid var(--color-text);border-radius:0;font-size:13px;cursor:pointer;">買入品を登録する</button>
-      <div id="ocrStatus">読み取り中です。少々お待ちください...</div>
-    </div>
-
-    <div id="skForm"><div class="ich2-edit-panel sk-panel">
+  <!-- ============ 製作手配 登録フォーム(ポップアップ。トップの図面ドロップ/手入力で開く) ============ -->
+  <div id="skForm"><div class="ich2-edit-panel sk-panel">
       <div class="ich2-edit-head"><span class="ttl">製作手配 登録</span><span class="no">新規</span><span class="sub">緑色の項目は図面からの仮入力です。内容を確認してください</span></div>
       <div class="ich2-edit-body">
         <div><div class="ich2-edit-sec-h"><b>基本情報</b><label style="font-size:11px;display:flex;align-items:center;gap:4px;cursor:pointer;"><input type="checkbox" id="f_coiluse" style="accent-color:var(--color-accent);">コイル使用(コイル成形を含む場合)</label><i></i></div>
@@ -911,8 +900,6 @@
         <button type="button" class="ich2-edit-save" id="skRegisterBtn">登録する</button>
       </div>
     </div></div>
-    </div>
-  </div>
 
   <!-- ============ 一覧(Claude Code版デザインを統合) ============ -->
   <div class="screen" id="screen-ichiran">
@@ -1531,7 +1518,6 @@
   function nav(screen) {
     document.querySelectorAll(".screen").forEach(s => s.classList.remove("active"));
     document.getElementById("screen-" + screen).classList.add("active");
-    if (screen === "seisaku" && !initialized.seisaku) { initSeisaku(); initialized.seisaku = true; }
     if (screen === "tosou" && !initialized.tosou) { initTosou(); initialized.tosou = true; }
     else if (screen === "tosou" && typeof tsApply === "function") {   // 塗装に戻ってきたとき、納品を入れた行を「未完」から外す(再読み込みはしない)
       [TSP.main, TSP.sub].forEach(p => { if (p.all && p.all.length && p.tabKey && p.tabKey !== TS_SCHEDULE_KEY && p.tabKey !== TS_PAINT_KEY) tsApply(p); });
@@ -2821,8 +2807,6 @@
   function skCancel() {
     skResetForm();
     document.getElementById("skForm").style.display = "none";
-    document.getElementById("dropZone").style.display = "block";
-    document.getElementById("skManualBtn").style.display = "";
     document.getElementById("ocrStatus").style.display = "none";
   }
 
@@ -2847,7 +2831,7 @@
     const dropZone = document.getElementById("dropZone");
     const ocrStatus = document.getElementById("ocrStatus");
     ocrStatus.style.display = "block";
-    dropZone.style.display = "none";
+    dropZone.classList.add("busy");
     try {
       const base64 = await fileToBase64(file);
       const res = await fetch(GAS_URL, { method: "POST", body: JSON.stringify({ type: "ocr", filename: file.name, base64 }) });
@@ -2855,11 +2839,11 @@
       const data = await res.json();
       if (data.result !== "success") throw new Error(data.message || data.error || "読み取りに失敗しました");
       fillFormFromOcr(data.fields || {}, data.pdfUrl);
-      ocrStatus.style.display = "none";
+      ocrStatus.style.display = "none"; dropZone.classList.remove("busy");
+      document.getElementById("skHomeMsg").className = "";
       document.getElementById("skForm").style.display = "block";
     } catch (e) {
-      ocrStatus.style.display = "none";
-      dropZone.style.display = "block";
+      ocrStatus.style.display = "none"; dropZone.classList.remove("busy");
       alert("読み取りに失敗しました。もう一度お試しいただくか、手入力で進めてください。\n詳細: " + e.message);
       document.getElementById("skForm").style.display = "block";
     }
@@ -3017,8 +3001,9 @@
         + (failNums.length ? " ※次の番号は一覧に登録できませんでした。もう一度、その番号だけ登録してください:" + failNums.join("、") : "")
         + (tosouFail ? " ※塗装画面への登録に失敗したものが " + tosouFail + "件あります。塗装画面で手動追加してください。" : "");
       skResetForm();
-      resultMsg.textContent = doneMsg;
-      resultMsg.className = "success"; resultMsg.style.display = "block";
+      document.getElementById("skForm").style.display = "none";   // 登録できたら、ポップアップを閉じてトップに戻る
+      const hm = document.getElementById("skHomeMsg");
+      hm.textContent = doneMsg; hm.className = (failNums.length || tosouFail) ? "error" : "success";
       btn.textContent = "登録する"; btn.disabled = false;
     } catch (e) {
       resultMsg.textContent = "登録に失敗しました。詳細: " + e.message;
@@ -3138,6 +3123,7 @@
   }
 
   document.getElementById("bkOpenBtn").addEventListener("click", () => bkOpen(false));
+  if (!initialized.seisaku) { initSeisaku(); initialized.seisaku = true; }   // 製作手配は、トップ画面の図面ドロップ欄から使うので、最初に準備しておく
   document.getElementById("ich2BuyEditBtn").addEventListener("click", bkOpenEdit);
   document.getElementById("bkCancelBtn").addEventListener("click", () => { document.getElementById("bkOverlay").hidden = true; });
   document.getElementById("bkSaveBtn").addEventListener("click", bkSave);
