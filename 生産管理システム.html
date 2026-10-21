@@ -2889,18 +2889,55 @@
     autoCheckCoilUse();
   }
 
+  // 続き番号(S-37668～71 / S-35396,7)を、1件ずつの番号に分ける。分けられない書き方は、そのまま1件
+  const SK_MARKS = "①②③④⑤⑥⑦⑧⑨⑩⑪⑫⑬⑭⑮⑯⑰⑱⑲⑳";
+  function skExpandNumbers(raw) {
+    const s0 = String(raw || "").trim().replace(/[〜~∼－ー]/g, "～").replace(/[、，]/g, ",").replace(/\s+/g, "");
+    let m = s0.match(/^([A-Za-z]+-?)(\d+)～(?:[A-Za-z]+-?)?(\d+)$/);   // S-37668～71 / S-37668～37671
+    if (m) {
+      const pre = m[1], base = m[2], tail = m[3];
+      if (tail.length > base.length) return [raw];
+      const endStr = base.slice(0, base.length - tail.length) + tail;
+      const a = Number(base), b = Number(endStr);
+      if (!(b > a)) return [raw];
+      if (b - a + 1 > SK_MARKS.length) return null;   // 21件以上は、①②…の印が足りない
+      const out = []; for (let n = a; n <= b; n++) out.push(pre + String(n).padStart(base.length, "0"));
+      return out;
+    }
+    m = s0.match(/^([A-Za-z]+-?)(\d+)((?:,\d+)+)$/);   // S-35396,7 / S-35396,7,8
+    if (m) {
+      const pre = m[1], base = m[2], out = [pre + base];
+      for (const t of m[3].slice(1).split(",")) {
+        if (t.length > base.length) return [raw];
+        out.push(pre + base.slice(0, base.length - t.length) + t);
+      }
+      if (out.length > SK_MARKS.length) return null;
+      return out;
+    }
+    return [raw];
+  }
+
   async function submitSeisaku() {
-    const seizouBangou = document.getElementById("f_seizouBangou").value.trim();
-    if (!seizouBangou) { alert("製造番号を入力してください"); return; }
+    const seizouRaw = document.getElementById("f_seizouBangou").value.trim();
+    if (!seizouRaw) { alert("製造番号を入力してください"); return; }
+    const nums = skExpandNumbers(seizouRaw);
+    if (!nums) { alert("続き番号が20件を超えています。20件までに分けて登録してください。"); return; }
+    const split = nums.length > 1;
+    const genba0 = document.getElementById("f_genbaMei").value.trim();
+    const genbaOf = i => (split && genba0 && !/[①-⑳]$/.test(genba0)) ? genba0 + SK_MARKS[i] : genba0;
+    if (split) {
+      const lines = nums.map((n, i) => n + "  " + genbaOf(i)).join("\n");
+      if (!confirm("「" + seizouRaw + "」を " + nums.length + "件に分けて登録します。\n(現場名に①②…を付けます。塗装も、各番号に同じ内容で登録します)\n\n" + lines + "\n\nよろしいですか？")) return;
+    }
     const btn = document.getElementById("skRegisterBtn");
     const resultMsg = document.getElementById("skResultMsg");
     btn.disabled = true; btn.textContent = "登録中...";
     const tosou = skCollect();
 
-    const payload = {
-      type: "addProduct", seizouBangou,
+    const payloadBase = {
+      type: "addProduct", seizouBangou: nums[0],
       nouki: document.getElementById("f_nouki").value.trim(),
-      genbaMei: document.getElementById("f_genbaMei").value.trim(),
+      genbaMei: genba0,
       hinmei: document.getElementById("f_hinmei").value.trim(),
       sunpou: document.getElementById("f_sunpou").value.trim(),
       jukenKansei: document.getElementById("f_jukenKansei").value.trim(),
@@ -2931,26 +2968,37 @@
     };
 
     try {
-      const res = await fetch(GAS_URL, { method: "POST", body: JSON.stringify(payload) });
-      if (!res.ok) throw new Error("通信エラー: " + res.status);
-
-      let tosouFail = 0;
-      for (const item of tosou.items) {
+      let tosouFail = 0, tosouOk = 0; const failNums = [];
+      for (let i = 0; i < nums.length; i++) {
+        const seizouBangou = nums[i];
+        const payload = Object.assign({}, payloadBase, { seizouBangou, genbaMei: genbaOf(i) });
         try {
-          const r2 = await fetch(GAS_URL, {
-            method: "POST",
-            body: JSON.stringify({
-              type: "addTosou", tab: item.tab, seizouBangou,
-              nouki: payload.nouki, genbaMei: payload.genbaMei, hinmei: payload.hinmei, sunpou: payload.sunpou,
-              bui: item.bui, naiyou: String(item.naiyou || "").replace(/ブラスト/g, "ﾌﾞﾗｽﾄ"), vol: item.vol || "",
-              zairyou: item.zairyou || "", kakaku: "", gyousha: item.gyousha || "", hankomiYotei: "", kanseiNouhin: "", biko: "",
-            }),
-          });
-          if (!r2.ok) tosouFail++;
-        } catch (e2) { tosouFail++; }
+          const res = await fetch(GAS_URL, { method: "POST", body: JSON.stringify(payload) });
+          if (!res.ok) throw new Error("通信エラー: " + res.status);
+        } catch (e1) {
+          if (nums.length === 1) throw e1;
+          failNums.push(seizouBangou); continue;   // この番号は登録できなかった。次の番号へ
+        }
+        for (const item of tosou.items) {
+          try {
+            const r2 = await fetch(GAS_URL, {
+              method: "POST",
+              body: JSON.stringify({
+                type: "addTosou", tab: item.tab, seizouBangou,
+                nouki: payload.nouki, genbaMei: payload.genbaMei, hinmei: payload.hinmei, sunpou: payload.sunpou,
+                bui: item.bui, naiyou: String(item.naiyou || "").replace(/ブラスト/g, "ﾌﾞﾗｽﾄ"), vol: item.vol || "",
+                zairyou: item.zairyou || "", kakaku: "", gyousha: item.gyousha || "", hankomiYotei: "", kanseiNouhin: "", biko: "",
+              }),
+            });
+            if (!r2.ok) tosouFail++; else tosouOk++;
+          } catch (e2) { tosouFail++; }
+        }
       }
-
-      const doneMsg = "登録しました:" + seizouBangou + "(塗装画面にも " + (tosou.items.length - tosouFail) + "件登録)" + (tosouFail ? " ※" + tosouFail + "件は塗装画面への登録に失敗しました。塗装画面で手動追加してください" : "");
+      if (failNums.length === nums.length) throw new Error("どの番号も登録できませんでした");
+      const regNums = nums.filter(n => !failNums.includes(n));
+      const doneMsg = "登録しました:" + (split ? regNums.join("、") + "(" + regNums.length + "件)" : nums[0]) + "(塗装画面にも " + tosouOk + "件登録)"
+        + (failNums.length ? " ※次の番号は一覧に登録できませんでした。もう一度、その番号だけ登録してください:" + failNums.join("、") : "")
+        + (tosouFail ? " ※塗装画面への登録に失敗したものが " + tosouFail + "件あります。塗装画面で手動追加してください。" : "");
       skResetForm();
       resultMsg.textContent = doneMsg;
       resultMsg.className = "success"; resultMsg.style.display = "block";
