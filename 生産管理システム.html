@@ -2917,6 +2917,18 @@
     return [raw];
   }
 
+  // 型番の続き(TWH-H-8-01～04)を、1件ずつの型番に分ける(0の桁数はそのまま)。範囲でなければ null
+  function skExpandModel(raw) {
+    const s0 = String(raw || "").trim().replace(/[〜~∼－ー]/g, "～");
+    const m = s0.match(/^(.*?)(\d+)～(\d+)$/);
+    if (!m) return null;
+    const pre = m[1], base = m[2], tail = m[3];
+    if (tail.length > base.length) return null;
+    const a = Number(base), b = Number(base.slice(0, base.length - tail.length) + tail);
+    if (!(b > a) || b - a + 1 > SK_MARKS.length) return null;
+    const out = []; for (let n = a; n <= b; n++) out.push(pre + String(n).padStart(base.length, "0"));
+    return out;
+  }
   async function submitSeisaku() {
     const seizouRaw = document.getElementById("f_seizouBangou").value.trim();
     if (!seizouRaw) { alert("製造番号を入力してください"); return; }
@@ -2925,9 +2937,14 @@
     const split = nums.length > 1;
     const genba0 = document.getElementById("f_genbaMei").value.trim();
     const genbaOf = i => (split && genba0 && !/[①-⑳]$/.test(genba0)) ? genba0 + SK_MARKS[i] : genba0;
+    const model0 = document.getElementById("f_katabangou").value.trim();
+    const modelList = split ? skExpandModel(model0) : null;
+    const modelSplit = !!(modelList && modelList.length === nums.length);   // 型番の続きが、製造番号の件数と同じときだけ分ける
+    const modelOf = i => modelSplit ? modelList[i] : model0;
     if (split) {
-      const lines = nums.map((n, i) => n + "  " + genbaOf(i)).join("\n");
-      if (!confirm("「" + seizouRaw + "」を " + nums.length + "件に分けて登録します。\n(現場名に①②…を付けます。塗装も、各番号に同じ内容で登録します)\n\n" + lines + "\n\nよろしいですか？")) return;
+      const lines = nums.map((n, i) => n + "  " + genbaOf(i) + (model0 ? "  型番:" + modelOf(i) : "")).join("\n");
+      const warn = (modelList && !modelSplit) ? "\n※型番「" + model0 + "」は " + modelList.length + "件分で、製造番号の " + nums.length + "件と合わないため、分けずにそのまま全件に入れます。\n" : "";
+      if (!confirm("「" + seizouRaw + "」を " + nums.length + "件に分けて登録します。\n(現場名に①②…を付けます。塗装も、各番号に同じ内容で登録します)\n\n" + lines + "\n" + warn + "\nよろしいですか？")) return;
     }
     const btn = document.getElementById("skRegisterBtn");
     const resultMsg = document.getElementById("skResultMsg");
@@ -2971,7 +2988,7 @@
       let tosouFail = 0, tosouOk = 0; const failNums = [];
       for (let i = 0; i < nums.length; i++) {
         const seizouBangou = nums[i];
-        const payload = Object.assign({}, payloadBase, { seizouBangou, genbaMei: genbaOf(i) });
+        const payload = Object.assign({}, payloadBase, { seizouBangou, genbaMei: genbaOf(i), katabangou: modelOf(i) });
         try {
           const res = await fetch(GAS_URL, { method: "POST", body: JSON.stringify(payload) });
           if (!res.ok) throw new Error("通信エラー: " + res.status);
