@@ -3463,6 +3463,17 @@
     return v == null ? "" : v;
   }
 
+  // メッキの形状分類:品名で判定(ヘッダ→熱交→タンク・貯湯槽→槽)。決まらないときは寸法(φ→タンク / □や縦×横×高さ→角槽)
+  function tsMekkiShape(o) {
+    const hin = String(o.get("品名") || "").normalize("NFKC"), sun = String(o.get("寸法") || "").normalize("NFKC").trim();
+    if (/ヘッダ/.test(hin)) return "ﾍｯﾀﾞ";
+    if (/熱交/.test(hin)) return "熱交";
+    if (/タンク|貯湯槽/.test(hin)) return "ﾀﾝｸ";
+    if (/槽/.test(hin)) return "角槽";
+    if (/^[φΦØ∅]/.test(sun)) return "ﾀﾝｸ";
+    if (/^□/.test(sun) || /\d\s*[×xX*]\s*\d+[^×xX*]*[×xX*]\s*\d/.test(sun)) return "角槽";
+    return "";
+  }
   function tsRenderTosouTable(table, tab, rowsList, opt) {
     const compact = !!opt.compact, p = opt.p, pane = p.name;
     const cols = TS_COLS[tab.key];
@@ -3507,6 +3518,10 @@
           } else td.textContent = v;
         } else if (label === "製作") {
           td.textContent = ich2SeisakuLabel(v);
+        } else if (label === "部位" && tab.key === "メッキ") {   // メッキの部位は、形状の分類を付けて表示(例:脚（ﾀﾝｸ）)。シートの値はそのまま
+          const sh = tsMekkiShape(o), bv = String(v == null ? "" : v).trim();
+          td.textContent = bv && sh && !/[（(]/.test(bv) ? bv + "（" + sh + "）" : bv;
+          td.title = td.textContent;
         } else if (label === "価格" || label === "工数㎡") {
           const pure = /^[¥￥\s]*[\d,]+(\.\d+)?\s*円?$/.test(String(v));   // 数字だけの価格だけ桁区切り(「真砂」「?」などの書き込みはそのまま)
           const n = pure ? parseFloat(String(v).replace(/[^0-9.]/g, "")) : NaN;
