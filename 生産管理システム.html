@@ -3353,12 +3353,13 @@
   }
   function tsListFromRows(rows, tab, rowNums, keyPrefix) {   // rowNums=各行のシート上の行番号 / keyPrefix=過去シートの行に付ける印(「過去:」)
     const header = rows[0] || [];
-    const iSeizou = header.indexOf("製造番号"), iGenba = header.indexOf("現場名"), iHinmei = header.indexOf("品名");
+    const iSeizou = header.indexOf("製造番号"), iGenba = header.indexOf("現場名"), iHinmei = header.indexOf("品名"), iNaiyou = header.indexOf("内容");
     let list = [];
     const seenRows = new Set();
     rows.forEach((r, k) => {
       if (k === 0) return;
-      if (!(r[iGenba] && r[iHinmei] && r[iSeizou] !== header[iSeizou])) return;
+      if (r[iSeizou] === header[iSeizou]) return;   // 見出しの繰り返し行は除く
+      if (keyPrefix ? !(r[iGenba] && r[iHinmei]) : !(r[iGenba] || r[iHinmei] || (iNaiyou !== -1 && r[iNaiyou]))) return;   // 未完側は、製品外(品名なし)の手動追加も表示する
       if (tab.key === "外装") {      // 外装は、全項目が同じ行(二重登録)を1行にまとめる
         const sig = r.map(x => String(x == null ? "" : x).trim()).join("\u0001");
         if (seenRows.has(sig)) return; seenRows.add(sig);
