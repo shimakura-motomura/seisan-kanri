@@ -1675,7 +1675,7 @@
     }
     if (!s) return { text: "—", bg: "var(--color-neutral-200)", fg: "var(--color-neutral-500)", bd: "var(--color-neutral-300)", dot: "var(--color-neutral-400)", fw: "400" };
     if (s === "***") return { text: "―", bg: "#dfeee4", fg: "#1e5c37", bd: "#2f7d4f", dot: "#2f7d4f", fw: "400" };
-    const d = new Date(s);
+    const d = new Date(/^\d{1,2}[\/\-]\d{1,2}$/.test(s) ? ich2NormalizeDateInput(s) : s);   // 年なし(12/15)は、近い年を補って判定(そのままだと2001年扱いで「済」になってしまう)
     const isPast = !isNaN(d.getTime()) && d.setHours(0,0,0,0) <= new Date().setHours(0,0,0,0);
     return isPast
       ? { text: formatDateShort(s), bg: "#dfeee4", fg: "#1e5c37", bd: "#2f7d4f", dot: "#2f7d4f", fw: "500" }
