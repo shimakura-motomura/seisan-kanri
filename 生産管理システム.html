@@ -1112,6 +1112,24 @@
           </div>
         </div>
       </div>
+
+      <!-- 複数をまとめて編集(進捗の日付・備考の追記) -->
+      <div class="ich2-edit-overlay" id="ich2BulkOverlay" hidden>
+        <div class="ich2-edit-panel" style="width:min(900px,100%);">
+          <div class="ich2-edit-head">
+            <span class="ttl">まとめて編集</span>
+            <span class="no" id="ich2BulkCount"></span>
+            <span class="sub" id="ich2BulkSub"></span>
+          </div>
+          <div class="ich2-edit-body" id="ich2BulkBody"></div>
+          <div class="ich2-edit-foot">
+            <span class="ich2-edit-hint">入れた項目だけが、選んだ全部の行に入ります。空欄の項目は変わりません</span>
+            <span class="ich2-edit-status" id="ich2BulkStatus"></span>
+            <button type="button" class="ich2-edit-cancel" id="ich2BulkCancelBtn">キャンセル</button>
+            <button type="button" class="ich2-edit-save" id="ich2BulkSaveBtn">保存</button>
+          </div>
+        </div>
+      </div>
     </div>
   </div>
 
@@ -2625,6 +2643,8 @@
   document.getElementById("ich2EditDelBtn").addEventListener("click", ich2DeleteRow);
   document.getElementById("ich2EditSaveBtn").addEventListener("click", ich2SaveEditModal);
   document.getElementById("ich2EditCancelBtn").addEventListener("click", ich2CloseEditModal);
+  document.getElementById("ich2BulkCancelBtn").addEventListener("click", () => { document.getElementById("ich2BulkOverlay").hidden = true; });
+  document.getElementById("ich2BulkSaveBtn").addEventListener("click", ich2SaveBulkModal);
   // 外側の暗い所を押したときだけ閉じる(入力欄の文字をドラッグで選んで、外側でマウスを離したときに閉じてしまわないよう、押し始めた場所も確かめる)
   let ich2EditDownOnBg = false;
   document.getElementById("ich2EditOverlay").addEventListener("mousedown", (e) => { ich2EditDownOnBg = (e.target.id === "ich2EditOverlay"); });
@@ -2656,14 +2676,72 @@
       document.getElementById("ich2BuyShukkaBtn").disabled = total === 0;
       document.getElementById("ich2BuyEditBtn").disabled = buyCount !== 1;   // 買入品をちょうど1件選んだときだけ編集できる
     }
-    document.getElementById("ich2SelbarEditBtn").disabled = makeKeys.length !== 1 || buyCount !== 0;
+    document.getElementById("ich2SelbarEditBtn").disabled = makeKeys.length === 0 || buyCount !== 0 || (makeKeys.length > 1 && ich2ArchMode);   // 2件以上は「まとめて編集」(出荷済み表示中は1件だけ)
   }
 
   // 下部バーの「編集」ボタン:製作品をちょうど1件選択しているときに、その製造番号の編集画面を開く
   function ich2SelbarEditClick() {
     const makeKeys = [...ich2Selected].filter(k => k.startsWith("make:"));
-    if (makeKeys.length !== 1) return;
-    ich2OpenEditModal(makeKeys[0].slice("make:".length));
+    if (makeKeys.length === 1) { ich2OpenEditModal(makeKeys[0].slice("make:".length)); return; }
+    if (makeKeys.length > 1 && !ich2ArchMode) ich2OpenBulkModal(makeKeys.map(k => k.slice("make:".length)));
+  }
+
+  // ===== まとめて編集(2件以上を選んで「編集」) =====
+  const ICH2_BULK_DATES = [["受注日","受注日"], ["製作日","製作日"], ["完成日","完成日"], ["内装日","内装日"], ["外装日","外装日"], ["出荷日","出荷日"]];
+  let ich2BulkNos = [];
+  function ich2OpenBulkModal(nos) {
+    ich2BulkNos = nos;
+    const iNo = ich2Header.indexOf("製造番号"), iG = ich2Header.indexOf("現場名");
+    const genbas = [...new Set(ich2All.filter(r => nos.includes(r[iNo])).map(r => r[iG]).filter(Boolean))];
+    document.getElementById("ich2BulkCount").textContent = nos.length + "件";
+    document.getElementById("ich2BulkSub").textContent = nos.join("、") + (genbas.length ? " ／ " + genbas.join("、") : "");
+    const dates = ICH2_BULK_DATES.map(([col, label]) => {
+      const id = "ich2bk_" + col;
+      return '<div class="ich2-edit-field"><label for="' + id + '">' + label + '</label><div class="ich2-edit-prog">' +
+        '<input type="text" id="' + id + '" placeholder="例 10/26">' +
+        '<label class="na" title="対象外"><input type="checkbox" id="' + id + '_na" onchange="document.getElementById(\'' + id + '\').disabled=this.checked;">―</label></div></div>';
+    }).join("");
+    document.getElementById("ich2BulkBody").innerHTML =
+      '<div><div class="ich2-edit-sec-h"><b>進捗</b><span>入れた日付で上書き /「―」にチェック = 対象外</span><i></i></div><div class="ich2-edit-grid gdate">' + dates + '</div></div>' +
+      '<div><div class="ich2-edit-sec-h"><b>備考に追記</b><span>今の備考の後ろに付け足します(今の備考は消えません)</span><i></i></div>' +
+      '<div class="ich2-edit-field"><textarea id="ich2bk_biko" rows="2"></textarea></div></div>';
+    document.getElementById("ich2BulkStatus").textContent = "";
+    document.getElementById("ich2BulkSaveBtn").disabled = false;
+    document.getElementById("ich2BulkOverlay").hidden = false;
+  }
+  async function ich2SaveBulkModal() {
+    const sets = [];
+    ICH2_BULK_DATES.forEach(([col, label]) => {
+      const id = "ich2bk_" + col, na = document.getElementById(id + "_na").checked, raw = document.getElementById(id).value.trim();
+      if (na) sets.push({ col, label, value: "***" });
+      else if (raw) sets.push({ col, label, value: ich2NormalizeDateInput(raw) });
+    });
+    const add = document.getElementById("ich2bk_biko").value.trim();
+    if (!sets.length && !add) { alert("入れる項目がありません。"); return; }
+    const lines = sets.map(x => x.label + " を " + (x.value === "***" ? "対象外(―)" : x.value)).concat(add ? ["備考に「" + add + "」を追記"] : []);
+    if (!confirm(ich2BulkNos.length + "件(" + ich2BulkNos.join("、") + ")に、次の内容を入れます。\n\n" + lines.join("\n") + "\n\nよろしいですか？")) return;
+    const iNo = ich2Header.indexOf("製造番号"), iB = ich2Header.indexOf("備考");
+    const btn = document.getElementById("ich2BulkSaveBtn"), st = document.getElementById("ich2BulkStatus");
+    btn.disabled = true;
+    const fails = [];
+    for (let k = 0; k < ich2BulkNos.length; k++) {
+      const no = ich2BulkNos[k], row = ich2All.find(r => r[iNo] === no);
+      if (!row) { fails.push(no); continue; }
+      st.textContent = "保存中… " + (k + 1) + "/" + ich2BulkNos.length;
+      const ch = sets.map(x => ({ col: x.col, value: x.value }));
+      if (add && iB !== -1) {
+        const old = String(row[iB] || "").trim();
+        if (!old.includes(add)) ch.push({ col: "備考", value: old ? old + " " + add : add });   // 同じ文がすでに入っていれば、二重に付けない
+      }
+      try {
+        const rs = await Promise.all(ch.map(c => fetch(GAS_URL, { method: "POST", body: JSON.stringify({ type: "updateProgress", seizouBangou: no, columnName: c.col, value: c.value }) }).then(r => r.json())));
+        if (rs.some(d => d.result !== "success")) throw new Error();
+        ch.forEach(c => { const i = ich2Header.indexOf(c.col); if (i !== -1) row[i] = c.value; });
+      } catch (e) { fails.push(no); }
+    }
+    ich2RenderAll();
+    if (fails.length) { st.textContent = ""; btn.disabled = false; alert("次の番号は保存できませんでした。もう一度お試しください:" + fails.join("、")); return; }
+    document.getElementById("ich2BulkOverlay").hidden = true;
   }
 
   function ich2GoShukka() {
