@@ -478,6 +478,7 @@
   .ich2-muted { color: var(--color-neutral-700); }
   #ich2Tbody.arch .ich2-prog-cell { cursor: default; }
   tr[data-arch="1"] td { cursor: default !important; }
+  .ts3-memo { color: #1a8f3c; font-weight: 900; margin-left: 1px; cursor: help; }
   .tsb-filter { display: flex; flex-wrap: wrap; gap: 12px 16px; align-items: center; padding: 8px 16px; border-bottom: 1px solid var(--color-border, #ddd); font-size: 13px; }
   .tsb-filter select { font: inherit; padding: 3px 6px; }
   .tsb-term { margin-left: auto; font-weight: 700; color: var(--color-accent-700, #a02); }
@@ -3202,9 +3203,9 @@
       tsBuiList = buiRows.slice(1).map(r => r[0]).filter(Boolean);
       const header = prodRows[0];
       const idxSeizou = header.indexOf("製造番号"), idxGenba = header.indexOf("現場名"), idxHinmei = header.indexOf("品名"), idxSunpou = header.indexOf("寸法"), idxZumen = header.indexOf("図");
-      const idxJuken = header.indexOf("検完") !== -1 ? header.indexOf("検完") : header.indexOf("受・完"), idxKu = header.indexOf("区"), idxSei = header.indexOf("製");
+      const idxJuken = header.indexOf("検完") !== -1 ? header.indexOf("検完") : header.indexOf("受・完"), idxKu = header.indexOf("区"), idxSei = header.indexOf("製"), idxBiko = header.indexOf("備考");
       prodRows.slice(1).forEach(r => {
-        if (r[idxSeizou]) tsProductMap[r[idxSeizou]] = { genbaMei: r[idxGenba] || "", hinmei: r[idxHinmei] || "", sunpou: r[idxSunpou] || "", zumen: r[idxZumen] || "", juken: r[idxJuken] || "", ku: r[idxKu] || "", seisaku: r[idxSei] || "" };
+        if (r[idxSeizou]) tsProductMap[r[idxSeizou]] = { genbaMei: r[idxGenba] || "", hinmei: r[idxHinmei] || "", sunpou: r[idxSunpou] || "", zumen: r[idxZumen] || "", juken: r[idxJuken] || "", ku: r[idxKu] || "", seisaku: r[idxSei] || "", biko: idxBiko === -1 ? "" : String(r[idxBiko] || "").trim() };
       });
     } catch (e) { console.error("マスタ読み込み失敗", e); }
     tsLoadArchMap().then(() => { [TSP.main, TSP.sub].forEach(p => { if (p.all && p.all.length && p.tabKey && p.tabKey !== TS_SCHEDULE_KEY && p.tabKey !== TS_PAINT_KEY) tsApply(p); }); }).catch(e => console.error("出荷済みの図面リンク読み込み失敗", e));   // 画面が開いたあと、裏で読む
@@ -3531,7 +3532,13 @@
         } else {
           td.textContent = tsDisplayValue(label, v);
         }
-        if (label === "納期") td.className = "ts3-sticky after-no";
+        if (label === "納期") {
+          td.className = "ts3-sticky after-no";
+          if (prod.biko) {   // 一覧の備考(納期のメモ)がある製品は、緑の「・」。マウスを載せると備考が見える
+            const dot = document.createElement("span"); dot.className = "ts3-memo"; dot.textContent = "・"; dot.title = "一覧の備考:" + prod.biko;
+            td.appendChild(dot);
+          }
+        }
         if (label === noteLabel) { td.className = "ts3-note"; td.title = td.textContent; }
         else if (label === "備考") { td.style.maxWidth = (tab.key === "メッキ" ? "165px" : "110px"); td.style.textAlign = "left"; td.title = td.textContent; }
         if (TS_INLINE[label]) {
