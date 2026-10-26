@@ -559,6 +559,7 @@
   .ich2-edit-grid.tosou { grid-template-columns: 1fr 1fr 1fr 1fr 1fr 2fr 1.3fr; }
   .ich2-edit-grid.gdate { grid-template-columns: 1.25fr 1.25fr 1.25fr 1.25fr 2.5fr 2.5fr 1.25fr; gap: 8px; }
   .ich2-edit-grid.gdate input[type="text"] { font-size: 12px; padding: 0 5px; }
+  .ich2-edit-grid.gdate.gbulk { grid-template-columns: 1.25fr 1.25fr 1.25fr 2.5fr 2.5fr 1.25fr 1.25fr; }   /* まとめて編集:内装・外装だけ広く */
   .ich2-edit-grid.tosou { padding: 10px 12px; background: var(--color-neutral-200); border-left: 3px solid var(--color-text); }
   .ich2-edit-field label { display: block; font-size: 11px; line-height: 16px; height: 16px; color: var(--color-neutral-700); margin-bottom: 2px; }
   .ich2-edit-grid.tosou .ich2-edit-field label { font-weight: 700; color: var(--color-text); }
@@ -2687,7 +2688,7 @@
   }
 
   // ===== まとめて編集(2件以上を選んで「編集」) =====
-  const ICH2_BULK_DATES = [["受注日","受注日"], ["製作日","製作日"], ["完成日","完成日"], ["内装日","内装日"], ["外装日","外装日"], ["出荷日","出荷日"]];
+  const ICH2_BULK_DATES = [["受注日","受注日"], ["製作日","製作日"], ["完成日","完成日"], ["内装日","内装日"], ["外装日","外装日"], ["出荷日","出荷日"], ["搬入日","搬入日"]];
   let ich2BulkNos = [];
   function ich2OpenBulkModal(nos) {
     ich2BulkNos = nos;
@@ -2702,7 +2703,7 @@
         '<label class="na" title="対象外"><input type="checkbox" id="' + id + '_na" onchange="document.getElementById(\'' + id + '\').disabled=this.checked;">―</label></div></div>';
     }).join("");
     document.getElementById("ich2BulkBody").innerHTML =
-      '<div><div class="ich2-edit-sec-h"><b>進捗</b><span>入れた日付で上書き /「―」にチェック = 対象外</span><i></i></div><div class="ich2-edit-grid gdate">' + dates + '</div></div>' +
+      '<div><div class="ich2-edit-sec-h"><b>進捗</b><span>入れた日付で上書き /「―」にチェック = 対象外</span><i></i></div><div class="ich2-edit-grid gdate gbulk">' + dates + '</div></div>' +
       '<div><div class="ich2-edit-sec-h"><b>備考に追記</b><span>今の備考の後ろに付け足します(今の備考は消えません)</span><i></i></div>' +
       '<div class="ich2-edit-field"><textarea id="ich2bk_biko" rows="2"></textarea></div></div>';
     document.getElementById("ich2BulkStatus").textContent = "";
