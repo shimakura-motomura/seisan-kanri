@@ -2263,6 +2263,24 @@
     }
   }
 
+  // 複数の保存を1回の通信でまとめて送る(GAS側の「batch」)。戻り値は、送った順の結果 [{result, message}]
+  async function gasBatch(items) {
+    const res = await fetch(GAS_URL, { method: "POST", body: JSON.stringify({ type: "batch", items }) });
+    const d = await res.json();
+    if (!Array.isArray(d.results)) throw new Error(d.message || "保存に失敗しました(GASを新しいものに入れ替えているか確認してください)");
+    return d.results;
+  }
+  // 画面のデータ(1行・1項目)を書き換える。戻り値は、元に戻すための控え。列がまだ無い「搬入日」「工事名（正式）」は、見出しも作る
+  function ich2SetCellMem(row, col, value) {
+    let idx = ich2Header.indexOf(col);
+    if (idx === -1 && (col === "搬入日" || col === "工事名（正式）")) { ich2Header.push(col); idx = ich2Header.length - 1; }
+    if (idx === -1) return null;
+    while (row.length < idx) row.push("");
+    const old = row[idx] === undefined ? "" : row[idx];
+    row[idx] = value;
+    return { row, idx, old };
+  }
+
   // 先に画面を変えて、保存は裏で行う(失敗したときだけ元に戻す)
   async function ich2SaveProgress(seizouBangou, columnName, value, td, original) {
     ich2KeepMake.add(String(seizouBangou).trim());
@@ -2581,33 +2599,48 @@
 
     const saveBtn = document.getElementById("ich2EditSaveBtn");
     const status = document.getElementById("ich2EditStatus");
+    const extra = ich2ArchExtra(row);
+    const items = changes.map(c => Object.assign({ type: "updateProgress", seizouBangou, columnName: c.col, value: c.value }, extra));
+
+    if (!renameWanted) {
+      // 先に画面を変えて閉じ、保存は裏で1回にまとめて行う(失敗した項目だけ元に戻す)
+      ich2KeepMake.add(String(seizouBangou).trim());
+      const olds = changes.map(c => ich2SetCellMem(row, c.col, c.value));
+      ich2CloseEditModal();
+      ich2RenderAll();
+      const revert = idxs => { idxs.forEach(k => { const o = olds[k]; if (o) o.row[o.idx] = o.old; }); ich2RenderAll(); };
+      try {
+        const results = await gasBatch(items);
+        const bad = [];
+        results.forEach((r, k) => { if (r.result !== "success") bad.push(k); });
+        if (bad.length) {
+          revert(bad);
+          alert("保存できなかった項目があり、元の表示に戻しました(" + seizouBangou + "): " + bad.map(k => changes[k].col + "(" + (results[k].message || "失敗") + ")").join("、"));
+        }
+      } catch (e) {
+        revert(changes.map((c, k) => k));
+        alert("保存に失敗したため、元の表示に戻しました(" + seizouBangou + "): " + e.message);
+      }
+      return;
+    }
+
+    // 製造番号も変えるときは、結果を待ってから進める(番号が変わると、行の目印が変わるため)
     saveBtn.disabled = true;
     status.textContent = (changes.length ? changes.length + "件を保存中…" : "製造番号を変更中…");
-
     try {
-      const results = await Promise.all(changes.map(c =>
-        fetch(GAS_URL, { method: "POST", body: JSON.stringify(Object.assign({ type: "updateProgress", seizouBangou, columnName: c.col, value: c.value }, ich2ArchExtra(row))) })
-          .then(res => res.json())
-          .then(data => ({ col: c.col, ok: data.result === "success", message: data.message }))
-      ));
-      const failed = results.filter(r => !r.ok);
-      if (failed.length > 0) {
-        throw new Error(failed.map(f => f.col + "(" + (f.message || "失敗") + ")").join("、"));
+      if (items.length) {
+        const results = await gasBatch(items);
+        const failed = [];
+        results.forEach((r, k) => { if (r.result !== "success") failed.push(changes[k].col + "(" + (r.message || "失敗") + ")"); });
+        if (failed.length) throw new Error(failed.join("、"));
+        changes.forEach(c => { ich2SetCellMem(row, c.col, c.value); });   // 全て成功したら、メモリ上のデータも更新
       }
-      // 全て成功したら、メモリ上のデータも更新して再描画
-      changes.forEach(c => {
-        let idx = ich2Header.indexOf(c.col);
-        if (idx === -1 && c.col === "工事名（正式）") { ich2Header.push(c.col); idx = ich2Header.length - 1; }
-        if (idx !== -1) { while (row.length < idx) row.push(""); row[idx] = c.value; }
-      });
-      if (renameWanted) {   // 製造番号の変更は、ほかの項目を保存したあとに行う
-        status.textContent = "製造番号を変更中…";
-        const rr = await fetch(GAS_URL, { method: "POST", body: JSON.stringify(Object.assign({ type: "renameSeizou", seizouBangou, newNo }, ich2ArchExtra(row))) });
-        const rd = await rr.json();
-        if (rd.result !== "success") throw new Error("製造番号を変更できませんでした: " + (rd.message || "失敗"));
-        row[idxSeizou] = newNo;
-        ich2Selected.clear();
-      }
+      status.textContent = "製造番号を変更中…";
+      const rr = await fetch(GAS_URL, { method: "POST", body: JSON.stringify(Object.assign({ type: "renameSeizou", seizouBangou, newNo }, extra)) });
+      const rd = await rr.json();
+      if (rd.result !== "success") throw new Error("製造番号を変更できませんでした: " + (rd.message || "失敗"));
+      row[idxSeizou] = newNo;
+      ich2Selected.clear();
       ich2CloseEditModal();
       ich2RenderAll();
     } catch (e) {
@@ -2726,27 +2759,34 @@
     const lines = sets.map(x => x.label + " を " + (x.value === "***" ? "対象外(―)" : x.value)).concat(add ? ["備考に「" + add + "」を追記"] : []);
     if (!confirm(ich2BulkNos.length + "件(" + ich2BulkNos.join("、") + ")に、次の内容を入れます。\n\n" + lines.join("\n") + "\n\nよろしいですか？")) return;
     const iNo = ich2Header.indexOf("製造番号"), iB = ich2Header.indexOf("備考");
-    const btn = document.getElementById("ich2BulkSaveBtn"), st = document.getElementById("ich2BulkStatus");
-    btn.disabled = true;
-    const fails = [];
-    for (let k = 0; k < ich2BulkNos.length; k++) {
-      const no = ich2BulkNos[k], row = ich2All.find(r => r[iNo] === no);
-      if (!row) { fails.push(no); continue; }
-      st.textContent = "保存中… " + (k + 1) + "/" + ich2BulkNos.length;
+    // 全件ぶんの保存内容をつくる(備考は、各行の今の備考の後ろに追記)
+    const plan = [], missing = [];
+    ich2BulkNos.forEach(no => {
+      const row = ich2All.find(r => r[iNo] === no);
+      if (!row) { missing.push(no); return; }
       const ch = sets.map(x => ({ col: x.col, value: x.value }));
       if (add && iB !== -1) {
         const old = String(row[iB] || "").trim();
         if (!old.includes(add)) ch.push({ col: "備考", value: old ? old + " " + add : add });   // 同じ文がすでに入っていれば、二重に付けない
       }
-      try {
-        const rs = await Promise.all(ch.map(c => fetch(GAS_URL, { method: "POST", body: JSON.stringify({ type: "updateProgress", seizouBangou: no, columnName: c.col, value: c.value }) }).then(r => r.json())));
-        if (rs.some(d => d.result !== "success")) throw new Error();
-        ch.forEach(c => { let i = ich2Header.indexOf(c.col); if (i === -1 && c.col === "工事名（正式）") { ich2Header.push(c.col); i = ich2Header.length - 1; } if (i !== -1) { while (row.length < i) row.push(""); row[i] = c.value; } });
-      } catch (e) { fails.push(no); }
-    }
-    ich2RenderAll();
-    if (fails.length) { st.textContent = ""; btn.disabled = false; alert("次の番号は保存できませんでした。もう一度お試しください:" + fails.join("、")); return; }
+      if (ch.length) plan.push({ no, row, ch });
+    });
+    // 先に画面を変えて閉じ、保存は裏で1回にまとめて行う(失敗した番号だけ元に戻す)
+    const items = [];
+    plan.forEach(pl => pl.ch.forEach(c => { items.push({ type: "updateProgress", seizouBangou: pl.no, columnName: c.col, value: c.value }); pl.idxs = (pl.idxs || []).concat(items.length - 1); }));
+    plan.forEach(pl => { ich2KeepMake.add(String(pl.no).trim()); pl.olds = pl.ch.map(c => ich2SetCellMem(pl.row, c.col, c.value)); });
     document.getElementById("ich2BulkOverlay").hidden = true;
+    ich2RenderAll();
+    if (!items.length) return;
+    let results = null, netErr = null;
+    try { results = await gasBatch(items); } catch (e) { netErr = e; }
+    const fails = [];
+    plan.forEach(pl => {
+      const bad = netErr || pl.idxs.some(k => results[k].result !== "success");
+      if (bad) { fails.push(pl.no); pl.olds.forEach(o => { if (o) o.row[o.idx] = o.old; }); }
+    });
+    if (fails.length) ich2RenderAll();
+    if (fails.length || missing.length) alert("次の番号は保存できませんでした(元の表示に戻しました)。もう一度お試しください:" + fails.concat(missing).join("、") + (netErr ? "\n" + netErr.message : ""));
   }
 
   function ich2GoShukka() {
@@ -3906,15 +3946,18 @@
     const today = now.getFullYear() + "/" + (now.getMonth() + 1) + "/" + now.getDate();
     const targets = p.all.filter(o => p.sel.has(o.key));
     if (!confirm((p.tabKey || "") + " " + targets.length + "件の「納品」を " + today + " にして、完了にします。よろしいですか？")) return;
-    const btn = tsEl(p, "done"); btn.disabled = true; btn.textContent = "処理中...";
-    let fail = 0, lastErr = "";
-    for (const o of targets) {
-      try { await tsPost({ type: "updateTosou", tab: o.tab, rowIndex: o.rowIndex, seizouBangou: o.get("製造番号"), fields: { "完成納品": today } }); o.set("完成納品", today); }
-      catch (e) { fail++; lastErr = e.message; }
-    }
-    btn.textContent = "完了にする";
-    if (fail) alert(fail + "件は更新できませんでした。" + lastErr);
+    // 先に画面を変え、保存は裏で1回にまとめて行う(失敗した行だけ元に戻す)
+    const olds = targets.map(o => o.get("完成納品"));
+    const items = targets.map(o => ({ type: "updateTosou", tab: o.tab, rowIndex: o.rowIndex, seizouBangou: o.get("製造番号"), fields: { "完成納品": today } }));
+    targets.forEach(o => o.set("完成納品", today));
     p.sel.clear(); tsApply(p);
+    let results = null, netErr = null;
+    try { results = await gasBatch(items); } catch (e) { netErr = e; }
+    let fail = 0, lastErr = netErr ? netErr.message : "";
+    targets.forEach((o, k) => {
+      if (netErr || results[k].result !== "success") { fail++; if (!netErr) lastErr = results[k].message || lastErr; o.set("完成納品", olds[k]); }
+    });
+    if (fail) { tsApply(p); alert(fail + "件は更新できませんでした(元の表示に戻しました)。" + lastErr); }
   }
 
   // ================= メッキスケ(カレンダー・3か月) =================
