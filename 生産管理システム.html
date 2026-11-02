@@ -811,7 +811,7 @@
           </span>
         </span>
         <span class="sk-entry-btns">
-          <button type="button" id="skManualBtn" onclick="event.stopPropagation();document.getElementById('skForm').style.display='block';">手入力</button>
+          <button type="button" id="skManualBtn" onclick="event.stopPropagation();skQueueClear();document.getElementById('skForm').style.display='block';">手入力</button>
           <button type="button" id="bkOpenBtn" onclick="event.stopPropagation();">買入品</button>
         </span>
       </div>
@@ -887,7 +887,7 @@
 
   <!-- ============ 製作手配 登録フォーム(ポップアップ。トップの図面ドロップ/手入力で開く) ============ -->
   <div id="skForm"><div class="ich2-edit-panel sk-panel">
-      <div class="ich2-edit-head"><span class="ttl">製作手配 登録</span><span class="no">新規</span><span class="sub">緑色の項目は図面からの仮入力です。内容を確認してください</span></div>
+      <div class="ich2-edit-head"><span class="ttl">製作手配 登録</span><span class="no" id="skNo">新規</span><span class="sub">緑色の項目は図面からの仮入力です。内容を確認してください</span></div>
       <div class="ich2-edit-body">
         <div><div class="ich2-edit-sec-h"><b>基本情報</b><label style="font-size:11px;display:flex;align-items:center;gap:4px;cursor:pointer;"><input type="checkbox" id="f_coiluse" style="accent-color:var(--color-accent);">コイル使用(コイル成形を含む場合)</label><i></i></div>
           <div class="ich2-edit-grid sk-grid5"><div class="ich2-edit-field"><label for="f_seizouBangou">製造番号</label><input type="text" id="f_seizouBangou"></div><div class="ich2-edit-field"><label for="f_nouki">納期</label><input type="text" id="f_nouki"></div><div class="ich2-edit-field"><label for="f_genbaMei">現場名<span style="color:var(--color-accent);font-weight:700;margin-left:6px;font-size:11px;">略称で入力</span></label><input type="text" id="f_genbaMei"></div><div class="ich2-edit-field"><label for="f_koujimei">工事名（正式）<span style="color:var(--color-accent);font-weight:700;margin-left:6px;font-size:11px;">図面どおり</span></label><input type="text" id="f_koujimei"></div><div class="ich2-edit-field"><label for="f_hinmei">品名</label><input type="text" id="f_hinmei"></div><div class="ich2-edit-field"><label for="f_sunpou">寸法</label><input type="text" id="f_sunpou"></div><div class="ich2-edit-field"><label for="f_zairyou">材質</label><input type="text" id="f_zairyou" placeholder="例 444"></div><div class="ich2-edit-field"><label for="f_jukenKansei">検完</label><input type="text" id="f_jukenKansei" placeholder="例 2026/10/15"></div><div class="ich2-edit-field"><label for="f_kubun">区</label><select id="f_kubun"><option value=""></option><option value="外">外(適用外)</option><option value="一">一(一圧)</option><option value="二">二(二圧)</option><option value="小">小(小型圧力容器)</option><option value="消">消(消防検査)</option></select></div><div class="ich2-edit-field"><label for="f_seisakuKubun">製作</label><select id="f_seisakuKubun"><option value=""></option><option value="第一">第一</option><option value="ｺｲﾙ">ｺｲﾙ</option><option value="SUS">SUS</option><option value="杉原">杉原</option><option value="工藤">工藤</option></select></div><div class="ich2-edit-field"><label for="f_tantou">担当者</label><input type="text" id="f_tantou"></div><div class="ich2-edit-field"><label for="f_mSunpou">m寸法</label><input type="text" id="f_mSunpou"></div><div class="ich2-edit-field"><label for="f_shitsuryou">質量</label><input type="text" id="f_shitsuryou"></div><div class="ich2-edit-field"><label for="f_katabangou">型番</label><input type="text" id="f_katabangou"></div><div class="ich2-edit-field"><label for="f_baika">売価(千円)</label><input type="text" id="f_baika"></div><div class="ich2-edit-field"><label for="f_zumenLink">図面リンク(自動)</label><input type="text" id="f_zumenLink" readonly></div></div></div>
@@ -899,6 +899,7 @@
       </div>
       <div class="ich2-edit-foot">
         <span id="skResultMsg"></span>
+        <button type="button" class="ich2-edit-cancel" id="skSkipBtn" style="display:none;">この図面をとばす</button>
         <button type="button" class="ich2-edit-cancel" id="skCancelBtn">キャンセル</button>
         <button type="button" class="ich2-edit-save" id="skRegisterBtn">登録する</button>
       </div>
@@ -2842,6 +2843,7 @@
     document.getElementById("f_hinmei").addEventListener("input", autoCheckCoilUse);
     skBuildBlocks();
     document.getElementById("skCancelBtn").addEventListener("click", skCancel);
+    document.getElementById("skSkipBtn").addEventListener("click", skSkip);
 
     ich2FetchJson(GAS_URL + "?type=bui").then(rows => {
       const buiList = rows.slice(1).map(r => r[0]).filter(Boolean);
@@ -2929,7 +2931,46 @@
     const msg = document.getElementById("skResultMsg"); msg.style.display = "none"; msg.textContent = "";
   }
 
+  // ---- 1つのPDFに図面が複数あるとき、1枚ずつ順番に登録フォームを出す ----
+  let skQueue = null;   // {list, idx, pdfUrl, msgs, bad}
+  function skQueueClear() {
+    skQueue = null;
+    document.getElementById("skNo").textContent = "新規";
+    document.getElementById("skSkipBtn").style.display = "none";
+  }
+  function skLoadDrawing(i) {
+    skResetForm();
+    skQueue.idx = i;
+    fillFormFromOcr(skQueue.list[i] || {}, skQueue.pdfUrl);
+    document.getElementById("skNo").textContent = (i + 1) + "/" + skQueue.list.length + "枚目";
+    document.getElementById("skSkipBtn").style.display = (i < skQueue.list.length - 1) ? "" : "none";
+    document.getElementById("skForm").style.display = "block";
+    const body = document.querySelector("#skForm .ich2-edit-body"); if (body) body.scrollTop = 0;
+  }
+  // 次の図面へ進む。進めたらtrue、最後だったらfalse
+  function skAdvance() {
+    if (!skQueue || skQueue.idx >= skQueue.list.length - 1) return false;
+    skLoadDrawing(skQueue.idx + 1);
+    return true;
+  }
+  function skSkip() {
+    if (!skQueue) return;
+    skQueue.skipped = (skQueue.skipped || 0) + 1;
+    skAdvance();
+  }
+  function skFinishMsg(doneMsg, isErr) {
+    const hm = document.getElementById("skHomeMsg");
+    let t = doneMsg;
+    if (skQueue) {
+      skQueue.msgs.push(doneMsg);
+      t = skQueue.msgs.join(" / ") + (skQueue.skipped ? "(とばした図面:" + skQueue.skipped + "枚)" : "");
+      isErr = isErr || skQueue.bad;
+    }
+    hm.textContent = t; hm.className = isErr ? "error" : "success";
+  }
+
   function skCancel() {
+    skQueueClear();
     skResetForm();
     document.getElementById("skForm").style.display = "none";
     document.getElementById("ocrStatus").style.display = "none";
@@ -2963,10 +3004,17 @@
       if (!res.ok) throw new Error("通信エラー: " + res.status);
       const data = await res.json();
       if (data.result !== "success") throw new Error(data.message || data.error || "読み取りに失敗しました");
-      fillFormFromOcr(data.fields || {}, data.pdfUrl);
       ocrStatus.style.display = "none"; dropZone.classList.remove("busy");
       document.getElementById("skHomeMsg").className = "";
-      document.getElementById("skForm").style.display = "block";
+      skQueueClear();
+      const ds = Array.isArray(data.drawings) ? data.drawings.filter(d => d && typeof d === "object") : [];
+      if (ds.length > 1) {
+        skQueue = { list: ds, idx: 0, pdfUrl: data.pdfUrl, msgs: [], bad: false, skipped: 0 };
+        skLoadDrawing(0);
+      } else {
+        fillFormFromOcr(data.fields || ds[0] || {}, data.pdfUrl);
+        document.getElementById("skForm").style.display = "block";
+      }
     } catch (e) {
       ocrStatus.style.display = "none"; dropZone.classList.remove("busy");
       alert("読み取りに失敗しました。もう一度お試しいただくか、手入力で進めてください。\n詳細: " + e.message);
@@ -3127,11 +3175,17 @@
       const doneMsg = "登録しました:" + (split ? regNums.join("、") + "(" + regNums.length + "件)" : nums[0]) + "(塗装画面にも " + tosouOk + "件登録)"
         + (failNums.length ? " ※次の番号は一覧に登録できませんでした。もう一度、その番号だけ登録してください:" + failNums.join("、") : "")
         + (tosouFail ? " ※塗装画面への登録に失敗したものが " + tosouFail + "件あります。塗装画面で手動追加してください。" : "");
-      skResetForm();
-      document.getElementById("skForm").style.display = "none";   // 登録できたら、ポップアップを閉じてトップに戻る
-      const hm = document.getElementById("skHomeMsg");
-      hm.textContent = doneMsg; hm.className = (failNums.length || tosouFail) ? "error" : "success";
+      const isErr = !!(failNums.length || tosouFail);
       btn.textContent = "登録する"; btn.disabled = false;
+      if (skQueue && skQueue.idx < skQueue.list.length - 1) {
+        skQueue.msgs.push(doneMsg); if (isErr) skQueue.bad = true;
+        skAdvance();   // 次の図面の入力画面へ
+      } else {
+        skFinishMsg(doneMsg, isErr);
+        skQueueClear();
+        skResetForm();
+        document.getElementById("skForm").style.display = "none";   // 登録できたら、ポップアップを閉じてトップに戻る
+      }
     } catch (e) {
       resultMsg.textContent = "登録に失敗しました。詳細: " + e.message;
       resultMsg.className = "error"; resultMsg.style.display = "block";
