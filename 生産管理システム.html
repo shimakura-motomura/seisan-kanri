@@ -3009,7 +3009,11 @@
       skQueueClear();
       const ds = Array.isArray(data.drawings) ? data.drawings.filter(d => d && typeof d === "object") : [];
       if (ds.length > 1) {
-        skQueue = { list: ds, idx: 0, pdfUrl: data.pdfUrl, msgs: [], bad: false, skipped: 0 };
+        skQueue = { list: ds, idx: 0, pdfUrl: data.pdfUrl, msgs: [], bad: false, skipped: 0, through: false, offs: [] };
+        // 製造番号が全部で2個以上(20個まで)なら、現場名の①②…を、PDF全体の通し番号にする(とばした図面も数える)
+        let tot = 0;
+        for (const d of ds) { skQueue.offs.push(tot); const ex = skExpandNumbers(d.seizouBangou); tot += (ex && ex.length) ? ex.length : 1; }
+        skQueue.through = tot >= 2 && tot <= SK_MARKS.length;
         skLoadDrawing(0);
       } else {
         fillFormFromOcr(data.fields || ds[0] || {}, data.pdfUrl);
@@ -3094,7 +3098,9 @@
     if (!nums) { alert("続き番号が20件を超えています。20件までに分けて登録してください。"); return; }
     const split = nums.length > 1;
     const genba0 = document.getElementById("f_genbaMei").value.trim();
-    const genbaOf = i => (split && genba0 && !/[①-⑳]$/.test(genba0)) ? genba0 + SK_MARKS[i] : genba0;
+    const thr = !!(skQueue && skQueue.through);   // PDF全体で通し番号にするとき
+    const off = thr ? (skQueue.offs[skQueue.idx] || 0) : 0;
+    const genbaOf = i => ((split || thr) && genba0 && !/[①-⑳]$/.test(genba0)) ? genba0 + SK_MARKS[off + i] : genba0;
     const model0 = document.getElementById("f_katabangou").value.trim();
     const modelList = split ? skExpandModel(model0) : null;
     const modelSplit = !!(modelList && modelList.length === nums.length);   // 型番の続きが、製造番号の件数と同じときだけ分ける
