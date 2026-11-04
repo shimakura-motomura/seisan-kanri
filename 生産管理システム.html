@@ -3049,7 +3049,7 @@
   // 続き番号(S-37668～71 / S-35396,7)を、1件ずつの番号に分ける。分けられない書き方は、そのまま1件
   const SK_MARKS = "①②③④⑤⑥⑦⑧⑨⑩⑪⑫⑬⑭⑮⑯⑰⑱⑲⑳";
   function skExpandNumbers(raw) {
-    const s0 = String(raw || "").trim().replace(/[〜~∼－ー]/g, "～").replace(/[、，]/g, ",").replace(/\s+/g, "");
+    const s0 = String(raw || "").trim().replace(/[〜~∼－ー]/g, "～").replace(/[、，\r\n]+/g, ",").replace(/\s+/g, "");
     let m = s0.match(/^([A-Za-z]+-?)(\d+)～(?:[A-Za-z]+-?)?(\d+)$/);   // S-37668～71 / S-37668～37671
     if (m) {
       const pre = m[1], base = m[2], tail = m[3];
@@ -3061,10 +3061,11 @@
       const out = []; for (let n = a; n <= b; n++) out.push(pre + String(n).padStart(base.length, "0"));
       return out;
     }
-    m = s0.match(/^([A-Za-z]+-?)(\d+)((?:,\d+)+)$/);   // S-35396,7 / S-35396,7,8
+    m = s0.match(/^([A-Za-z]+-?)(\d+)((?:,(?:\1)?\d+)+)$/);   // S-35396,7 / S-35396,7,8 / Z-37679,Z-37680 / Z-37679,37680
     if (m) {
       const pre = m[1], base = m[2], out = [pre + base];
-      for (const t of m[3].slice(1).split(",")) {
+      for (let t of m[3].slice(1).split(",")) {
+        if (t.startsWith(pre)) t = t.slice(pre.length);
         if (t.length > base.length) return [raw];
         out.push(pre + base.slice(0, base.length - t.length) + t);
       }
