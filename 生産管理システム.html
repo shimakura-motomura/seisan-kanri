@@ -4195,7 +4195,8 @@
     const table = tsEl(p, "table"), q = p.query.toLowerCase(), T = tsTokanL();
     table.classList.add("compact", "ts3-paint");
     const list = tsPaint.rows.filter(o => !q || o.name.toLowerCase().includes(q));
-    const latest = tsPaint.rows.map(o => o.date).filter(Boolean).sort().pop() || "";
+    const dnum = d => { const m = String(d).normalize("NFKC").match(/(\d{4})\D+(\d{1,2})\D+(\d{1,2})/); return m ? +m[1] * 10000 + +m[2] * 100 + +m[3] : 0; };   // 文字の並びではなく日付の大きさで比べる(9/28より11/16が新しい)
+    const latest = tsPaint.rows.map(o => o.date).filter(d => dnum(d) > 0).sort((x, y) => dnum(x) - dnum(y)).pop() || "";
     tsEl(p, "stat").textContent = tsPaint.err ? tsPaint.err : list.length + "品目" + (latest ? " ／ 更新 " + latest : "");
     const head = ["品名", "斗缶", "4L缶", "残量L", "㎡/L(目安)", "塗装㎡", "備考"];
     const hcls = { "斗缶": "c", "4L缶": "c", "㎡/L(目安)": "c", "残量L": "r", "塗装㎡": "r", "備考": "ts3-note" };
